@@ -1,0 +1,23 @@
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.[eE]nv
+venv/
+env/
+
+# IDE configuration files
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+*.egg-info
+
+# Generated output files
+# The directory will be tracked because of the .gitkeep file,
+# but its contents will be ignored.
+/outputs/*
+!/outputs/.gitkeep
