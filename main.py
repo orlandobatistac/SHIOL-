@@ -1,86 +1,62 @@
-"""
-SHIOLPlus - Strategic Lottery Optimization System
-
-Main entry point to orchestrate the entire lottery analysis workflow,
-from data ingestion to the export of optimized plays.
-"""
-import time
-
-# Import functions from modules and configuration parameters
-from src.config import DATA_FILE_PATH, NUM_FINAL_COMBINATIONS, NUM_POWERBALLS_TO_SELECT
-from src.data_processor import load_and_analyze_data
-from src.base_number_selector import select_strategic_base_numbers
-from src.combination_generator import generate_and_filter_combinations
-from src.performance_evaluator import evaluate_and_select_final_combinations
-from src.output_exporter import export_final_plays
+from loguru import logger
+import argparse
+from src.data_manager import update_db
+from src.model_trainer import train_model
+from src.play_generator import generate_plays
+from src.results_evaluator import evaluate_results
 
 def main():
     """
-    Executes the complete SHIOLPlus workflow.
+    Main orchestrator for the SHIOLPlus system.
     """
-    start_time = time.time()
-    print("=============================================")
-    print("===   Starting SHIOLPlus Process   ===")
-    print("=============================================\n")
+    logger.add("logs/shiolplus.log", rotation="10 MB", level="INFO")
+    logger.info("SHIOLPlus v1.2 - Starting weekly run.")
 
-    # --- Step 1: Data Loading and Analysis ---
-    print("--- [Step 1/5] Loading and analyzing historical data...")
-    analysis_results = load_and_analyze_data(DATA_FILE_PATH)
-    if not analysis_results:
-        print("\nProcess terminated due to an error in data loading.")
-        return
-    print("---------------------------------------------\n")
-
-    # --- Step 2: Base Number Selection ---
-    print("--- [Step 2/5] Selecting strategic base numbers...")
-    base_numbers = select_strategic_base_numbers(analysis_results)
-    if not base_numbers:
-        print("\nProcess terminated. Could not select base numbers.")
-        return
-    print(f"Selected Base Numbers: {base_numbers}")
-    print("---------------------------------------------\n")
-
-    # --- Step 3: Combination Generation and Filtering ---
-    print("--- [Step 3/5] Generating and filtering combinations...")
-    filtered_combinations = generate_and_filter_combinations(
-        base_numbers,
-        analysis_results['historical_winners']
+    parser = argparse.ArgumentParser(description="SHIOLPlus Powerball Analysis Tool")
+    parser.add_argument(
+        "--evaluate", 
+        nargs=2, 
+        metavar=('DRAW_DATE', 'WINNING_NUMBERS'),
+        help="Evaluate results for a given draw. WINNING_NUMBERS should be a comma-separated string, e.g., '1,2,3,4,5,6'"
     )
-    if not filtered_combinations:
-        print("\nProcess terminated. No combinations passed the filters.")
-        return
-    print("---------------------------------------------\n")
-
-    # --- Step 4: Performance Evaluation and Final Selection ---
-    print("--- [Step 4/5] Evaluating performance via backtesting...")
-    final_combinations = evaluate_and_select_final_combinations(
-        filtered_combinations,
-        analysis_results['historical_draws'],
-        num_final_combinations=NUM_FINAL_COMBINATIONS
+    parser.add_argument(
+        "--full-run",
+        action="store_true",
+        help="Perform a full run: update DB, retrain model, and generate new plays."
     )
-    if not final_combinations:
-        print("\nProcess terminated. Could not select final combinations.")
-        return
-    print("---------------------------------------------\n")
 
-    # --- Step 5: Final Assembly and Export ---
-    print("--- [Step 5/5] Assembling and exporting final plays...")
-    output_file = export_final_plays(
-        final_combinations,
-        analysis_results['powerball_freq'],
-        num_powerballs=NUM_POWERBALLS_TO_SELECT
-    )
-    
-    end_time = time.time()
-    total_time = end_time - start_time
+    args = parser.parse_args()
 
-    print("\n=============================================")
-    print("===      SHIOLPlus Process Complete      ===")
-    print("=============================================")
-    print(f"Total execution time: {total_time:.2f} seconds")
-    print(f"Final plays saved in: {output_file}")
-    print("=============================================\n")
+    if args.full_run:
+        logger.info("--- Phase 1: Updating Database ---")
+        update_db()
+        
+        logger.info("--- Phase 2: Training Model ---")
+        train_model()
+        
+        logger.info("--- Phase 3: Generating Plays ---")
+        generate_plays()
 
+    elif args.evaluate:
+        logger.info("--- Phase 4: Evaluating Results ---")
+        draw_date = args.evaluate[0]
+        try:
+            numbers = [int(n) for n in args.evaluate[1].split(',')]
+            if len(numbers) != 6:
+                raise ValueError("Exactly 6 numbers are required (5 white + 1 PB).")
+            winning_numbers = numbers[:5]
+            winning_pb = numbers[5]
+            evaluate_results(draw_date, winning_numbers, winning_pb)
+        except ValueError as e:
+            logger.error(f"Invalid format for winning numbers: {e}")
+            print(f"Error: {e}")
+            print("Please provide numbers as a comma-separated string, e.g., '1,2,3,4,5,6'")
 
-if __name__ == '__main__':
+    else:
+        print("No action specified. Use --full-run to generate plays or --evaluate to check results.")
+        parser.print_help()
+
+    logger.info("SHIOLPlus run finished.")
+
+if __name__ == "__main__":
     main()
