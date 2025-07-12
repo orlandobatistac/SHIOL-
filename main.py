@@ -1,62 +1,34 @@
-from loguru import logger
 import argparse
-from src.data_manager import update_db
-from src.model_trainer import train_model
-from src.play_generator import generate_plays
-from src.results_evaluator import evaluate_results
+from loguru import logger
+
+from src.pipeline import generate_new_plays, update_with_new_results
+from src.gui import launch_gui
+
+def setup_logging():
+    logger.add("logs/shiolplus.log", rotation="10 MB", level="INFO")
 
 def main():
-    """
-    Main orchestrator for the SHIOLPlus system.
-    """
-    logger.add("logs/shiolplus.log", rotation="10 MB", level="INFO")
-    logger.info("SHIOLPlus v1.2 - Starting weekly run.")
+    setup_logging()
+    parser = argparse.ArgumentParser(description="SHIOLPlus v1.3 - Lottery Analysis and Prediction System")
+    subparsers = parser.add_subparsers(dest='command', required=True)
 
-    parser = argparse.ArgumentParser(description="SHIOLPlus Powerball Analysis Tool")
-    parser.add_argument(
-        "--evaluate", 
-        nargs=2, 
-        metavar=('DRAW_DATE', 'WINNING_NUMBERS'),
-        help="Evaluate results for a given draw. WINNING_NUMBERS should be a comma-separated string, e.g., '1,2,3,4,5,6'"
-    )
-    parser.add_argument(
-        "--full-run",
-        action="store_true",
-        help="Perform a full run: update DB, retrain model, and generate new plays."
-    )
+    # 'generate' command
+    parser_generate = subparsers.add_parser('generate', help="Run the full pipeline to generate new plays.")
+    parser_generate.set_defaults(func=lambda args: generate_new_plays())
+
+    # 'update' command
+    parser_update = subparsers.add_parser('update', help="Ingest new real draw results and retrain the model.")
+    parser_update.add_argument('--file', required=True, help="Path to the CSV file with new draw results.")
+    parser_update.set_defaults(func=lambda args: update_with_new_results(args.file))
+
+    # 'gui' command
+    parser_gui = subparsers.add_parser('gui', help="Launch the graphical user interface.")
+    parser_gui.set_defaults(func=lambda args: launch_gui())
 
     args = parser.parse_args()
-
-    if args.full_run:
-        logger.info("--- Phase 1: Updating Database ---")
-        update_db()
-        
-        logger.info("--- Phase 2: Training Model ---")
-        train_model()
-        
-        logger.info("--- Phase 3: Generating Plays ---")
-        generate_plays()
-
-    elif args.evaluate:
-        logger.info("--- Phase 4: Evaluating Results ---")
-        draw_date = args.evaluate[0]
-        try:
-            numbers = [int(n) for n in args.evaluate[1].split(',')]
-            if len(numbers) != 6:
-                raise ValueError("Exactly 6 numbers are required (5 white + 1 PB).")
-            winning_numbers = numbers[:5]
-            winning_pb = numbers[5]
-            evaluate_results(draw_date, winning_numbers, winning_pb)
-        except ValueError as e:
-            logger.error(f"Invalid format for winning numbers: {e}")
-            print(f"Error: {e}")
-            print("Please provide numbers as a comma-separated string, e.g., '1,2,3,4,5,6'")
-
-    else:
-        print("No action specified. Use --full-run to generate plays or --evaluate to check results.")
-        parser.print_help()
-
-    logger.info("SHIOLPlus run finished.")
+    
+    # Call the function associated with the chosen command
+    args.func(args)
 
 if __name__ == "__main__":
     main()
