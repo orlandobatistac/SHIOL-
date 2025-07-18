@@ -23,12 +23,14 @@ def main():
 
     # --- Predict Command ---
     parser_predict = subparsers.add_parser('predict', help="Generate new plays based on the trained model.")
-    parser_predict.add_argument('--count', type=int, help="Number of plays to generate.")
+    # default value set to avoid NoneType error
+    parser_predict.add_argument('--count', type=int, default=5, help="Number of plays to generate.")
     parser_predict.set_defaults(func=predict_plays_command)
 
     # --- Backtest Command ---
     parser_backtest = subparsers.add_parser('backtest', help="Backtest a generated strategy against historical data.")
-    parser_backtest.add_argument('--count', type=int, help="Number of plays to generate and test.")
+    # default value set to avoid NoneType error
+    parser_backtest.add_argument('--count', type=int, default=100, help="Number of plays to generate and test.")
     parser_backtest.set_defaults(func=backtest_strategy_command)
 
     # --- Update Command ---
@@ -44,7 +46,9 @@ def main():
 
 def predict_plays_command(args):
     """Handles the 'predict' command."""
-    logger.info(f"Received 'predict' command. Generating {args.count} plays...")
+    # Defensive check for count to ensure it's a valid integer.
+    count = args.count if args.count is not None else 5
+    logger.info(f"Received 'predict' command. Generating {count} plays...")
     try:
         from src.predictor import Predictor
         from src.intelligent_generator import IntelligentGenerator
@@ -53,7 +57,7 @@ def predict_plays_command(args):
         wb_probs, pb_probs = predictor.predict_probabilities()
 
         generator = IntelligentGenerator()
-        plays_df = generator.generate_plays(wb_probs, pb_probs, args.count)
+        plays_df = generator.generate_plays(wb_probs, pb_probs, count)
         
         logger.info("Generated plays:\n" + plays_df.to_string())
         print("\n--- Generated Plays ---")
@@ -66,7 +70,9 @@ def predict_plays_command(args):
     
 def backtest_strategy_command(args):
     """Handles the 'backtest' command."""
-    logger.info(f"Received 'backtest' command for {args.count} plays...")
+    # Defensive check for count to ensure it's a valid integer.
+    count = args.count if args.count is not None else 100
+    logger.info(f"Received 'backtest' command for {count} plays...")
     try:
         from src.predictor import Predictor
         from src.intelligent_generator import IntelligentGenerator
@@ -79,7 +85,7 @@ def backtest_strategy_command(args):
         predictor = Predictor()
         wb_probs, pb_probs = predictor.predict_probabilities()
         generator = IntelligentGenerator()
-        plays_df = generator.generate_plays(wb_probs, pb_probs, args.count)
+        plays_df = generator.generate_plays(wb_probs, pb_probs, count)
         logger.info(f"{len(plays_df)} plays generated.")
 
         # 2. Load historical data
