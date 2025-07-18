@@ -1,7 +1,8 @@
-pandas
-numpy
-scikit-learn
-xgboost
-sqlalchemy
-joblib
-loguru
+pandas==2.3.1
+numpy==2.3.1
+scikit-learn==1.7.0
+xgboost==3.0.2
+joblib==1.5.1
+loguru==0.7.3
+statsmodels==0.14.5
+requests==2.32.4

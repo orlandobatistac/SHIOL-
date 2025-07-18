@@ -21,3 +21,6 @@ build/
 # but its contents will be ignored.
 /outputs/*
 !/outputs/.gitkeep
+
+# Log files
+logs/*.log

@@ -1,135 +1,97 @@
-# SHIOLPlus v1.4: Intelligent Lottery Analysis System
+# SHIOL+ v2.0: AI-Powered Lottery Analysis System
 
-## Project Description
+An intelligent system designed to analyze historical data and predict lottery combinations using Machine Learning techniques.
 
-SHIOLPlus (System of Heuristic and Inferential Optimized Lottery) is a Python-based application designed to analyze Powerball lottery data. Version 1.4 features a complete, end-to-end pipeline that integrates statistical analysis, machine learning, and evolutionary algorithms to generate and optimize lottery plays. The system is accessible through a user-friendly graphical interface (GUI) or a command-line interface (CLI).
+## Project Summary
 
-### Methodology
+**SHIOL+ (Heuristic and Inferential Optimized Lottery System)** is a software tool that analyzes historical Powerball lottery draw data to identify statistical patterns. The system's main objective is to use an artificial intelligence model to predict the probability of each number appearing in future draws, thereby generating optimized plays.
 
-The core methodology of SHIOLPlus is a multi-stage intelligence pipeline:
-1.  **Feature Engineering:** The system ingests the entire history of Powerball draws and calculates a rich set of features for each draw, including number parity, sum, spread, and advanced recency (delay) metrics.
-2.  **ML-Powered Ranking:** An XGBoost classification model is trained on these features to learn the statistical "shape" of high-quality winning combinations.
-3.  **Weighted Candidate Generation:** Instead of pure random generation, the system creates a large pool of candidate plays weighted by the historical frequency of each number.
-4.  **Evolutionary Optimization:** The top-ranked plays from the ML model are used as the initial population for a Genetic Algorithm. This algorithm "evolves" the plays over dozens of generations, using crossover and mutation to search for even more optimal combinations.
-5.  **Monte Carlo Simulation:** The final, evolved plays are run through a Monte Carlo simulation of 100,000+ synthetic draws to estimate their long-term performance, calculating metrics like expected Return on Investment (ROI).
+Unlike traditional random number generators, SHIOL+ makes data-driven decisions, learning from thousands of past draws to identify trends, frequencies, and other subtle features that can influence results.
 
-### Disclaimer
-
-**This project is for educational, research, and entertainment purposes only. It is an exploration of data analysis and machine learning concepts. It does not and cannot guarantee any winnings. The lottery is a game of chance, and you should always play responsibly.**
-
----
-
-## Table of Contents
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [Installation](#installation)
-- [How to Run](#how-to-run)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
-
----
+> **Important**: This tool was created for educational, research, and entertainment purposes. The lottery is a game of chance, and SHIOL+ **does not guarantee prizes or winnings**. Always play responsibly.
 
 ## Key Features
 
-- **Graphical User Interface (GUI):** A simple, dark-themed Tkinter interface allows for easy operation without using the command line.
-- **End-to-End Automated Pipeline:** A single click or command runs the entire workflow from data loading to final play generation.
-- **Advanced ML and AI Integration:** Combines statistical analysis, XGBoost classification, a Genetic Algorithm optimizer, and Monte Carlo simulation.
-- **Intelligent Candidate Generation:** Uses historical number frequencies to generate statistically relevant candidate plays.
-- **Data-Driven Updates:** The system can ingest new draw results from a CSV file to automatically update its historical data and retrain its models.
-- **Detailed Logging:** All operations are logged to `logs/shiolplus.log` for easy debugging and tracking.
+SHIOL+ v2.0 focuses on a clean and efficient pipeline with three key functionalities accessible from the command line:
 
----
+*   **`train`**: Trains the Machine Learning model (an `XGBoost` classifier) using the complete historical dataset. The model learns to associate statistical and temporal features of the draws with the winning numbers. The trained model is saved in the `models/` directory.
+*   **`predict`**: Loads the already trained model to predict the probabilities for each number (white balls and Powerball) for the next draw. Based on these probabilities, it generates a specified number of unique, weighted plays.
+*   **`backtest`**: Performs a historical simulation to evaluate the performance of the model's strategy. It generates a set of plays and compares them against all past draws to calculate performance metrics like total cost, winnings, and Return on Investment (ROI).
 
-## Tech Stack
-
-- **Language:** Python 3.10+
-- **GUI:** Tkinter
-- **Core Libraries:**
-    - `pandas` & `numpy`
-    - `scikit-learn` & `xgboost`
-    - `sqlalchemy`
-    - `joblib`
-    - `loguru`
-
----
-
-## Installation
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd SHIOLPlus
-    ```
-
-2.  **Set up a virtual environment (recommended):**
-    ```bash
-    python -m venv venv
-    # On Windows
-    .\venv\Scripts\activate
-    # On macOS/Linux
-    source venv/bin/activate
-    ```
-
-3.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-
----
-
-## How to Run
-
-The system can be operated via the GUI (recommended for most users) or the CLI.
-
-### Running the GUI
-
-To launch the graphical user interface, run:
-```bash
-python main.py gui
-```
-The GUI provides buttons to "Generate Plays", "Update from CSV", and a link to this "User Manual".
-
-### Using the CLI
-
--   **Generate New Plays:**
-    ```bash
-    python main.py generate
-    ```
--   **Update with New Results:**
-    ```bash
-    python main.py update --file <path/to/new_results.csv>
-    ```
-
----
+The system's artificial intelligence works by creating a statistical profile for each draw, including data like parity, sum of numbers, and recency. The AI model learns to "score" number combinations based on how well they align with the profiles of historical winning draws.
 
 ## Project Structure
 
--   `main.py`: The main CLI entry point.
--   `src/`:
-    -   `gui.py`: Contains all code for the Tkinter graphical user interface.
-    -   `pipeline.py`: Holds the core orchestration logic for the `generate` and `update` commands.
-    -   `data_loader.py`: Handles loading and cleaning of historical data.
-    -   `feature_engineer.py`: Extracts statistical and heuristic features.
-    -   `model_trainer.py`: Manages training and versioning of the ML model.
-    -   `play_generator.py`: Implements the candidate generation and ranking logic.
-    -   `evolutionary_engine.py`: Contains the Genetic Algorithm for play optimization.
-    -   `simulation_engine.py`: Runs the Monte Carlo simulation to evaluate plays.
-    -   `evaluator.py`: Contains logic to evaluate plays against winning numbers.
--   `config/`: Contains the `config.ini` file for all settings.
--   `data/`: Contains the source `NCELPowerball.csv` file.
--   `models/`: Stores the serialized model artifact.
--   `outputs/`: Default location for generated play CSV files.
--   `logs/`: Contains execution logs.
+The project is organized into modular directories to facilitate maintenance and scalability.
 
----
+-   `src/`: Contains all the application's source code.
+    -   `cli.py`: The command-line interface (CLI) entry point that orchestrates all operations.
+    -   `loader.py`: Loads, cleans, and standardizes historical lottery data.
+    -   `intelligent_generator.py`: Includes the feature engineering logic (`FeatureEngineer`) and the weighted play generator (`IntelligentGenerator`).
+    -   `predictor.py`: Manages the training, evaluation, and loading of the AI model, as well as generating predictions.
+    -   `evaluator.py`: Contains the logic to run the `backtest` and calculate historical performance.
+-   `config/`: Configuration files. `config.ini` centralizes all system parameters.
+-   `data/`: Stores raw data, such as the `NCELPowerball.csv` file with historical results.
+-   `models/`: Saves the trained AI model artifacts (`shiolplus.pkl`).
+-   `outputs/`: Default directory for any files generated by the system (currently not actively used, but available).
+-   `logs/`: Stores application execution logs for debugging and tracking.
 
-## Contributing
+## Requirements
 
-Contributions are welcome. Please fork the repository, create a feature branch, and submit a pull request with a clear description of your changes.
+-   Python 3.10+
+-   Dependencies listed in `requirements.txt`.
 
----
+To install all dependencies, it is recommended to first create a virtual environment and then run:
+
+```bash
+pip install -r requirements.txt
+```
+
+## System Usage (CLI)
+
+All interactions with SHIOL+ are done through `src/cli.py`.
+
+1.  **Train the model**:
+    *   This command must be run first to create the AI model.
+    ```bash
+    python src/cli.py train
+    ```
+
+2.  **Generate predictions (plays)**:
+    *   Uses the trained model to generate a specific number of plays. The `--count` parameter is optional (defaults to 5).
+    ```bash
+    python src/cli.py predict --count 10
+    ```
+
+3.  **Backtest the strategy**:
+    *   Simulates the strategy's performance by generating plays and testing them against the history.
+    ```bash
+    python src/cli.py backtest --count 20
+    ```
+
+## Configuration
+
+The `config/config.ini` file allows for adjusting the system's behavior without modifying the code.
+
+-   **`[paths]`**: Defines the paths to data, model, and log files.
+-   **`[model_params]`**: Hyperparameters for the model, such as `test_size` for the test data split.
+-   **`[temporal_analysis]`**: Parameters for temporal feature engineering, like the `time_decay_function`.
+-   **`[cli_defaults]`**: Default values for CLI arguments, such as `count`.
+
+## Training and Evaluation
+
+Training is performed with the `train` command, which processes historical data and generates a `shiolplus.pkl` model file.
+
+Evaluation is done with `backtest`, which provides a JSON report with the following key indicators:
+-   **`total_cost`**: Total simulated cost of having played the generated combinations.
+-   **`total_winnings`**: Total simulated winnings.
+-   **`roi_percent`**: The Return on Investment, showing the strategy's profitability.
+-   **`win_distribution`**: A breakdown of the number and type of prizes that would have been won.
+
+## Credits and Authorship
+
+-   **Creator**: Orlando Batista
 
 ## License
 
-This project is distributed under the MIT License.
+Private use – All rights reserved.
