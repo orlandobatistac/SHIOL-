@@ -66,9 +66,34 @@ And that's it! The system is now ready to be used.
 
 ## 3. How to Use the System
 
-SHIOL+ is controlled through simple commands in the terminal from the project folder. There are three main commands.
+SHIOL+ v2.0 offers two ways to interact with it: a simple web interface (recommended) and a command-line tool for more advanced users.
 
-### Command 1: `train` (Train the Model)
+### Method 1: Using the Web Interface (Recommended)
+
+This is the easiest and most intuitive way to generate plays.
+
+**Step 1: Start the Application**
+
+1.  Make sure you have completed the installation steps.
+2.  Open your terminal, navigate to the project's root folder (`SHIOL-PLUS-V2`), and ensure your virtual environment is activated.
+3.  Run the following command:
+    ```bash
+    uvicorn src.api:app --reload
+    ```
+    This command starts the local web server. You will see some text in the terminal indicating that the server is running, usually on `http://127.0.0.1:8000`.
+
+**Step 2: Access the Application in Your Browser**
+
+1.  Open your favorite web browser (like Chrome, Firefox, or Edge).
+2.  In the address bar, type `http://127.0.0.1:8000` and press Enter.
+
+You will see the SHIOL+ user interface, where you can generate new plays with the click of a button. The system will automatically handle model training the first time it's needed.
+
+### Method 2: Using the Command-Line Interface (CLI)
+
+For users who prefer working in the terminal or want to automate tasks, the CLI provides direct access to the core functions.
+
+#### Command 1: `train` (Train the Model)
 
 This is the first command you should run. It tells the system to analyze all historical draw data and "train" its artificial intelligence brain.
 
@@ -82,7 +107,7 @@ python src/cli.py train
 ```
 You will see a log of the training process on the screen. Once it's finished, the intelligent model is ready and saved.
 
-### Command 2: `predict` (Generate New Plays)
+#### Command 2: `predict` (Generate New Plays)
 
 Once the model is trained, you can ask it to generate new plays.
 
@@ -98,7 +123,7 @@ python src/cli.py predict --count 15
 ```
 The system will show you a table with the generated plays.
 
-### Command 3: `backtest` (Test a Strategy)
+#### Command 3: `backtest` (Test a Strategy)
 
 This command is for simulating how the system's strategy would have performed in the past. It generates a set of plays and compares them against all historical draws to see how many prizes they would have won.
 

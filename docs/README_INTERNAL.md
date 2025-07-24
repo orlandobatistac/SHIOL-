@@ -155,3 +155,44 @@ The modular architecture allows for extending the system with relative ease.
 3.  Create a new function to handle the command (e.g., `def my_command_handler(args):`).
 4.  Set the handler function with `parser_new_command.set_defaults(func=my_command_handler)`.
 5.  Implement the logic for your new command, calling the necessary modules.
+
+## 7. Unified Web Module (Frontend + API)
+
+This section details the implementation of a unified web interface that integrates the frontend and a backend API to provide an interactive user experience.
+
+### General Architecture
+
+A unified architecture was chosen where a single **FastAPI** application acts as the backend and, at the same time, serves a static frontend. This decision simplifies deployment and management, as only one running process is needed for the entire application. The backend exposes a RESTful API while the frontend consumes this API to offer a dynamic user interface.
+
+### Backend Details (`src/api.py`)
+
+The backend is built with FastAPI, a modern, high-performance web framework for Python.
+
+*   **Frameworks**: Uses **FastAPI** for the API logic and **Uvicorn** as the ASGI server to run the application.
+*   **Component Reuse**: For maximum efficiency, the `Predictor` and `IntelligentGenerator` classes are instantiated only once when the application starts. This avoids the overhead of loading the Machine Learning model on each request, ensuring fast responses.
+*   **Prediction Endpoint**:
+    *   A single endpoint is implemented: `GET /api/v1/predict`.
+    *   This endpoint requires no parameters and, when called, uses the global instances of `Predictor` and `IntelligentGenerator` to generate a single Powerball play.
+    *   It returns the prediction in JSON format: `{"prediction": [n1, n2, n3, n4, n5, pb]}`.
+*   **CORS Configuration**: `CORSMiddleware` is used to allow requests from any origin (`allow_origins=["*"]`). This is crucial for the frontend, served in the client's browser, to communicate with the API without same-origin security policy issues.
+*   **Static File Service**: FastAPI uses `StaticFiles` to mount the `frontend` directory at the root path (`/`). The `html=True` option ensures that `index.html` is served as the default page, allowing the application to function as a Single Page Application (SPA).
+
+### Frontend Details (`frontend/`)
+
+The frontend is designed to be lightweight, modern, and easy to maintain.
+
+*   **File Structure**:
+    *   `index.html`: The main structure of the page, using semantic HTML5.
+    *   `css/styles.css`: CSS style file for additional customizations.
+    *   `js/app.js`: Contains all the user interface logic.
+*   **Technologies Used**:
+    *   **Semantic HTML5**: For a clear and accessible structure.
+    *   **JavaScript (ES6+)**: Plain (vanilla) JavaScript is used without frameworks to maintain simplicity and performance.
+    *   **TailwindCSS**: Included via a CDN for rapid and responsive utility-based design.
+*   **Application Logic (`js/app.js`)**:
+    *   **Event Listener**: An event listener is assigned to the "Generate Numbers" button.
+    *   **API Call**: When the button is clicked, an asynchronous function is executed that makes a `fetch` call to the `/api/v1/predict` backend endpoint.
+    *   **DOM Manipulation and UI States**: The script robustly manages the different states of the user interface:
+        *   **Loading**: Disables the button, shows a spinner, and changes the text to indicate that the request is in progress.
+        *   **Success**: Hides the initial text, displays the prediction area, and renders the generated numbers with a clear visual style (white balls and a red Powerball).
+        *   **Error**: Displays a descriptive error message if the API call fails.

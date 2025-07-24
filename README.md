@@ -47,12 +47,34 @@ To install all dependencies, it is recommended to first create a virtual environ
 pip install -r requirements.txt
 ```
 
-## System Usage (CLI)
+## Usage
 
-All interactions with SHIOL+ are done through `src/cli.py`.
+SHIOL+ v2.0 offers two ways to interact with the system: a web interface and a command-line interface (CLI).
+
+### 1. Web Interface (Recommended)
+
+The easiest way to use SHIOL+ is through its integrated web interface.
+
+**How to run it:**
+
+1.  Make sure you have installed all the dependencies from `requirements.txt`.
+2.  From the project's root directory, run the following command:
+
+    ```bash
+    uvicorn src.api:app --reload
+    ```
+3.  Open your web browser and go to `http://127.0.0.1:8000`.
+
+The application will automatically train the model on the first run and allow you to generate plays interactively.
+
+### 2. Command-Line Interface (CLI)
+
+For more advanced users or for integration into automated workflows, the CLI provides direct access to the system's core functions.
+
+All commands are executed through `src/cli.py`.
 
 1.  **Train the model**:
-    *   This command must be run first to create the AI model.
+    *   This command must be run at least once before generating predictions.
     ```bash
     python src/cli.py train
     ```
@@ -64,10 +86,12 @@ All interactions with SHIOL+ are done through `src/cli.py`.
     ```
 
 3.  **Backtest the strategy**:
-    *   Simulates the strategy's performance by generating plays and testing them against the history.
+    *   Simulates the strategy's performance by generating plays and testing them against history.
     ```bash
     python src/cli.py backtest --count 20
     ```
+
+---
 
 ## Configuration
 
