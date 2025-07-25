@@ -5,6 +5,29 @@ from loguru import logger
 
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator
+from src.loader import update_database_from_source
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from contextlib import asynccontextmanager
+
+# --- Scheduler and App Lifecycle ---
+scheduler = AsyncIOScheduler()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # On startup
+    logger.info("Application startup...")
+    # Initial data update
+    logger.info("Performing initial data update on startup.")
+    update_database_from_source()
+    # Schedule the update job
+    scheduler.add_job(update_database_from_source, 'interval', hours=12)
+    scheduler.start()
+    logger.info("Scheduler started. Data will be updated every 12 hours.")
+    yield
+    # On shutdown
+    logger.info("Application shutdown...")
+    scheduler.shutdown()
+    logger.info("Scheduler shut down.")
 
 # --- Application Initialization ---
 logger.info("Initializing FastAPI application...")
@@ -12,6 +35,7 @@ app = FastAPI(
     title="SHIOL+ Powerball Prediction API",
     description="Provides ML-based Powerball number predictions.",
     version="1.0.0",
+    lifespan=lifespan
 )
 
 # --- CORS Configuration ---

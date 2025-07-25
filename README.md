@@ -6,35 +6,43 @@ An intelligent system designed to analyze historical data and predict lottery co
 
 **SHIOL+ (Heuristic and Inferential Optimized Lottery System)** is a software tool that analyzes historical Powerball lottery draw data to identify statistical patterns. The system's main objective is to use an artificial intelligence model to predict the probability of each number appearing in future draws, thereby generating optimized plays.
 
-Unlike traditional random number generators, SHIOL+ makes data-driven decisions, learning from thousands of past draws to identify trends, frequencies, and other subtle features that can influence results.
+The system is now powered by an **SQLite database**, ensuring data integrity and performance. It automatically downloads the latest draw data, keeping the model's knowledge base up-to-date for the most accurate predictions possible.
 
 > **Important**: This tool was created for educational, research, and entertainment purposes. The lottery is a game of chance, and SHIOL+ **does not guarantee prizes or winnings**. Always play responsibly.
 
 ## Key Features
 
-SHIOL+ v2.0 focuses on a clean and efficient pipeline with three key functionalities accessible from the command line:
+SHIOL+ v2.0 focuses on a clean and efficient pipeline with four key functionalities accessible from the command line:
 
-*   **`train`**: Trains the Machine Learning model (an `XGBoost` classifier) using the complete historical dataset. The model learns to associate statistical and temporal features of the draws with the winning numbers. The trained model is saved in the `models/` directory.
-*   **`predict`**: Loads the already trained model to predict the probabilities for each number (white balls and Powerball) for the next draw. Based on these probabilities, it generates a specified number of unique, weighted plays.
-*   **`backtest`**: Performs a historical simulation to evaluate the performance of the model's strategy. It generates a set of plays and compares them against all past draws to calculate performance metrics like total cost, winnings, and Return on Investment (ROI).
-
-The system's artificial intelligence works by creating a statistical profile for each draw, including data like parity, sum of numbers, and recency. The AI model learns to "score" number combinations based on how well they align with the profiles of historical winning draws.
+*   **`update`**: Downloads the latest official Powerball data and intelligently updates the local SQLite database with only the new draws.
+*   **`train`**: Trains the Machine Learning model (an `XGBoost` classifier) using the complete historical dataset stored in the SQLite database. The trained model is saved in the `models/` directory.
+*   **`predict`**: Loads the trained model to predict the probabilities for each number (white balls and Powerball) for the next draw. Based on these probabilities, it generates a specified number of unique, weighted plays.
+*   **`backtest`**: Performs a historical simulation to evaluate the performance of the model's strategy. It generates a set of plays and compares them against all past draws to calculate performance metrics like total cost, winnings, and ROI.
 
 ## Project Structure
 
-The project is organized into modular directories to facilitate maintenance and scalability.
+The project is organized into the following directories:
 
--   `src/`: Contains all the application's source code.
-    -   `cli.py`: The command-line interface (CLI) entry point that orchestrates all operations.
-    -   `loader.py`: Loads, cleans, and standardizes historical lottery data.
-    -   `intelligent_generator.py`: Includes the feature engineering logic (`FeatureEngineer`) and the weighted play generator (`IntelligentGenerator`).
-    -   `predictor.py`: Manages the training, evaluation, and loading of the AI model, as well as generating predictions.
-    -   `evaluator.py`: Contains the logic to run the `backtest` and calculate historical performance.
--   `config/`: Configuration files. `config.ini` centralizes all system parameters.
--   `data/`: Stores raw data, such as the `NCELPowerball.csv` file with historical results.
+-   `src/`: Contains all the application's Python source code.
+    -   `__init__.py`: Makes the `src` directory a Python package.
+    -   `api.py`: FastAPI application that serves the web interface and provides API endpoints.
+    -   `cli.py`: The command-line interface (CLI) entry point.
+    -   `database.py`: Manages all SQLite database interactions.
+    -   `loader.py`: Handles loading data and orchestrates the database update process.
+    -   `predictor.py`: Manages the training and prediction logic of the AI model.
+    -   `intelligent_generator.py`: Includes feature engineering and weighted play generation.
+    -   `evaluator.py`: Contains the logic for the `backtest` command.
+-   `frontend/`: Contains the static files for the web interface.
+    -   `index.html`: The main page of the web application.
+    -   `css/styles.css`: Styles for the interface.
+    -   `js/app.js`: JavaScript for interactive functionality.
+-   `db/`: Stores the `shiolplus.db` SQLite database file (ignored by Git).
+-   `data/`: Used for temporary storage of downloaded data before it's loaded into the database (ignored by Git).
 -   `models/`: Saves the trained AI model artifacts (`shiolplus.pkl`).
--   `outputs/`: Default directory for any files generated by the system (currently not actively used, but available).
--   `logs/`: Stores application execution logs for debugging and tracking.
+-   `docs/`: Contains additional documentation for users and developers.
+-   `config/`: Holds configuration files, like `config.ini`.
+-   `logs/`: Stores application execution logs (ignored by Git).
+-   `outputs/`: Default directory for generated files like prediction reports (ignored by Git).
 
 ## Requirements
 
@@ -59,13 +67,13 @@ The easiest way to use SHIOL+ is through its integrated web interface.
 
 1.  Make sure you have installed all the dependencies from `requirements.txt`.
 2.  From the project's root directory, run the following command:
-
+    
     ```bash
     uvicorn src.api:app --reload
     ```
 3.  Open your web browser and go to `http://127.0.0.1:8000`.
 
-The application will automatically train the model on the first run and allow you to generate plays interactively.
+The application will **automatically update the database** on the first run and then every 12 hours. It also trains the model if one doesn't exist, allowing you to generate plays interactively right away.
 
 ### 2. Command-Line Interface (CLI)
 
@@ -73,19 +81,25 @@ For more advanced users or for integration into automated workflows, the CLI pro
 
 All commands are executed through `src/cli.py`.
 
-1.  **Train the model**:
-    *   This command must be run at least once before generating predictions.
+1.  **Update the database**:
+    *   Downloads the latest data and updates your local database. Run this periodically.
+    ```bash
+    python src/cli.py update
+    ```
+
+2.  **Train the model**:
+    *   This command must be run at least once before generating predictions. It uses the data in the local database.
     ```bash
     python src/cli.py train
     ```
 
-2.  **Generate predictions (plays)**:
-    *   Uses the trained model to generate a specific number of plays. The `--count` parameter is optional (defaults to 5).
+3.  **Generate predictions (plays)**:
+    *   Uses the trained model to generate a specific number of plays.
     ```bash
     python src/cli.py predict --count 10
     ```
 
-3.  **Backtest the strategy**:
+4.  **Backtest the strategy**:
     *   Simulates the strategy's performance by generating plays and testing them against history.
     ```bash
     python src/cli.py backtest --count 20
@@ -97,20 +111,16 @@ All commands are executed through `src/cli.py`.
 
 The `config/config.ini` file allows for adjusting the system's behavior without modifying the code.
 
--   **`[paths]`**: Defines the paths to data, model, and log files.
--   **`[model_params]`**: Hyperparameters for the model, such as `test_size` for the test data split.
--   **`[temporal_analysis]`**: Parameters for temporal feature engineering, like the `time_decay_function`.
--   **`[cli_defaults]`**: Default values for CLI arguments, such as `count`.
+-   **`[paths]`**: Defines the paths to the database, model, and log files.
+-   **`[model_params]`**: Hyperparameters for the model, such as `test_size`.
+-   **`[temporal_analysis]`**: Parameters for temporal feature engineering.
+-   **`[cli_defaults]`**: Default values for CLI arguments.
 
 ## Training and Evaluation
 
-Training is performed with the `train` command, which processes historical data and generates a `shiolplus.pkl` model file.
+Training is performed with the `train` command, which processes historical data from the SQLite database and generates a `shiolplus.pkl` model file.
 
-Evaluation is done with `backtest`, which provides a JSON report with the following key indicators:
--   **`total_cost`**: Total simulated cost of having played the generated combinations.
--   **`total_winnings`**: Total simulated winnings.
--   **`roi_percent`**: The Return on Investment, showing the strategy's profitability.
--   **`win_distribution`**: A breakdown of the number and type of prizes that would have been won.
+Evaluation is done with `backtest`, which provides a JSON report with key performance indicators.
 
 ## Credits and Authorship
 

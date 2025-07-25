@@ -146,18 +146,18 @@ def load_cli_defaults():
 
 def update_data_command(args):
     """Handles the 'update' command."""
-    logger.info("Received 'update' command. Downloading latest data...")
+    logger.info("Received 'update' command. Updating database from source...")
     try:
-        from src.loader import update_powerball_data_from_csv
+        from src.loader import update_database_from_source
         
-        rows_updated = update_powerball_data_from_csv()
+        total_rows = update_database_from_source()
         
-        if rows_updated > 0:
-            logger.info(f"Data update complete. Total rows in dataset: {rows_updated}")
-            print(f"\nData update successful. The dataset now contains {rows_updated} rows.\n")
+        if total_rows > 0:
+            logger.info(f"Database update complete. Total rows in database: {total_rows}")
+            print(f"\nDatabase update successful. The database now contains {total_rows} rows.\n")
         else:
-            logger.warning("Data update did not return any rows. The dataset might be empty or unchanged.")
-            print("\nData update process finished, but no new data was returned.\n")
+            logger.warning("Database update did not add new rows. The database might be empty or already up-to-date.")
+            print("\nDatabase update process finished, but no new data was added.\n")
 
     except Exception as e:
         logger.error(f"An error occurred during data update: {e}")

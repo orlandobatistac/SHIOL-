@@ -8,3 +8,4 @@ statsmodels==0.14.5
 requests==2.32.4
 fastapi
 uvicorn[standard]
+apscheduler==3.10.4
