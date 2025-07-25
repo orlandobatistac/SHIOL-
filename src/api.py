@@ -60,15 +60,15 @@ except Exception as e:
     intelligent_generator = None
 
 # --- API Router ---
-api_router = APIRouter()
+api_router = APIRouter(prefix="/api/v1")
 
-@api_router.get("/api/v1/predict")
+@api_router.get("/predict")
 async def get_prediction():
     """
     Generates and returns a single Powerball prediction.
     """
     if not predictor or not intelligent_generator:
-        logger.error("Endpoint /api/v1/predict called, but model is not available.")
+        logger.error("Endpoint /predict called, but model is not available.")
         raise HTTPException(
             status_code=500, detail="Model is not available. Please check server logs."
         )
@@ -85,15 +85,15 @@ async def get_prediction():
         logger.error(f"An error occurred during prediction: {e}")
         raise HTTPException(status_code=500, detail="Model prediction failed.")
 
-@api_router.get("/api/v1/predict-multiple")
-async def get_multiple_predictions(count: int = Query(5, ge=1, le=100)):
+@api_router.get("/predict-multiple")
+async def get_multiple_predictions(count: int = Query(1, ge=1, le=10)):
     """
     Generates and returns a specified number of Powerball predictions.
     
-    - **count**: Number of plays to generate (default: 5, min: 1, max: 100).
+    - **count**: Number of plays to generate (default: 1, min: 1, max: 10).
     """
     if not predictor or not intelligent_generator:
-        logger.error("Endpoint /api/v1/predict-multiple called, but model is not available.")
+        logger.error("Endpoint /predict-multiple called, but model is not available.")
         raise HTTPException(
             status_code=500, detail="Model is not available. Please check server logs."
         )

@@ -1,1 +1,19 @@
-/* Estilos personalizados adicionales si son necesarios */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Custom style for the generated number balls for a bit of depth */
+#result-area > div > div > div {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.dark #result-area > div > div > div {
+     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Special style for the Powerball to make it pop */
+.bg-red-500 {
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
