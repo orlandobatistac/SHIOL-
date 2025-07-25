@@ -1,7 +1,8 @@
-from fastapi import FastAPI, HTTPException, APIRouter
+from fastapi import FastAPI, HTTPException, APIRouter, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
+import os
 
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator
@@ -84,10 +85,38 @@ async def get_prediction():
         logger.error(f"An error occurred during prediction: {e}")
         raise HTTPException(status_code=500, detail="Model prediction failed.")
 
+@api_router.get("/api/v1/predict-multiple")
+async def get_multiple_predictions(count: int = Query(5, ge=1, le=100)):
+    """
+    Generates and returns a specified number of Powerball predictions.
+    
+    - **count**: Number of plays to generate (default: 5, min: 1, max: 100).
+    """
+    if not predictor or not intelligent_generator:
+        logger.error("Endpoint /api/v1/predict-multiple called, but model is not available.")
+        raise HTTPException(
+            status_code=500, detail="Model is not available. Please check server logs."
+        )
+    try:
+        logger.info(f"Received request for {count} predictions.")
+        wb_probs, pb_probs = predictor.predict_probabilities()
+        plays_df = intelligent_generator.generate_plays(
+            wb_probs, pb_probs, num_plays=count
+        )
+        predictions = plays_df.astype(int).values.tolist()
+        logger.info(f"Generated {len(predictions)} predictions.")
+        return {"predictions": predictions}
+    except Exception as e:
+        logger.error(f"An error occurred during multiple prediction generation: {e}")
+        raise HTTPException(status_code=500, detail="Model prediction failed.")
+
 # --- Application Mounting ---
 # Mount the API router before the static files to ensure API endpoints are prioritized.
 app.include_router(api_router)
 
-# Mount the static directory to serve the frontend.
-# The `html=True` argument ensures that index.html is served for root requests.
-app.mount("/", StaticFiles(directory="frontend", html=True), name="static")
+# Build an absolute path to the 'frontend' directory for robust file serving.
+# This avoids issues with the current working directory.
+APP_ROOT = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.join(APP_ROOT, "..", "frontend")
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
