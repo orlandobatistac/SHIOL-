@@ -1,11 +1,14 @@
 import configparser
 import os
 from datetime import datetime
+import hashlib
+import json
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
 from loguru import logger
 from scipy.spatial.distance import euclidean
+from typing import Dict, List, Tuple, Optional
 
 class FeatureEngineer:
     def __init__(self, historical_data):
@@ -756,3 +759,551 @@ class IntelligentGenerator:
         logger.info(f"Successfully generated {len(plays_df)} plays.")
         
         return plays_df
+
+
+class PlayScorer:
+    """
+    Sistema de scoring multi-criterio para evaluar combinaciones de números.
+    Implementa 4 componentes de scoring con pesos específicos.
+    """
+    
+    def __init__(self, historical_data: pd.DataFrame):
+        self.historical_data = historical_data.copy()
+        self.white_ball_cols = ["n1", "n2", "n3", "n4", "n5"]
+        self.pb_col = "pb"
+        
+        # Pesos para cada componente de scoring
+        self.weights = {
+            'probability': 0.40,
+            'diversity': 0.25,
+            'historical': 0.20,
+            'risk_adjusted': 0.15
+        }
+        
+        logger.info("PlayScorer initialized with multi-criteria scoring system")
+        
+    def calculate_total_score(self, white_balls: List[int], powerball: int,
+                            wb_probs: Dict[int, float], pb_probs: Dict[int, float]) -> Dict:
+        """
+        Calcula el score total para una combinación de números.
+        
+        Args:
+            white_balls: Lista de 5 números blancos
+            powerball: Número del powerball
+            wb_probs: Probabilidades de números blancos
+            pb_probs: Probabilidades de powerball
+            
+        Returns:
+            Dict con scores individuales y total
+        """
+        scores = {}
+        
+        # Calcular cada componente de scoring
+        scores['probability'] = self._calculate_probability_score(white_balls, powerball, wb_probs, pb_probs)
+        scores['diversity'] = self._calculate_diversity_score(white_balls, powerball)
+        scores['historical'] = self._calculate_historical_score(white_balls, powerball)
+        scores['risk_adjusted'] = self._calculate_risk_adjusted_score(white_balls, powerball)
+        
+        # Calcular score total ponderado
+        total_score = sum(scores[component] * self.weights[component]
+                         for component in scores.keys())
+        
+        scores['total'] = total_score
+        
+        return scores
+    
+    def _calculate_probability_score(self, white_balls: List[int], powerball: int,
+                                   wb_probs: Dict[int, float], pb_probs: Dict[int, float]) -> float:
+        """
+        Score basado en las probabilidades predichas por el modelo (40%).
+        """
+        try:
+            # Score de números blancos (promedio de probabilidades)
+            wb_score = np.mean([wb_probs.get(num, 0.0) for num in white_balls])
+            
+            # Score del powerball
+            pb_score = pb_probs.get(powerball, 0.0)
+            
+            # Combinar scores (80% white balls, 20% powerball)
+            probability_score = 0.8 * wb_score + 0.2 * pb_score
+            
+            return probability_score
+            
+        except Exception as e:
+            logger.warning(f"Error calculating probability score: {e}")
+            return 0.0
+    
+    def _calculate_diversity_score(self, white_balls: List[int], powerball: int) -> float:
+        """
+        Score basado en diversidad de la combinación (25%).
+        Evalúa distribución par/impar, rangos, spread, etc.
+        """
+        try:
+            scores = []
+            
+            # 1. Balance par/impar (ideal: 2-3 o 3-2)
+            even_count = sum(1 for num in white_balls if num % 2 == 0)
+            parity_score = 1.0 if even_count in [2, 3] else 0.5
+            scores.append(parity_score)
+            
+            # 2. Distribución por rangos (1-23, 24-46, 47-69)
+            range1 = sum(1 for num in white_balls if 1 <= num <= 23)
+            range2 = sum(1 for num in white_balls if 24 <= num <= 46)
+            range3 = sum(1 for num in white_balls if 47 <= num <= 69)
+            
+            # Penalizar concentración excesiva en un rango
+            max_in_range = max(range1, range2, range3)
+            range_score = 1.0 if max_in_range <= 3 else 0.5
+            scores.append(range_score)
+            
+            # 3. Spread (diferencia entre max y min)
+            spread = max(white_balls) - min(white_balls)
+            spread_score = min(1.0, spread / 50.0)  # Normalizar a [0,1]
+            scores.append(spread_score)
+            
+            # 4. Números consecutivos (penalizar muchos consecutivos)
+            consecutive_count = 0
+            sorted_balls = sorted(white_balls)
+            for i in range(len(sorted_balls) - 1):
+                if sorted_balls[i + 1] - sorted_balls[i] == 1:
+                    consecutive_count += 1
+            
+            consecutive_score = 1.0 if consecutive_count <= 1 else 0.5
+            scores.append(consecutive_score)
+            
+            return np.mean(scores)
+            
+        except Exception as e:
+            logger.warning(f"Error calculating diversity score: {e}")
+            return 0.5
+    
+    def _calculate_historical_score(self, white_balls: List[int], powerball: int) -> float:
+        """
+        Score basado en patrones históricos (20%).
+        Evalúa frecuencia histórica y recencia de aparición.
+        """
+        try:
+            if self.historical_data.empty:
+                return 0.5
+                
+            scores = []
+            
+            # 1. Frecuencia histórica de números blancos
+            wb_frequencies = {}
+            for col in self.white_ball_cols:
+                if col in self.historical_data.columns:
+                    freq_counts = self.historical_data[col].value_counts()
+                    for num in range(1, 70):
+                        wb_frequencies[num] = freq_counts.get(num, 0)
+            
+            total_draws = len(self.historical_data)
+            if total_draws > 0:
+                wb_freq_scores = []
+                for num in white_balls:
+                    freq = wb_frequencies.get(num, 0)
+                    # Normalizar frecuencia (números que aparecen con frecuencia media obtienen mejor score)
+                    expected_freq = total_draws * 5 / 69  # Frecuencia esperada
+                    freq_score = 1.0 - abs(freq - expected_freq) / expected_freq
+                    wb_freq_scores.append(max(0.0, freq_score))
+                
+                scores.append(np.mean(wb_freq_scores))
+            
+            # 2. Frecuencia histórica del powerball
+            if self.pb_col in self.historical_data.columns and total_draws > 0:
+                pb_freq = self.historical_data[self.pb_col].value_counts().get(powerball, 0)
+                expected_pb_freq = total_draws / 26
+                pb_freq_score = 1.0 - abs(pb_freq - expected_pb_freq) / expected_pb_freq
+                scores.append(max(0.0, pb_freq_score))
+            
+            # 3. Recencia (penalizar números que aparecieron muy recientemente)
+            recent_draws = self.historical_data.tail(10)  # Últimos 10 sorteos
+            recent_numbers = set()
+            for col in self.white_ball_cols:
+                if col in recent_draws.columns:
+                    recent_numbers.update(recent_draws[col].dropna().tolist())
+            
+            recent_pb = set(recent_draws[self.pb_col].dropna().tolist()) if self.pb_col in recent_draws.columns else set()
+            
+            # Score de recencia (mejor si no aparecieron recientemente)
+            wb_recent_score = np.mean([0.3 if num in recent_numbers else 1.0 for num in white_balls])
+            pb_recent_score = 0.3 if powerball in recent_pb else 1.0
+            
+            scores.extend([wb_recent_score, pb_recent_score])
+            
+            return np.mean(scores) if scores else 0.5
+            
+        except Exception as e:
+            logger.warning(f"Error calculating historical score: {e}")
+            return 0.5
+    
+    def _calculate_risk_adjusted_score(self, white_balls: List[int], powerball: int) -> float:
+        """
+        Score ajustado por riesgo (15%).
+        Evalúa patrones que podrían ser demasiado obvios o populares.
+        """
+        try:
+            scores = []
+            
+            # 1. Evitar patrones obvios (secuencias, múltiplos)
+            sorted_balls = sorted(white_balls)
+            
+            # Penalizar secuencias largas
+            is_sequence = all(sorted_balls[i+1] - sorted_balls[i] == 1
+                            for i in range(len(sorted_balls)-1))
+            sequence_score = 0.1 if is_sequence else 1.0
+            scores.append(sequence_score)
+            
+            # Penalizar múltiplos del mismo número
+            multiples_score = 1.0
+            for base in range(2, 11):
+                multiples = [num for num in white_balls if num % base == 0]
+                if len(multiples) >= 4:  # 4 o más múltiplos del mismo número
+                    multiples_score = 0.3
+                    break
+            scores.append(multiples_score)
+            
+            # 2. Suma total (evitar sumas extremas)
+            total_sum = sum(white_balls)
+            # Rango ideal aproximado: 120-240
+            if 120 <= total_sum <= 240:
+                sum_score = 1.0
+            elif 100 <= total_sum <= 260:
+                sum_score = 0.7
+            else:
+                sum_score = 0.3
+            scores.append(sum_score)
+            
+            # 3. Evitar números "populares" (terminaciones comunes)
+            popular_endings = [1, 7, 11, 13, 21, 23]
+            popular_count = sum(1 for num in white_balls if num in popular_endings)
+            popular_score = 1.0 if popular_count <= 2 else 0.5
+            scores.append(popular_score)
+            
+            return np.mean(scores)
+            
+        except Exception as e:
+            logger.warning(f"Error calculating risk adjusted score: {e}")
+            return 0.5
+
+
+class DeterministicGenerator:
+    """
+    Generador determinístico de predicciones basado en scoring multi-criterio.
+    Siempre produce la misma predicción para el mismo dataset histórico.
+    """
+    
+    def __init__(self, historical_data: pd.DataFrame):
+        self.historical_data = historical_data.copy()
+        self.scorer = PlayScorer(historical_data)
+        self.model_version = "1.0.0"
+        
+        # Configurar seed fijo para determinismo
+        np.random.seed(42)
+        
+        logger.info("DeterministicGenerator initialized with deterministic scoring system")
+    
+    def generate_top_prediction(self, wb_probs: Dict[int, float], pb_probs: Dict[int, float],
+                              num_candidates: int = 1000) -> Dict:
+        """
+        Genera la predicción top basada en scoring determinístico.
+        
+        Args:
+            wb_probs: Probabilidades de números blancos del modelo
+            pb_probs: Probabilidades de powerball del modelo
+            num_candidates: Número de combinaciones candidatas a evaluar
+            
+        Returns:
+            Dict con la predicción top y sus detalles
+        """
+        logger.info(f"Generating deterministic top prediction from {num_candidates} candidates...")
+        
+        # Generar combinaciones candidatas de forma determinística
+        candidates = self._generate_candidate_combinations(wb_probs, pb_probs, num_candidates)
+        
+        # Evaluar cada combinación con el sistema de scoring
+        scored_candidates = []
+        for white_balls, powerball in candidates:
+            scores = self.scorer.calculate_total_score(white_balls, powerball, wb_probs, pb_probs)
+            
+            scored_candidates.append({
+                'white_balls': white_balls,
+                'powerball': powerball,
+                'scores': scores,
+                'total_score': scores['total']
+            })
+        
+        # Ordenar por score total (descendente) y tomar el top
+        scored_candidates.sort(key=lambda x: x['total_score'], reverse=True)
+        top_prediction = scored_candidates[0]
+        
+        # Preparar resultado con metadatos
+        result = {
+            'numbers': top_prediction['white_balls'],
+            'powerball': top_prediction['powerball'],
+            'score_total': top_prediction['total_score'],
+            'score_details': top_prediction['scores'],
+            'model_version': self.model_version,
+            'dataset_hash': self._calculate_dataset_hash(),
+            'timestamp': datetime.now().isoformat(),
+            'num_candidates_evaluated': len(candidates)
+        }
+        
+        logger.info(f"Top prediction generated with total score: {result['score_total']:.4f}")
+        return result
+    
+    def generate_diverse_predictions(self, wb_probs: Dict[int, float], pb_probs: Dict[int, float],
+                                   num_plays: int = 5, num_candidates: int = 2000) -> List[Dict]:
+        """
+        Genera múltiples predicciones diversas de alta calidad.
+        
+        Args:
+            wb_probs: Probabilidades de números blancos del modelo
+            pb_probs: Probabilidades de powerball del modelo
+            num_plays: Número de plays diversos a generar (default: 5)
+            num_candidates: Número de combinaciones candidatas a evaluar
+            
+        Returns:
+            Lista de Dict con las predicciones diversas y sus detalles
+        """
+        logger.info(f"Generating {num_plays} diverse high-quality predictions from {num_candidates} candidates...")
+        
+        # Generar más candidatos para mayor diversidad
+        candidates = self._generate_candidate_combinations(wb_probs, pb_probs, num_candidates)
+        
+        # Evaluar cada combinación con el sistema de scoring
+        scored_candidates = []
+        for white_balls, powerball in candidates:
+            scores = self.scorer.calculate_total_score(white_balls, powerball, wb_probs, pb_probs)
+            
+            scored_candidates.append({
+                'white_balls': white_balls,
+                'powerball': powerball,
+                'scores': scores,
+                'total_score': scores['total']
+            })
+        
+        # Ordenar por score total (descendente)
+        scored_candidates.sort(key=lambda x: x['total_score'], reverse=True)
+        
+        # Seleccionar plays diversos usando algoritmo de diversidad
+        diverse_plays = self._select_diverse_plays(scored_candidates, num_plays)
+        
+        # Preparar resultados con metadatos
+        results = []
+        dataset_hash = self._calculate_dataset_hash()
+        timestamp = datetime.now().isoformat()
+        
+        for i, play in enumerate(diverse_plays):
+            result = {
+                'numbers': play['white_balls'],
+                'powerball': play['powerball'],
+                'score_total': play['total_score'],
+                'score_details': play['scores'],
+                'model_version': self.model_version,
+                'dataset_hash': dataset_hash,
+                'timestamp': timestamp,
+                'num_candidates_evaluated': len(candidates),
+                'play_rank': i + 1,
+                'diversity_method': 'intelligent_selection'
+            }
+            results.append(result)
+        
+        logger.info(f"Generated {len(results)} diverse predictions with scores ranging from "
+                   f"{results[0]['score_total']:.4f} to {results[-1]['score_total']:.4f}")
+        return results
+    
+    def _select_diverse_plays(self, scored_candidates: List[Dict], num_plays: int) -> List[Dict]:
+        """
+        Selecciona plays diversos de alta calidad usando algoritmo de diversidad inteligente.
+        
+        Args:
+            scored_candidates: Lista de candidatos evaluados y ordenados por score
+            num_plays: Número de plays diversos a seleccionar
+            
+        Returns:
+            Lista de plays diversos seleccionados
+        """
+        if len(scored_candidates) < num_plays:
+            logger.warning(f"Not enough candidates ({len(scored_candidates)}) for {num_plays} diverse plays")
+            return scored_candidates
+        
+        selected_plays = []
+        remaining_candidates = scored_candidates.copy()
+        
+        # 1. Seleccionar el mejor candidato como base
+        best_play = remaining_candidates.pop(0)
+        selected_plays.append(best_play)
+        logger.info(f"Selected play 1 with score {best_play['total_score']:.4f}: {best_play['white_balls']} + {best_play['powerball']}")
+        
+        # 2. Para los plays restantes, usar criterio de diversidad + calidad
+        for play_num in range(2, num_plays + 1):
+            best_candidate = None
+            best_diversity_score = -1
+            best_candidate_idx = -1
+            
+            # Evaluar cada candidato restante por diversidad respecto a los ya seleccionados
+            for idx, candidate in enumerate(remaining_candidates):
+                # Calcular score de diversidad respecto a plays ya seleccionados
+                diversity_score = self._calculate_diversity_from_selected(candidate, selected_plays)
+                
+                # Combinar diversidad con calidad (70% calidad, 30% diversidad)
+                combined_score = 0.7 * candidate['total_score'] + 0.3 * diversity_score
+                
+                if combined_score > best_diversity_score:
+                    best_diversity_score = combined_score
+                    best_candidate = candidate
+                    best_candidate_idx = idx
+            
+            if best_candidate:
+                selected_plays.append(best_candidate)
+                remaining_candidates.pop(best_candidate_idx)
+                logger.info(f"Selected play {play_num} with score {best_candidate['total_score']:.4f} "
+                           f"(diversity: {best_diversity_score:.4f}): {best_candidate['white_balls']} + {best_candidate['powerball']}")
+        
+        return selected_plays
+    
+    def _calculate_diversity_from_selected(self, candidate: Dict, selected_plays: List[Dict]) -> float:
+        """
+        Calcula qué tan diverso es un candidato respecto a los plays ya seleccionados.
+        
+        Args:
+            candidate: Candidato a evaluar
+            selected_plays: Plays ya seleccionados
+            
+        Returns:
+            Score de diversidad (0-1, mayor es más diverso)
+        """
+        if not selected_plays:
+            return 1.0
+        
+        diversity_scores = []
+        candidate_numbers = set(candidate['white_balls'] + [candidate['powerball']])
+        
+        for selected_play in selected_plays:
+            selected_numbers = set(selected_play['white_balls'] + [selected_play['powerball']])
+            
+            # Calcular diversidad basada en números únicos
+            intersection = len(candidate_numbers.intersection(selected_numbers))
+            union = len(candidate_numbers.union(selected_numbers))
+            
+            # Jaccard distance (1 - Jaccard similarity)
+            jaccard_diversity = 1.0 - (intersection / union if union > 0 else 0)
+            
+            # Diversidad adicional basada en diferencias numéricas
+            wb_diff = self._calculate_numerical_diversity(candidate['white_balls'], selected_play['white_balls'])
+            pb_diff = abs(candidate['powerball'] - selected_play['powerball']) / 26.0
+            
+            # Combinar métricas de diversidad
+            combined_diversity = 0.6 * jaccard_diversity + 0.3 * wb_diff + 0.1 * pb_diff
+            diversity_scores.append(combined_diversity)
+        
+        # Retornar la diversidad mínima (más conservadora)
+        return min(diversity_scores)
+    
+    def _calculate_numerical_diversity(self, numbers1: List[int], numbers2: List[int]) -> float:
+        """
+        Calcula diversidad numérica entre dos conjuntos de números blancos.
+        
+        Args:
+            numbers1: Primera lista de números
+            numbers2: Segunda lista de números
+            
+        Returns:
+            Score de diversidad numérica (0-1)
+        """
+        # Calcular diferencias en características numéricas
+        sum1, sum2 = sum(numbers1), sum(numbers2)
+        spread1 = max(numbers1) - min(numbers1)
+        spread2 = max(numbers2) - min(numbers2)
+        
+        # Diversidad basada en suma
+        sum_diversity = min(1.0, abs(sum1 - sum2) / 100.0)
+        
+        # Diversidad basada en spread
+        spread_diversity = min(1.0, abs(spread1 - spread2) / 30.0)
+        
+        # Diversidad basada en rangos
+        range1_count = sum(1 for n in numbers1 if 1 <= n <= 23)
+        range2_count = sum(1 for n in numbers2 if 1 <= n <= 23)
+        range_diversity = abs(range1_count - range2_count) / 5.0
+        
+        return (sum_diversity + spread_diversity + range_diversity) / 3.0
+    
+    def _generate_candidate_combinations(self, wb_probs: Dict[int, float], pb_probs: Dict[int, float],
+                                       num_candidates: int) -> List[Tuple[List[int], int]]:
+        """
+        Genera combinaciones candidatas de forma determinística basada en probabilidades.
+        """
+        candidates = []
+        
+        # Preparar listas ordenadas por probabilidad para sampling determinístico
+        wb_sorted = sorted(wb_probs.items(), key=lambda x: x[1], reverse=True)
+        pb_sorted = sorted(pb_probs.items(), key=lambda x: x[1], reverse=True)
+        
+        # Usar seed fijo para reproducibilidad
+        rng = np.random.RandomState(42)
+        
+        # Estrategia híbrida: combinar top probabilidades con diversidad
+        top_wb_count = min(20, len(wb_sorted))  # Top 20 números blancos
+        top_pb_count = min(10, len(pb_sorted))  # Top 10 powerballs
+        
+        attempts = 0
+        max_attempts = num_candidates * 3
+        
+        while len(candidates) < num_candidates and attempts < max_attempts:
+            # Seleccionar 5 números blancos únicos
+            if rng.random() < 0.7:  # 70% del tiempo usar top probabilidades
+                wb_pool = [num for num, _ in wb_sorted[:top_wb_count]]
+            else:  # 30% del tiempo usar pool más amplio para diversidad
+                wb_pool = [num for num, _ in wb_sorted[:min(40, len(wb_sorted))]]
+            
+            white_balls = sorted(rng.choice(wb_pool, size=5, replace=False))
+            
+            # Seleccionar powerball
+            if rng.random() < 0.8:  # 80% del tiempo usar top probabilidades
+                pb_pool = [num for num, _ in pb_sorted[:top_pb_count]]
+            else:
+                pb_pool = [num for num, _ in pb_sorted[:min(15, len(pb_sorted))]]
+            
+            powerball = rng.choice(pb_pool)
+            
+            # Verificar que la combinación no esté duplicada
+            combination = (white_balls, powerball)
+            if combination not in candidates:
+                candidates.append(combination)
+            
+            attempts += 1
+        
+        logger.info(f"Generated {len(candidates)} unique candidate combinations")
+        return candidates
+    
+    def _calculate_dataset_hash(self) -> str:
+        """
+        Calcula hash SHA256 del dataset histórico para tracking de versiones.
+        """
+        try:
+            # Crear string representativo del dataset
+            dataset_str = ""
+            
+            # Incluir información clave del dataset
+            if not self.historical_data.empty:
+                # Ordenar por fecha para consistencia
+                sorted_data = self.historical_data.sort_values('draw_date') if 'draw_date' in self.historical_data.columns else self.historical_data
+                
+                # Concatenar valores clave
+                for _, row in sorted_data.iterrows():
+                    row_str = ""
+                    for col in ['draw_date', 'n1', 'n2', 'n3', 'n4', 'n5', 'pb']:
+                        if col in row:
+                            row_str += str(row[col])
+                    dataset_str += row_str
+            
+            # Calcular hash SHA256
+            hash_obj = hashlib.sha256(dataset_str.encode('utf-8'))
+            dataset_hash = hash_obj.hexdigest()[:16]  # Usar primeros 16 caracteres
+            
+            return dataset_hash
+            
+        except Exception as e:
+            logger.warning(f"Error calculating dataset hash: {e}")
+            return "unknown_hash"

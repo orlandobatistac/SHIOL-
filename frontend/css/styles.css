@@ -5,15 +5,704 @@ body {
 }
 
 /* Custom style for the generated number balls for a bit of depth */
-#result-area > div > div > div {
+#result-area > div > div > div,
+.prediction-item div > div,
+.method-card div > div,
+.history-item div > div {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.dark #result-area > div > div > div {
+.dark #result-area > div > div > div,
+.dark .prediction-item div > div,
+.dark .method-card div > div,
+.dark .history-item div > div {
      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 /* Special style for the Powerball to make it pop */
 .bg-red-500 {
     box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+/* Method toggle switch styling */
+#method-toggle:checked + div {
+    background-color: #3b82f6;
+}
+
+#method-toggle:focus + div {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25);
+}
+
+/* Score component styling */
+.score-component {
+    transition: all 0.3s ease;
+}
+
+.score-component:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Progress bars for scores */
+.score-component .bg-blue-500,
+.score-component .bg-green-500,
+.score-component .bg-yellow-500,
+.score-component .bg-red-500 {
+    transition: width 0.8s ease-in-out;
+}
+
+/* Method comparison cards */
+.method-card {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.method-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.method-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.method-card:hover::before {
+    left: 100%;
+}
+
+/* Prediction history styling */
+.prediction-history {
+    max-height: 500px;
+}
+
+.history-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.history-item:hover {
+    border-left-color: #3b82f6;
+    background-color: rgba(59, 130, 246, 0.05);
+    transform: translateX(4px);
+}
+
+.dark .history-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Traceability info styling */
+#traceability-info {
+    border-left: 4px solid #3b82f6;
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Score details animation */
+#score-details {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Button hover effects */
+.deterministic-feature button {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.deterministic-feature button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.deterministic-feature button:active {
+    transform: translateY(0);
+}
+
+/* Method badge styling */
+.prediction-item span {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* Responsive design improvements */
+@media (max-width: 768px) {
+    .method-comparison .grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .deterministic-feature {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .deterministic-feature button {
+        padding: 0.75rem 1rem;
+    }
+}
+
+/* Loading state improvements */
+.fas.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Enhanced toast notification */
+#toast-notification {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Method info panel styling */
+.method-info {
+    transition: all 0.3s ease;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid transparent;
+}
+
+.method-info:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    background-color: rgba(59, 130, 246, 0.05);
+    transform: translateY(-2px);
+}
+
+.dark .method-info:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Score visualization enhancements */
+.score-component .rounded-full {
+    position: relative;
+    overflow: hidden;
+}
+
+.score-component .rounded-full::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { left: -100%; }
+    100% { left: 100%; }
+}
+
+/* Improved focus states for accessibility */
+button:focus,
+input:focus,
+#method-toggle:focus + div {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Dark mode enhancements */
+.dark .method-card {
+    border-color: rgba(75, 85, 99, 0.3);
+}
+
+.dark .score-component:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+/* Prediction item styling */
+.prediction-item {
+    transition: all 0.3s ease;
+    border-radius: 1rem;
+    padding: 1rem;
+    border: 2px solid transparent;
+}
+
+.prediction-item:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+    background-color: rgba(59, 130, 246, 0.05);
+    transform: scale(1.02);
+}
+
+.dark .prediction-item:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+/* Enhanced number ball styling */
+.prediction-item div > div,
+.method-card div > div,
+.history-item div > div {
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255,255,255,0.1);
+}
+
+.prediction-item div > div:hover,
+.method-card div > div:hover,
+.history-item div > div:hover {
+    transform: scale(1.1);
+    border-color: rgba(59, 130, 246, 0.5);
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ===== PIPELINE DASHBOARD STYLES ===== */
+
+/* Pipeline status cards */
+.pipeline-status-card {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.pipeline-status-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.dark .pipeline-status-card:hover {
+    box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+}
+
+/* Pipeline status indicators */
+#pipeline-status-indicator.status-running {
+    background-color: #10b981; /* green */
+    animation: pulse-green 2s infinite;
+}
+
+#pipeline-status-indicator.status-idle {
+    background-color: #6b7280; /* gray */
+}
+
+#pipeline-status-indicator.status-failed {
+    background-color: #ef4444; /* red */
+    animation: pulse-red 2s infinite;
+}
+
+#pipeline-status-indicator.status-warning {
+    background-color: #f59e0b; /* yellow */
+    animation: pulse-yellow 2s infinite;
+}
+
+#system-health-indicator.health-healthy {
+    background-color: #10b981; /* green */
+}
+
+#system-health-indicator.health-degraded {
+    background-color: #f59e0b; /* yellow */
+}
+
+#system-health-indicator.health-unhealthy {
+    background-color: #ef4444; /* red */
+}
+
+#system-health-indicator.health-unknown {
+    background-color: #6b7280; /* gray */
+}
+
+/* Status indicator animations */
+@keyframes pulse-green {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+}
+
+@keyframes pulse-red {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+    }
+}
+
+@keyframes pulse-yellow {
+    0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    }
+    50% {
+        opacity: 0.8;
+        box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+    }
+}
+
+/* Pipeline action buttons */
+#trigger-pipeline-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+#trigger-pipeline-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
+}
+
+#trigger-pipeline-btn:disabled {
+    transform: none;
+    box-shadow: none;
+}
+
+#view-logs-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(107, 114, 128, 0.3);
+}
+
+/* Auto-refresh toggle styling */
+#auto-refresh-checkbox:checked + div {
+    background-color: #6366f1; /* indigo */
+}
+
+#auto-refresh-checkbox:focus + div {
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+}
+
+/* Execution history table styling */
+#execution-history-tbody tr {
+    transition: all 0.3s ease;
+}
+
+#execution-history-tbody tr:hover {
+    background-color: rgba(99, 102, 241, 0.05);
+    transform: translateX(2px);
+}
+
+.dark #execution-history-tbody tr:hover {
+    background-color: rgba(99, 102, 241, 0.1);
+}
+
+/* Status badges in table */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-badge.success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge.completed {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-badge.failed {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.status-badge.running {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    animation: pulse 2s infinite;
+}
+
+.status-badge.warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.status-badge.unknown {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+    border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+/* Dark mode status badges */
+.dark .status-badge.success {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.dark .status-badge.completed {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.dark .status-badge.failed {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.dark .status-badge.running {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+.dark .status-badge.warning {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+}
+
+.dark .status-badge.unknown {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #9ca3af;
+}
+
+/* Pipeline trigger modal */
+#pipeline-trigger-modal {
+    backdrop-filter: blur(8px);
+}
+
+#pipeline-trigger-modal .bg-white {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Pipeline notifications */
+#pipeline-notification {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    min-width: 300px;
+}
+
+#pipeline-notification.success {
+    background-color: rgba(16, 185, 129, 0.9);
+    color: white;
+}
+
+#pipeline-notification.error {
+    background-color: rgba(239, 68, 68, 0.9);
+    color: white;
+}
+
+#pipeline-notification.info {
+    background-color: rgba(59, 130, 246, 0.9);
+    color: white;
+}
+
+#pipeline-notification.warning {
+    background-color: rgba(245, 158, 11, 0.9);
+    color: white;
+}
+
+/* Last generated plays showcase */
+#last-generated-plays {
+    animation: slideInUp 0.5s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pipeline dashboard gradient background */
+.pipeline-dashboard-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dark .pipeline-dashboard-bg {
+    background: linear-gradient(135deg, #4c1d95 0%, #581c87 100%);
+}
+
+/* Loading states for pipeline components */
+.pipeline-loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.pipeline-loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+.dark .pipeline-loading::after {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+}
+
+/* Progress bars for pipeline operations */
+.pipeline-progress {
+    width: 100%;
+    height: 4px;
+    background-color: rgba(156, 163, 175, 0.3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.pipeline-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+    animation: progressPulse 2s infinite;
+}
+
+@keyframes progressPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.7;
+    }
+}
+
+/* Responsive design for pipeline dashboard */
+@media (max-width: 768px) {
+    .pipeline-status-card {
+        margin-bottom: 1rem;
+    }
+    
+    #pipeline-trigger-modal .bg-white {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+    }
+    
+    #pipeline-notification {
+        left: 1rem;
+        right: 1rem;
+        min-width: auto;
+    }
+    
+    .pipeline-dashboard-bg {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 640px) {
+    .pipeline-status-card h3 {
+        font-size: 0.75rem;
+    }
+    
+    .pipeline-status-card div:first-child {
+        font-size: 1rem;
+    }
+    
+    #execution-history-tbody {
+        font-size: 0.75rem;
+    }
+    
+    .status-badge {
+        font-size: 0.625rem;
+        padding: 0.125rem 0.5rem;
+    }
+}
+
+/* Accessibility improvements */
+.pipeline-status-card:focus-within {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+}
+
+#trigger-pipeline-btn:focus,
+#view-logs-btn:focus,
+#refresh-pipeline-btn:focus {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .pipeline-status-card {
+        border-width: 2px;
+    }
+    
+    .status-badge {
+        border-width: 2px;
+    }
+    
+    #pipeline-status-indicator,
+    #system-health-indicator {
+        border: 2px solid currentColor;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .pipeline-status-card,
+    #trigger-pipeline-btn,
+    #view-logs-btn,
+    #execution-history-tbody tr {
+        transition: none;
+    }
+    
+    #pipeline-status-indicator.status-running,
+    #pipeline-status-indicator.status-failed,
+    #pipeline-status-indicator.status-warning,
+    .status-badge.running,
+    .pipeline-progress-bar {
+        animation: none;
+    }
 }

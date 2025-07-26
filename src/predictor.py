@@ -2,14 +2,17 @@ import configparser
 import joblib
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from loguru import logger
 from sklearn.metrics import roc_auc_score, log_loss
 from sklearn.model_selection import train_test_split
 from sklearn.multioutput import MultiOutputClassifier
 from xgboost import XGBClassifier
+from typing import Dict, List
 
 from src.loader import get_data_loader
-from src.intelligent_generator import FeatureEngineer
+from src.intelligent_generator import FeatureEngineer, DeterministicGenerator
+from src.database import save_prediction_log
 
 class ModelTrainer:
     def __init__(self, model_path):
@@ -222,6 +225,138 @@ class Predictor:
 
         logger.info("Probabilities predicted successfully.")
         return wb_probs, pb_probs
+
+    def predict_deterministic(self, save_to_log: bool = True) -> Dict:
+        """
+        Genera una predicción determinística usando el sistema de scoring multi-criterio.
+        
+        Args:
+            save_to_log: Si True, guarda la predicción en el log de base de datos
+            
+        Returns:
+            Dict con la predicción determinística y sus detalles
+        """
+        logger.info("Generating deterministic prediction with multi-criteria scoring...")
+        
+        # Obtener probabilidades del modelo
+        wb_probs, pb_probs = self.predict_probabilities()
+        
+        # Obtener datos históricos para el generador determinístico
+        data_loader = get_data_loader()
+        historical_data = data_loader.load_historical_data()
+        
+        if historical_data.empty:
+            raise ValueError("Historical data is empty. Cannot generate deterministic prediction.")
+        
+        # Crear generador determinístico
+        deterministic_generator = DeterministicGenerator(historical_data)
+        
+        # Generar predicción top
+        prediction = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
+        
+        # Guardar en log si se solicita
+        if save_to_log:
+            prediction_id = save_prediction_log(prediction)
+            if prediction_id:
+                prediction['log_id'] = prediction_id
+                logger.info(f"Deterministic prediction saved to log with ID: {prediction_id}")
+            else:
+                logger.warning("Failed to save prediction to log")
+        
+        logger.info("Deterministic prediction generated successfully")
+        return prediction
+    
+    def predict_diverse_plays(self, num_plays: int = 5, save_to_log: bool = True) -> List[Dict]:
+        """
+        Genera múltiples predicciones diversas de alta calidad para el próximo sorteo.
+        
+        Args:
+            num_plays: Número de plays diversos a generar (default: 5)
+            save_to_log: Si True, guarda las predicciones en el log de base de datos
+            
+        Returns:
+            Lista de Dict con las predicciones diversas y sus detalles
+        """
+        logger.info(f"Generating {num_plays} diverse high-quality plays for next drawing...")
+        
+        # Obtener probabilidades del modelo
+        wb_probs, pb_probs = self.predict_probabilities()
+        
+        # Obtener datos históricos para el generador determinístico
+        data_loader = get_data_loader()
+        historical_data = data_loader.load_historical_data()
+        
+        if historical_data.empty:
+            raise ValueError("Historical data is empty. Cannot generate diverse predictions.")
+        
+        # Crear generador determinístico
+        deterministic_generator = DeterministicGenerator(historical_data)
+        
+        # Generar predicciones diversas
+        diverse_predictions = deterministic_generator.generate_diverse_predictions(
+            wb_probs, pb_probs, num_plays=num_plays
+        )
+        
+        # Guardar en log si se solicita
+        if save_to_log:
+            saved_count = 0
+            for i, prediction in enumerate(diverse_predictions):
+                prediction_id = save_prediction_log(prediction)
+                if prediction_id:
+                    prediction['log_id'] = prediction_id
+                    saved_count += 1
+                else:
+                    logger.warning(f"Failed to save prediction {i+1} to log")
+            
+            logger.info(f"Saved {saved_count}/{len(diverse_predictions)} diverse predictions to log")
+        
+        logger.info(f"Generated {len(diverse_predictions)} diverse plays successfully")
+        return diverse_predictions
+
+    def compare_prediction_methods(self) -> Dict:
+        """
+        Compara el método tradicional con el determinístico para análisis.
+        
+        Returns:
+            Dict con comparación de ambos métodos
+        """
+        logger.info("Comparing traditional vs deterministic prediction methods...")
+        
+        # Obtener probabilidades base
+        wb_probs, pb_probs = self.predict_probabilities()
+        
+        # Método tradicional (IntelligentGenerator)
+        from src.intelligent_generator import IntelligentGenerator
+        traditional_generator = IntelligentGenerator()
+        traditional_plays = traditional_generator.generate_plays(wb_probs, pb_probs, 1)
+        
+        # Método determinístico
+        data_loader = get_data_loader()
+        historical_data = data_loader.load_historical_data()
+        deterministic_generator = DeterministicGenerator(historical_data)
+        deterministic_prediction = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
+        
+        comparison = {
+            'traditional_method': {
+                'numbers': traditional_plays.iloc[0][['n1', 'n2', 'n3', 'n4', 'n5']].tolist(),
+                'powerball': int(traditional_plays.iloc[0]['pb']),
+                'method': 'weighted_random_sampling',
+                'reproducible': False
+            },
+            'deterministic_method': {
+                'numbers': deterministic_prediction['numbers'],
+                'powerball': deterministic_prediction['powerball'],
+                'total_score': deterministic_prediction['score_total'],
+                'score_details': deterministic_prediction['score_details'],
+                'method': 'multi_criteria_scoring',
+                'reproducible': True,
+                'dataset_hash': deterministic_prediction['dataset_hash']
+            },
+            'comparison_timestamp': datetime.now().isoformat()
+        }
+        
+        logger.info("Method comparison completed")
+        return comparison
 
 def get_model_trainer():
     config = configparser.ConfigParser()
