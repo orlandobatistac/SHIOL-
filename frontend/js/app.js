@@ -42,7 +42,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const pipelineNotificationText = document.getElementById('pipeline-notification-text');
 
     // --- API Configuration ---
-    const API_BASE_URL = 'http://127.0.0.1:8000/api/v1';
+    // Enhanced dynamic API URL configuration with automatic detection
+    function getApiBaseUrl() {
+        // Use current origin for API calls - automatically adapts to any server IP
+        const baseUrl = window.location.origin + '/api/v1';
+        
+        // Log the detected configuration for debugging
+        console.log('API Base URL detected:', baseUrl);
+        console.log('Current location:', {
+            protocol: window.location.protocol,
+            hostname: window.location.hostname,
+            port: window.location.port,
+            origin: window.location.origin
+        });
+        
+        return baseUrl;
+    }
+    
+    const API_BASE_URL = getApiBaseUrl();
 
     let lastPredictions = [];
     let lastPredictionData = null;
@@ -1043,12 +1060,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize pipeline dashboard
     function initializePipelineDashboard() {
-        // Initial status fetch
-        fetchPipelineStatus();
-        
-        // Start auto-refresh if enabled
-        if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
-            handleAutoRefreshToggle();
+        // Test API connectivity first
+        testApiConnectivity().then(isConnected => {
+            if (isConnected) {
+                console.log('✅ API connectivity confirmed');
+                // Initial status fetch
+                fetchPipelineStatus();
+                
+                // Start auto-refresh if enabled
+                if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
+                    handleAutoRefreshToggle();
+                }
+            } else {
+                console.warn('⚠️ API connectivity issues detected');
+                showPipelineError('Unable to connect to API server. Check if server is running.');
+            }
+        });
+    }
+
+    // Test API connectivity
+    async function testApiConnectivity() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/pipeline/status`, {
+                method: 'GET',
+                timeout: 5000
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('API connectivity test failed:', error);
+            return false;
         }
     }
 

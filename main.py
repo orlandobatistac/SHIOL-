@@ -24,6 +24,8 @@ import configparser
 import os
 import sys
 import traceback
+import subprocess
+import requests
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from pathlib import Path
@@ -678,6 +680,119 @@ class PipelineOrchestrator:
             }
 
 
+def get_public_ip() -> Optional[str]:
+    """
+    Detect the public IP address of the server automatically.
+    
+    Returns:
+        str: Public IP address or None if detection fails
+    """
+    services = [
+        'https://api.ipify.org',
+        'https://ipinfo.io/ip',
+        'https://icanhazip.com',
+        'https://ident.me'
+    ]
+    
+    for service in services:
+        try:
+            logger.debug(f"Trying to get public IP from {service}")
+            response = requests.get(service, timeout=5)
+            if response.status_code == 200:
+                ip = response.text.strip()
+                # Basic IP validation
+                if ip and '.' in ip and len(ip.split('.')) == 4:
+                    logger.info(f"Public IP detected: {ip}")
+                    return ip
+        except Exception as e:
+            logger.debug(f"Failed to get IP from {service}: {e}")
+            continue
+    
+    logger.warning("Could not detect public IP address")
+    return None
+
+
+def start_api_server(host: str = "0.0.0.0", port: int = 8000, auto_detect_ip: bool = True):
+    """
+    Start the API server optimized for VPN access.
+    
+    Args:
+        host: Host to bind to (default: 0.0.0.0 for external access)
+        port: Port to bind to (default: 8000)
+        auto_detect_ip: Whether to auto-detect and display public IP
+    """
+    print("🚀 Starting SHIOL+ API Server...")
+    print("=" * 50)
+    
+    # Verify that we're in the correct directory
+    if not os.path.exists("src/api.py"):
+        print("❌ Error: src/api.py not found")
+        print("   Make sure to run this script from the project root directory")
+        sys.exit(1)
+    
+    # Check if virtual environment is activated
+    if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+        print("⚠️  Warning: No virtual environment detected")
+        print("   It's recommended to activate the virtual environment first:")
+        print("   source venv/bin/activate  # Linux/Mac")
+        print("   .\\venv\\Scripts\\activate  # Windows")
+        print()
+    
+    # Server configuration
+    print(f"📡 Server Configuration:")
+    print(f"   Host: {host} (allows external connections)")
+    print(f"   Port: {port}")
+    print(f"   CORS: Enabled for all origins")
+    print()
+    
+    # Display access URLs
+    print("🌐 Access URLs:")
+    print(f"   Local: http://127.0.0.1:{port}")
+    
+    if auto_detect_ip:
+        public_ip = get_public_ip()
+        if public_ip:
+            print(f"   External/VPN: http://{public_ip}:{port}")
+            print()
+            print("📱 For mobile/remote access:")
+            print(f"   Use: http://{public_ip}:{port}")
+        else:
+            print("   External/VPN: Could not detect public IP")
+            print("   Check your network configuration or use manual IP")
+    print()
+    
+    print("🔧 Starting uvicorn server...")
+    print("   Press Ctrl+C to stop the server")
+    print("=" * 50)
+    
+    try:
+        # Command to start uvicorn
+        cmd = [
+            "uvicorn",
+            "src.api:app",
+            "--host", host,
+            "--port", str(port),
+            "--reload",  # Auto-reload in development
+            "--access-log",  # Access logs
+            "--log-level", "info"
+        ]
+        
+        # Execute the server
+        subprocess.run(cmd, check=True)
+        
+    except KeyboardInterrupt:
+        print("\n🛑 Server stopped by user")
+    except subprocess.CalledProcessError as e:
+        print(f"\n❌ Error starting server: {e}")
+        print("\n🔍 Possible solutions:")
+        print("1. Install uvicorn: pip install uvicorn")
+        print("2. Install dependencies: pip install -r requirements.txt")
+        print("3. Check that the port is not in use")
+    except FileNotFoundError:
+        print("\n❌ Error: uvicorn not found")
+        print("   Install with: pip install uvicorn")
+
+
 def main():
     """Main entry point for the pipeline orchestrator."""
     parser = argparse.ArgumentParser(
@@ -689,10 +804,16 @@ Examples:
   python main.py --step data        # Run data update step only
   python main.py --step prediction  # Run prediction generation only
   python main.py --status           # Check pipeline status
+  python main.py --server           # Start API server for VPN access
+  python main.py --api --port 8080  # Start API server on custom port
   python main.py --help             # Show this help message
 
 Available steps:
   data, adaptive, weights, prediction, validation, performance, reports
+
+Server mode:
+  --server or --api starts the web API server optimized for VPN access
+  Automatically detects public IP and configures CORS for external access
         """
     )
     
@@ -721,9 +842,40 @@ Available steps:
         help='Enable verbose logging output'
     )
     
+    parser.add_argument(
+        '--server',
+        action='store_true',
+        help='Start API server optimized for VPN access'
+    )
+    
+    parser.add_argument(
+        '--api',
+        action='store_true',
+        help='Alias for --server (start API server)'
+    )
+    
+    parser.add_argument(
+        '--host',
+        type=str,
+        default='0.0.0.0',
+        help='Host to bind server to (default: 0.0.0.0 for external access)'
+    )
+    
+    parser.add_argument(
+        '--port',
+        type=int,
+        default=8000,
+        help='Port to bind server to (default: 8000)'
+    )
+    
     args = parser.parse_args()
     
     try:
+        # Handle server mode
+        if args.server or args.api:
+            start_api_server(host=args.host, port=args.port, auto_detect_ip=True)
+            return
+        
         # Initialize pipeline orchestrator
         orchestrator = PipelineOrchestrator(config_path=args.config)
         
