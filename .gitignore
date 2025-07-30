@@ -30,4 +30,6 @@ logs/*.log
 # Data directory specific ignores
 # Ignore the original CSV and any temporary files, but keep the directory.
 /data/*.csv
+/data/validations/
+/data/predoctions/
 !/data/.gitkeep
