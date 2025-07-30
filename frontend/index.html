@@ -6,24 +6,26 @@
     <title>SHIOL+ - AI-Powered Powerball Predictions</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/public.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <meta name="description" content="Advanced AI-powered Powerball number predictions with historical analysis and real-time insights.">
     <meta name="keywords" content="powerball, lottery, predictions, AI, machine learning, numbers">
 </head>
-<body class="bg-gray-50 min-h-screen font-sans">
+<body class="bg-gray-100 dark:bg-gray-800 flex flex-col min-h-screen font-sans">
     
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200">
+    <header class="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 mb-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-gray-900">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
                         <span class="text-red-600">SHIOL+</span>
-                        <span class="text-sm font-normal text-gray-600 ml-2">AI Predictions</span>
+                        <span class="text-sm font-normal text-gray-600 dark:text-gray-400 ml-2">AI Predictions</span>
                     </h1>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button id="admin-login-btn" class="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                    <button id="admin-login-btn" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium">
                         <i class="fas fa-user-shield mr-1"></i>
                         Admin
                     </button>
@@ -33,151 +35,52 @@
     </header>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Hero Section with Next Drawing -->
-        <section class="mb-12">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-                    Next Powerball Drawing
-                </h2>
-                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                    Get AI-powered predictions for the upcoming Powerball drawing using advanced machine learning algorithms.
-                </p>
-            </div>
-
-            <!-- Featured Prediction Card -->
-            <div id="featured-prediction-card" class="max-w-4xl mx-auto">
-                <div class="bg-gradient-to-br from-red-50 to-blue-50 rounded-2xl shadow-xl border-2 border-red-200 p-8 mb-6">
-                    
-                    <!-- Drawing Info -->
-                    <div class="text-center mb-8">
-                        <div class="inline-flex items-center bg-white rounded-full px-6 py-3 shadow-md mb-4">
-                            <i class="fas fa-calendar-alt text-red-600 mr-2"></i>
-                            <span id="next-drawing-date" class="font-semibold text-gray-900">Loading...</span>
-                            <span class="mx-2 text-gray-400">•</span>
-                            <span id="next-drawing-time" class="font-semibold text-gray-900">10:59 PM ET</span>
-                        </div>
-                        
-                        <!-- Countdown Timer -->
-                        <div id="countdown-timer" class="text-2xl font-bold text-red-600 mb-2">
-                            <span id="countdown-display">--:--:--</span>
-                        </div>
-                        <p class="text-sm text-gray-600">Time until drawing</p>
-                    </div>
-
-                    <!-- AI Prediction -->
-                    <div class="text-center">
-                        <div class="inline-flex items-center bg-blue-600 text-white rounded-full px-4 py-2 text-sm font-semibold mb-6">
-                            <i class="fas fa-brain mr-2"></i>
-                            AI FEATURED PREDICTION
-                        </div>
-                        
-                        <!-- PowerBall Numbers Display -->
-                        <div id="featured-numbers" class="flex items-center justify-center space-x-3 mb-6">
-                            <!-- Numbers will be populated by JavaScript -->
-                            <div class="loading-placeholder">
-                                <i class="fas fa-spinner fa-spin text-gray-400 text-2xl"></i>
-                                <p class="text-gray-500 mt-2">Loading prediction...</p>
-                            </div>
-                        </div>
-
-                        <!-- Confidence Score -->
-                        <div class="flex items-center justify-center space-x-4 text-sm text-gray-600">
-                            <div class="flex items-center">
-                                <i class="fas fa-chart-line text-green-600 mr-1"></i>
-                                <span>Confidence: <span id="confidence-score" class="font-semibold">--</span></span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-robot text-blue-600 mr-1"></i>
-                                <span>Method: <span id="prediction-method" class="font-semibold">AI Optimized</span></span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Info -->
-                <div class="grid md:grid-cols-3 gap-4 text-center">
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <i class="fas fa-calendar-week text-red-600 text-xl mb-2"></i>
-                        <p class="text-sm font-semibold text-gray-900">Drawing Days</p>
-                        <p class="text-xs text-gray-600">Wednesday & Saturday</p>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <i class="fas fa-clock text-blue-600 text-xl mb-2"></i>
-                        <p class="text-sm font-semibold text-gray-900">Drawing Time</p>
-                        <p class="text-xs text-gray-600">10:59 PM Eastern</p>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <i class="fas fa-sync-alt text-green-600 text-xl mb-2"></i>
-                        <p class="text-sm font-semibold text-gray-900">Updated</p>
-                        <p class="text-xs text-gray-600" id="last-updated">Real-time</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Historical Results Section -->
-        <section>
-            <div class="text-center mb-8">
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-                    Recent Powerball Results
-                </h2>
-                <p class="text-gray-600 max-w-2xl mx-auto">
-                    Official winning numbers from recent drawings. Track the performance and patterns in Powerball history.
-                </p>
-            </div>
-
-            <!-- Historical Results Grid -->
-            <div id="historical-results" class="grid gap-4 md:gap-6">
-                <!-- Loading placeholder -->
-                <div class="text-center py-12">
-                    <i class="fas fa-spinner fa-spin text-gray-400 text-3xl mb-4"></i>
-                    <p class="text-gray-500">Loading recent results...</p>
-                </div>
-            </div>
-
-            <!-- Load More Button -->
-            <div class="text-center mt-8">
-                <button id="load-more-btn" class="hidden bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-                    <i class="fas fa-plus mr-2"></i>
-                    Load More Results
-                </button>
-            </div>
-        </section>
+    <main class="flex-1 flex items-center justify-center px-4">
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-4xl w-full">
+            <header class="mb-6 text-center">
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">SHIOL+ AI Predictions</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Advanced ML-powered lottery prediction system</p>
+            </header>
+            <main>
+                <!-- AI Predictions Section -->
+                <section id="ai-predictions" class="mb-12">
+                    <!-- Predictions will be loaded here by public.js -->
+                </section>
+            </main>
+        </div>
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-900 text-white mt-16">
+    <footer class="bg-gray-900 dark:bg-gray-900 text-white dark:text-gray-300 mt-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="grid md:grid-cols-3 gap-8">
                 <div>
                     <h3 class="text-lg font-semibold mb-4">SHIOL+ AI</h3>
-                    <p class="text-gray-400 text-sm">
+                    <p class="text-gray-400 dark:text-gray-500 text-sm">
                         Advanced machine learning algorithms for Powerball number prediction and analysis.
                     </p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-4">Disclaimer</h3>
-                    <p class="text-gray-400 text-sm">
+                    <p class="text-gray-400 dark:text-gray-500 text-sm">
                         Predictions are for entertainment purposes only. Lottery games involve chance and no system can guarantee wins.
                     </p>
                 </div>
                 <div>
                     <h3 class="text-lg font-semibold mb-4">System Info</h3>
-                    <p class="text-gray-400 text-sm">
+                    <p class="text-gray-400 dark:text-gray-500 text-sm">
                         <span id="system-status" class="inline-flex items-center">
                             <span class="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
                             System Operational
                         </span>
                     </p>
-                    <p class="text-gray-400 text-xs mt-2">
+                    <p class="text-gray-400 dark:text-gray-500 text-xs mt-2">
                         Last updated: <span id="footer-last-updated">--</span>
                     </p>
                 </div>
             </div>
-            <div class="border-t border-gray-800 mt-8 pt-8 text-center">
-                <p class="text-gray-400 text-sm">
+            <div class="border-t border-gray-800 dark:border-gray-700 mt-8 pt-8 text-center">
+                <p class="text-gray-400 dark:text-gray-500 text-sm">
                     © 2024 SHIOL+ AI Prediction System. All rights reserved.
                 </p>
             </div>
