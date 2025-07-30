@@ -1076,3 +1076,242 @@ def run_adaptive_analysis(days_back: int = 30) -> Dict:
     except Exception as e:
         logger.error(f"Error running adaptive analysis: {e}")
         return {'error': str(e)}
+
+
+class AdaptivePlayScorer:
+    """
+    Extends PlayScorer with adaptive weight capabilities.
+    Uses dynamically optimized weights instead of fixed weights.
+    """
+    
+    def __init__(self, historical_data: pd.DataFrame):
+        super().__init__(historical_data)
+        self.adaptive_weights = None
+        self.load_adaptive_weights()
+        logger.info("AdaptivePlayScorer initialized with adaptive weight system")
+    
+    def load_adaptive_weights(self):
+        """Loads the currently active adaptive weights."""
+        try:
+            active_weights = db.get_active_adaptive_weights()
+            if active_weights:
+                self.adaptive_weights = active_weights['weights']
+                logger.info(f"Loaded adaptive weights: {self.adaptive_weights}")
+            else:
+                logger.info("No active adaptive weights found, using default weights")
+                self.adaptive_weights = self.weights.copy()
+                
+        except Exception as e:
+            logger.error(f"Error loading adaptive weights: {e}")
+            self.adaptive_weights = self.weights.copy()
+    
+    def calculate_total_score(self, white_balls: List[int], powerball: int,
+                            wb_probs: Dict[int, float], pb_probs: Dict[int, float]) -> Dict:
+        """
+        Calculates total score using adaptive weights.
+        
+        Args:
+            white_balls: List of 5 numbers blancos
+            powerball: Número del powerball
+            wb_probs: Probabilidades de números blancos
+            pb_probs: Probabilidades de powerball
+            
+        Returns:
+            Dict con scores individuales y total usando pesos adaptativos
+        """
+        try:
+            # Use adaptive weights if available
+            current_weights = self.adaptive_weights if self.adaptive_weights else self.weights
+            
+            scores = {}
+            
+            # Calculate each scoring component (same as parent class)
+            scores['probability'] = self._calculate_probability_score(white_balls, powerball, wb_probs, pb_probs)
+            scores['diversity'] = self._calculate_diversity_score(white_balls, powerball)
+            scores['historical'] = self._calculate_historical_score(white_balls, powerball)
+            scores['risk_adjusted'] = self._calculate_risk_adjusted_score(white_balls, powerball)
+            
+            # Calculate total score using adaptive weights
+            total_score = sum(scores[component] * current_weights[component]
+                            for component in scores.keys())
+            
+            scores['total'] = total_score
+            scores['weights_used'] = current_weights.copy()
+            scores['adaptive_mode'] = self.adaptive_weights is not None
+            
+            return scores
+            
+        except Exception as e:
+            logger.error(f"Error calculating adaptive total score: {e}")
+            # Fallback to parent class method
+            return super().calculate_total_score(white_balls, powerball, wb_probs, pb_probs)
+    
+    def update_weights(self, new_weights: Dict[str, float]):
+        """
+        Updates the adaptive weights.
+        
+        Args:
+            new_weights: New weight configuration
+        """
+        try:
+            self.adaptive_weights = new_weights.copy()
+            logger.info(f"Updated adaptive weights: {new_weights}")
+            
+        except Exception as e:
+            logger.error(f"Error updating adaptive weights: {e}")
+    
+    def get_weight_performance_analysis(self) -> Dict:
+        """
+        Analyzes the performance of current weights.
+        
+        Returns:
+            Dict with weight performance analysis
+        """
+        try:
+            current_weights = self.adaptive_weights if self.adaptive_weights else self.weights
+            
+            # Get recent performance data
+            performance_data = db.get_performance_analytics(30)
+            
+            analysis = {
+                'current_weights': current_weights,
+                'performance_metrics': performance_data,
+                'weight_balance': {
+                    'max_weight': max(current_weights.values()),
+                    'min_weight': min(current_weights.values()),
+                    'weight_std': np.std(list(current_weights.values())),
+                    'is_balanced': max(current_weights.values()) - min(current_weights.values()) < 0.4
+                },
+                'recommendations': self._generate_weight_recommendations(current_weights, performance_data)
+            }
+            
+            return analysis
+            
+        except Exception as e:
+            logger.error(f"Error analyzing weight performance: {e}")
+            return {}
+    
+    def _generate_weight_recommendations(self, weights: Dict[str, float],
+                                       performance_data: Dict) -> List[str]:
+        """Generates recommendations for weight adjustments."""
+        try:
+            recommendations = []
+            
+            # Check if performance is below threshold
+            avg_accuracy = performance_data.get('avg_accuracy', 0.0)
+            win_rate = performance_data.get('win_rate', 0.0)
+            
+            if avg_accuracy < 0.3:
+                recommendations.append("Consider increasing probability weight for better accuracy")
+            
+            if win_rate < 0.05:
+                recommendations.append("Consider adjusting diversity and historical weights")
+            
+            # Check weight balance
+            weight_values = list(weights.values())
+            if max(weight_values) - min(weight_values) > 0.5:
+                recommendations.append("Weights are highly imbalanced, consider rebalancing")
+            
+            if not recommendations:
+                recommendations.append("Current weight configuration appears optimal")
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.warning(f"Error generating weight recommendations: {e}")
+            return ["Unable to generate recommendations due to error"]
+
+    def generate_adaptive_predictions(self, n_samples: int) -> List[List[int]]:
+        """
+        Genera combinaciones utilizando pesos adaptativos optimizados.
+        """
+        logger.info("Generando combinaciones adaptativas con AdaptivePlayScorer...")
+        # Implementar lógica adaptativa mejorada aquí
+        return [[7, 8, 9, 10, 11, 12] for _ in range(n_samples)]  # Ejemplo
+
+
+# Utility functions for the adaptive feedback system
+
+def initialize_adaptive_system(historical_data: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Initializes the complete adaptive feedback system.
+    
+    Args:
+        historical_data: Historical lottery data
+        
+    Returns:
+        Dict with initialized system components
+    """
+    try:
+        logger.info("Initializing Phase 4 Adaptive Feedback System...")
+        
+        # Initialize core components
+        adaptive_validator = AdaptiveValidator()
+        feedback_engine = ModelFeedbackEngine(historical_data)
+        adaptive_scorer = AdaptivePlayScorer(historical_data)
+        
+        # Connect components
+        adaptive_validator.set_feedback_engine(feedback_engine)
+        
+        # Initialize database tables
+        db.initialize_database()
+        
+        system_components = {
+            'adaptive_validator': adaptive_validator,
+            'feedback_engine': feedback_engine,
+            'adaptive_scorer': adaptive_scorer,
+            'weight_optimizer': feedback_engine.weight_optimizer,
+            'pattern_analyzer': feedback_engine.pattern_analyzer,
+            'reliable_play_tracker': feedback_engine.reliable_play_tracker
+        }
+        
+        logger.info("Adaptive feedback system initialized successfully")
+        return system_components
+        
+    except Exception as e:
+        logger.error(f"Error initializing adaptive feedback system: {e}")
+        raise
+
+
+def run_adaptive_analysis(days_back: int = 30) -> Dict:
+    """
+    Runs a comprehensive adaptive analysis.
+    
+    Args:
+        days_back: Number of days to analyze
+        
+    Returns:
+        Dict with analysis results
+    """
+    try:
+        logger.info(f"Running adaptive analysis for {days_back} days...")
+        
+        # Get performance analytics
+        performance_data = db.get_performance_analytics(days_back)
+        
+        # Get reliable plays
+        reliable_plays = db.get_reliable_plays(limit=20)
+        
+        # Get current adaptive weights
+        current_weights = db.get_active_adaptive_weights()
+        
+        analysis_results = {
+            'analysis_period': f"{days_back} days",
+            'timestamp': datetime.now().isoformat(),
+            'performance_summary': performance_data,
+            'reliable_plays_count': len(reliable_plays),
+            'top_reliable_plays': reliable_plays.head(5).to_dict('records') if not reliable_plays.empty else [],
+            'current_adaptive_weights': current_weights,
+            'system_status': {
+                'adaptive_learning_active': current_weights is not None,
+                'total_predictions_analyzed': performance_data.get('total_predictions', 0),
+                'learning_threshold_met': performance_data.get('total_predictions', 0) >= 10
+            }
+        }
+        
+        logger.info("Adaptive analysis completed successfully")
+        return analysis_results
+        
+    except Exception as e:
+        logger.error(f"Error running adaptive analysis: {e}")
+        return {'error': str(e)}

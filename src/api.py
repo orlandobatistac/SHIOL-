@@ -24,6 +24,9 @@ from src.adaptive_feedback import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from contextlib import asynccontextmanager
 
+# Import new public API and authentication
+from src.public_api import public_router, auth_router
+
 def convert_numpy_types(obj):
     """Convert numpy types to native Python types for JSON serialization."""
     if isinstance(obj, np.integer):
@@ -1343,6 +1346,10 @@ async def run_pipeline_steps_background(execution_id: str, steps: List[str], num
 # --- Application Mounting ---
 # Mount the API router before the static files to ensure API endpoints are prioritized.
 app.include_router(api_router)
+
+# Mount new public and authentication routers
+app.include_router(public_router)
+app.include_router(auth_router)
 
 # Build an absolute path to the 'frontend' directory for robust file serving.
 # This avoids issues with the current working directory.

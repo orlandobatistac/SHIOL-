@@ -1,0 +1,29 @@
+{
+  "prediction": {
+    "numbers": [
+      7,
+      10,
+      28,
+      63,
+      69
+    ],
+    "powerball": 26,
+    "timestamp": "2025-07-26T23:08:18.995972"
+  },
+  "scoring": {
+    "total_score": 0.6034452720250942,
+    "score_details": {
+      "probability": 0.1798251982033253,
+      "diversity": 1.0,
+      "historical": 0.6575759637188208,
+      "risk_adjusted": 1.0,
+      "total": 0.6034452720250942
+    },
+    "num_candidates_evaluated": 2000
+  },
+  "metadata": {
+    "model_version": "1.0.0",
+    "dataset_hash": "f67850cb5aa77b83",
+    "created_at": "2025-07-26T23:08:18.998972"
+  }
+}

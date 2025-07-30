@@ -1,0 +1,1691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SHIOL+ Project Documentation</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f7f6;
+            color: #333;
+            line-height: 1.6;
+        }
+        header {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5em 0;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5em;
+        }
+        nav {
+            background-color: #34495e;
+            color: #ecf0f1;
+            padding: 1em 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        nav ul li {
+            margin: 0 15px;
+        }
+        nav ul li a {
+            color: #ecf0f1;
+            text-decoration: none;
+            font-weight: bold;
+            padding: 5px 10px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 4px;
+        }
+        nav ul li a:hover, nav ul li a.active {
+            background-color: #1abc9c;
+            color: #fff;
+        }
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 20px auto;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        aside {
+            width: 250px;
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-right: 1px solid #eee;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+        aside h2 {
+            color: #2c3e50;
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        aside ul {
+            list-style: none;
+            padding: 0;
+        }
+        aside ul li {
+            margin-bottom: 10px;
+        }
+        aside ul li a {
+            text-decoration: none;
+            color: #34495e;
+            display: block;
+            padding: 8px 10px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            border-radius: 4px;
+        }
+        aside ul li a:hover, aside ul li a.active {
+            background-color: #e0f7fa;
+            color: #1abc9c;
+        }
+        main {
+            flex-grow: 1;
+            padding: 30px;
+        }
+        section {
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        section:last-child {
+            border-bottom: none;
+        }
+        h2 {
+            color: #2c3e50;
+            font-size: 2em;
+            margin-bottom: 15px;
+            border-left: 5px solid #1abc9c;
+            padding-left: 10px;
+        }
+        h3 {
+            color: #34495e;
+            font-size: 1.5em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 10px;
+        }
+        ul {
+            list-style: disc;
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        ol {
+            list-style: decimal;
+            margin-left: 20px;
+            margin-bottom: 10px;
+        }
+        pre {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+        code {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: #c0392b;
+        }
+        pre code {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        footer {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 1.5em 0;
+            margin-top: 40px;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.2);
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                margin: 10px;
+            }
+            aside {
+                width: 100%;
+                border-right: none;
+                border-bottom: 1px solid #eee;
+            }
+            nav ul {
+                flex-direction: column;
+            }
+            nav ul li {
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>SHIOL+ Project Documentation</h1>
+        <p>Comprehensive Guide to SHIOL+: System for Hybrid Intelligence Optimization and Learning</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#project-overview">Project Overview</a></li>
+            <li><a href="#system-architecture">System Architecture</a></li>
+            <li><a href="#installation-guide">Installation Guide</a></li>
+            <li><a href="#usage-guide">Usage Guide</a></li>
+            <li><a href="#api-documentation">API Documentation</a></li>
+            <li><a href="#technical-details">Technical Details</a></li>
+            <li><a href="#database-schema">Database Schema</a></li>
+            <li><a href="#configuration-guide">Configuration Guide</a></li>
+            <li><a href="#security-considerations">Security Considerations</a></li>
+            <li><a href="#troubleshooting-faq">Troubleshooting & FAQ</a></li>
+            <li><a href="#contributing-guidelines">Contributing Guidelines</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <aside>
+            <h2>Table of Contents</h2>
+            <ul>
+                <li><a href="#project-overview">Project Overview</a></li>
+                <li><a href="#system-architecture">System Architecture</a></li>
+                <li><a href="#installation-guide">Installation Guide</a></li>
+                <li><a href="#usage-guide">Usage Guide</a></li>
+                <li><a href="#api-documentation">API Documentation</a></li>
+                <li><a href="#technical-details">Technical Details</a></li>
+                <li><a href="#database-schema">Database Schema</a></li>
+                <li><a href="#configuration-guide">Configuration Guide</a></li>
+                <li><a href="#security-considerations">Security Considerations</a></li>
+                <li><a href="#troubleshooting-faq">Troubleshooting & FAQ</a></li>
+                <li><a href="#contributing-guidelines">Contributing Guidelines</a></li>
+            </ul>
+            <div style="margin-top: 30px;">
+                <h3>Search Documentation</h3>
+                <input type="text" id="searchInput" placeholder="Type to search..." style="width: calc(100% - 22px); padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+        </aside>
+
+        <main>
+            <section id="project-overview">
+                <h2>Project Overview</h2>
+                <p>The SHIOL+ (System for Hybrid Intelligence Optimization and Learning) project is an advanced platform designed to integrate human expertise with artificial intelligence to solve complex prediction and optimization problems, specifically in lottery pattern analysis. It aims to provide highly accurate and adaptable solutions by combining machine learning models with rule-based systems and expert feedback.</p>
+
+                <h3>Objectives</h3>
+                <ul>
+                    <li>To develop a robust system for predictive analytics.</li>
+                    <li>To incorporate adaptive learning mechanisms based on user feedback.</li>
+                    <li>To provide a flexible and scalable architecture for various applications.</li>
+                    <li>To ensure data security and integrity.</li>
+                    <li>To implement a transparent history of AI predictions compared with official results to build trust and credibility with potential clients.</li>
+                </ul>
+
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Hybrid Intelligence Approach:</strong> Combines machine learning models with human insights and rule-based systems.</li>
+                    <li><strong>Multi-Criteria Scoring:</strong> Comprehensive evaluation of predictions beyond single metrics.</li>
+                    <li><strong>Adaptive Learning:</strong> Continuous model improvement based on user feedback and historical performance.</li>
+                    <li><strong>Advanced Feature Engineering:</strong> Optimal data representation for predictive models.</li>
+                    <li><strong>Deterministic Prediction:</strong> Reliable and reproducible outcomes for critical decisions.</li>
+                    <li><strong>Support for Various ML Models:</strong> Includes XGBoost, Variational Autoencoders (VAE), and Recurrent Neural Networks (RNN).</li>
+                    <li><strong>User-Friendly Interfaces:</strong> Interaction via Command Line Interface (CLI), Web Dashboard, and RESTful API.</li>
+                    <li><strong>Automated Pipeline:</strong> An end-to-end system for training models, predicting number probabilities, and generating plays.</li>
+                </ul>
+
+                <h3>Commercial Benefits</h3>
+                <p>The implementation of transparent AI prediction comparisons against official results is expected to significantly enhance SHIOL+'s market position:</p>
+                <ul>
+                    <li><strong>Trust Generation:</strong> Full transparency, showing all results (including non-winning predictions) and verifiable data against official sources, builds strong client confidence.</li>
+                    <li><strong>Customer Conversion:</strong> Real statistics and credibility differentiate SHIOL+ from competitors, encouraging more visitors to become subscribers.</li>
+                    <li><strong>Competitive Advantage:</strong> The unique automated tracking and real-time comparison system, coupled with continuous AI learning and the ADAPTIVE methodology, provides a significant edge.</li>
+                    <li><strong>Improved User Retention:</strong> Users who can verify the system's effectiveness are more likely to remain engaged.</li>
+                </ul>
+
+                <h3>Expected Success Metrics</h3>
+                <h4>Technical KPIs:</h4>
+                <ul>
+                    <li>Page load time less than 2 seconds.</li>
+                    <li>Responsive design across all devices.</li>
+                    <li>100% accurate and verifiable data.</li>
+                    <li>Professional and smooth animations.</li>
+                </ul>
+                <h4>Commercial KPIs:</h4>
+                <ul>
+                    <li>+25% increase in time spent on the page.</li>
+                    <li>+15% increase in conversion rate (visitors to subscribers).</li>
+                    <li>-40% reduction in questions regarding system effectiveness.</li>
+                    <li>+30% improvement in user retention.</li>
+                </ul>
+            </section>
+
+            <section id="system-architecture">
+                <h2>System Architecture</h2>
+                <p>SHIOL+ follows a modular and scalable architecture, designed to facilitate easy integration of new components and technologies. The system's backend is the core, responsible for business logic, prediction generation, data management, and exposing a RESTful API for user interfaces. It orchestrates a complex Machine Learning pipeline, manages user authentication, and serves both public and private data efficiently and securely.</p>
+
+                <h3>Overall Architecture</h3>
+                <p>The system architecture follows a linear and logical data flow, where each component is responsible for a specific stage of the process. User interaction primarily occurs through a Command Line Interface (CLI) or a web-based interface (Frontend + API).</p>
+                <pre><code class="language-mermaid">graph TD
+    subgraph User Interaction
+        A[CLI: src/cli.py]
+    end
+
+    subgraph Data Layer
+        B[Loader: src/loader.py] --> C[Historical Data: data/NCELPowerball.csv];
+    end
+
+    subgraph Feature Engineering
+        D[FeatureEngineer: src/intelligent_generator.py];
+    end
+
+    subgraph Modeling
+        E[ModelTrainer: src/predictor.py] -- Trains and saves --> F[Saved Model: models/shiolplus.pkl];
+        F -- Loads --> G[Predictor: src/predictor.py];
+    end
+
+    subgraph Generation & Evaluation
+        H[IntelligentGenerator: src/intelligent_generator.py];
+        I[Evaluator: src/evaluator.py];
+    end
+
+    A -- "train" --> B;
+    A -- "predict" --> B;
+    A -- "backtest" --> B;
+
+    B -- Historical data --> D;
+    B -- Historical data for backtest --> I;
+
+    D -- Features --> E;
+    D -- Latest features for prediction --> G;
+
+    G -- Probabilities --> H;
+
+    H -- Plays for backtest --> I;
+
+    I -- Backtest report --> A;
+</code></pre>
+
+                <h3>Main Components</h3>
+                <ul>
+                    <li><strong>Pipeline Orchestrator (<code>main.py</code>):</strong> The main entry point and orchestrator of the application. It coordinates the execution of the 7 steps of the AI pipeline, including data update, adaptive analysis, weight optimization, prediction generation, historical validation, performance analysis, and reports/notifications.</li>
+                    <li><strong>Data Loader (<code>src/loader.py</code>):</strong> Handles data ingestion from various sources, primarily loading historical Powerball data from CSV files. It includes functionalities for standardizing columns and updating data from external sources.</li>
+                    <li><strong>Feature Engineering Module (<code>src/intelligent_generator.py</code>):</strong> Processes raw historical data to create a set of statistical and temporal features (e.g., parity, sum, recency, trends) suitable for machine learning models. It also contains the logic for generating plays based on predicted probabilities.</li>
+                    <li><strong>Predictor Module (<code>src/predictor.py</code>):</strong> Encapsulates the machine learning model's lifecycle, including training, loading, and inference. It uses an XGBoost model wrapped in a MultiOutputClassifier to predict the probability of each number's appearance.</li>
+                    <li><strong>Generative Predictors (<code>src/generative_predictor.py</code>, <code>src/rnn_predictor.py</code>):</strong> Implement advanced prediction methods. The Variational Autoencoder (VAE) generates combinations based on the latent distribution of historical data, while Recurrent Neural Networks (RNN) predict sequences of numbers based on temporal patterns.</li>
+                    <li><strong>Adaptive Feedback Module (<code>src/adaptive_feedback.py</code>):</strong> Processes user feedback and past performance to refine models and rules. It adjusts predictions using adaptive weights and continuously improves accuracy.</li>
+                    <li><strong>Evaluator (<code>src/evaluator.py</code>):</strong> Responsible for assessing the performance of predictions and models against actual outcomes, calculating metrics like ROI, prize distribution, and win rates.</li>
+                    <li><strong>API Layer (<code>src/api.py</code>, <code>src/public_api.py</code>):</strong> Built with FastAPI, it exposes functionalities for external systems and the web dashboard. It handles prediction requests, authentication, and pipeline control.</li>
+                    <li><strong>Database (<code>src/database.py</code>):</strong> Utilizes SQLite for data persistence, storing configurations, historical data, predictions, user feedback, and performance tracking.</li>
+                    <li><strong>Authentication (<code>src/auth.py</code>):</strong> Manages user authentication and session creation/validation using secure practices like bcrypt for password hashing.</li>
+                    <li><strong>Scheduler (<code>src/scheduler.py</code>):</strong> Manages automated tasks and pipeline execution, typically scheduling runs on a weekly basis using APScheduler.</li>
+                </ul>
+                <h3>Data Flows</h3>
+                <p>The data flow in SHIOL+ is designed for clarity and efficiency:</p>
+                <ol>
+                    <li><strong>User Input:</strong> Actions are initiated via the CLI (<code>src/cli.py</code>) or the Web Dashboard.</li>
+                    <li><strong>Data Loading:</strong> The <code>src/loader.py</code> module loads historical data, which is then cleaned and standardized.</li>
+                    <li><strong>Feature Engineering:</strong> The <code>FeatureEngineer</code> in <code>src/intelligent_generator.py</code> processes the historical data to create relevant features.</li>
+                    <li><strong>Model Training:</strong> For training commands, features are passed to <code>ModelTrainer</code> in <code>src/predictor.py</code>, where an XGBoost model is trained and saved.</li>
+                    <li><strong>Prediction:</strong> The <code>Predictor</code> loads the trained model and uses features from the most recent draws to predict number probabilities.</li>
+                    <li><strong>Play Generation:</strong> The <code>IntelligentGenerator</code> uses these probabilities to generate specific lottery plays.</li>
+                    <li><strong>Evaluation:</strong> For backtesting, generated plays are passed to the <code>Evaluator</code> (<code>src/evaluator.py</code>) for performance simulation and reporting.</li>
+                    <li><strong>Feedback Loop:</strong> User feedback via the Web Dashboard or API is fed into the <code>Adaptive Feedback Module</code>, which refines models and influences future predictions.</li>
+                    <li><strong>Storage:</strong> Predictions, performance metrics, and configurations are stored in the SQLite database.</li>
+                </ol>
+                <h3>Technology Stack</h3>
+                <ul>
+                    <li><strong>Backend:</strong> Python (FastAPI, Scikit-learn, XGBoost, TensorFlow/Keras for VAE/RNN, Pandas, NumPy, APScheduler, Loguru)</li>
+                    <li><strong>Database:</strong> SQLite (for development and low-traffic scenarios; PostgreSQL/MySQL recommended for production)</li>
+                    <li><strong>Frontend:</strong> HTML, CSS (TailwindCSS), JavaScript (Vanilla JS)</li>
+                    <li><strong>CLI:</strong> Python's <code>argparse</code></li>
+                    <li><strong>ASGI Server:</strong> Uvicorn</li>
+                </ul>
+            </section>
+
+            <section id="installation-guide">
+                <h2>Installation Guide</h2>
+                <p>This guide provides instructions to set up and run the SHIOL+ project on your local machine.</p>
+
+                <h3>Prerequisites</h3>
+                <ul>
+                    <li>Python 3.8+</li>
+                    <li><code>pip</code> (Python package installer)</li>
+                    <li>Git (for cloning the repository)</li>
+                </ul>
+
+                <h3>Steps</h3>
+                <ol>
+                    <li><strong>Clone the repository:</strong>
+                        <p>First, download the project code. If you have <code>git</code> installed, you can use this command in your terminal:</p>
+                        <pre><code>git clone <REPOSITORY_URL>
+cd SHIOL-PLUS-V5</code></pre>
+                        <p>If you don't have <code>git</code>, you can download the project as a ZIP file and unzip it.</p>
+                    </li>
+                    <li><strong>Create a virtual environment (recommended):</strong>
+                        <p>A virtual environment is an isolated space to install the project's dependencies without affecting other programs on your computer.</p>
+                        <pre><code>python -m venv venv</code></pre>
+                        <p>Then, activate the environment:</p>
+                        <pre><code># On Windows
+.\venv\Scripts\activate
+# On macOS or Linux
+source venv/bin/activate</code></pre>
+                    </li>
+                    <li><strong>Install dependencies:</strong>
+                        <p>With the environment activated, install all necessary libraries with a single command. Note that some new dependencies like <code>bcrypt</code> and <code>psutil</code> are required for the latest features.</p>
+                        <pre><code>pip install -r requirements.txt
+pip install bcrypt==4.1.2 psutil==5.9.8</code></pre>
+                    </li>
+                    <li><strong>Initialize the database:</strong>
+                        <p>The system uses an SQLite database. Run the database initialization script to set up the schema:</p>
+                        <pre><code>python src/database.py</code></pre>
+                    </li>
+                    <li><strong>Configure the system:</strong>
+                        <p>Edit the <code>config/config.ini</code> file to adjust settings such as database paths, API keys, and model parameters. An example of common configurations:</p>
+                        <pre><code>[paths]
+db_file = data/shiolplus.db
+model_file = models/shiolplus.pkl
+
+[pipeline]
+weekly_execution_day = 0
+execution_time = 02:00
+timezone = America/New_York
+auto_execution_enabled = true</code></pre>
+                    </li>
+                    <li><strong>Run the application:</strong>
+                        <p>You can run the application in several ways:</p>
+                        <h4>Quick Start - Full Pipeline Execution</h4>
+                        <p>The easiest way to use SHIOL+ v5.0 is with the automated pipeline system. This single command will automatically update data, perform adaptive analysis, generate predictions, and more:</p>
+                        <pre><code>python main.py</code></pre>
+                        <h4>Start the Web Dashboard</h4>
+                        <p>After running the pipeline at least once, you can start the web server:</p>
+                        <pre><code>uvicorn src.api:app --reload</code></pre>
+                        <p>Then open your web browser and go to <code>http://127.0.0.1:8000</code>.</p>
+                        <h4>Access Interfaces</h4>
+                        <ul>
+                            <li><strong>Public Page:</strong> <code>http://localhost:8000/</code></li>
+                            <li><strong>Login Admin:</strong> <code>http://localhost:8000/login.html</code></li>
+                            <li><strong>Dashboard:</strong> <code>http://localhost:8000/dashboard.html</code> (requires login)</li>
+                        </ul>
+                        <p><strong>Temporary Admin Credentials:</strong> For initial setup, use username <code>admin</code> and password <code>shiol2024!</code>. <strong>WARNING: Change these before production!</strong></p>
+                    </li>
+                </ol>
+            </section>
+
+            <section id="usage-guide">
+                <h2>Usage Guide</h2>
+                <p>SHIOL+ is a comprehensive software tool that uses artificial intelligence to analyze historical lottery draw data and generate predictions. It can be interacted with through a Command Line Interface (CLI), a Web Dashboard, and a RESTful API.</p>
+
+                <h3>Command Line Interface (CLI)</h3>
+                <p>The CLI provides direct access to all system functions for advanced users or automation.</p>
+
+                <h4>Quick Start - Full Pipeline Execution</h4>
+                <p>The easiest way to use SHIOL+ is with the automated pipeline system. This single command will automatically:</p>
+                <ol>
+                    <li><strong>Data Update:</strong> Download and update the lottery database with the latest draws.</li>
+                    <li><strong>Adaptive Analysis:</strong> Analyze recent system performance and identify improvement opportunities.</li>
+                    <li><strong>Weight Optimization:</strong> Optimize prediction scoring weights based on historical results.</li>
+                    <li><strong>Prediction Generation:</strong> Generate new lottery predictions using the deterministic system.</li>
+                    <li><strong>Historical Validation:</strong> Validate predictions against actual lottery results.</li>
+                    <li><strong>Performance Analysis:</strong> Calculate detailed performance metrics and trends.</li>
+                    <li><strong>Reports & Notifications:</strong> Generate comprehensive execution reports.</li>
+                </ol>
+                <pre><code>python main.py</code></pre>
+
+                <h4>Pipeline Commands</h4>
+                <p>You can run specific steps of the pipeline or check the system status:</p>
+                <ul>
+                    <li><strong>Run Specific Steps:</strong>
+                        <pre><code>python main.py --step data          # Update database only
+python main.py --step adaptive      # Run adaptive analysis only
+python main.py --step weights       # Optimize weights only
+python main.py --step prediction    # Generate predictions only
+python main.py --step validation    # Run validation only
+python main.py --step performance   # Analyze performance only
+python main.py --step reports       # Generate reports only</code></pre>
+                    </li>
+                    <li><strong>Check System Status:</strong>
+                        <pre><code>python main.py --status</code></pre>
+                        <p>This will show database status, configuration status, recent execution history, system health metrics, and next scheduled execution time.</p>
+                    </li>
+                    <li><strong>Get Help:</strong>
+                        <pre><code>python main.py --help</code></pre>
+                    </li>
+                </ul>
+
+                <h4>Legacy CLI Commands</h4>
+                <p>For compatibility, the system still supports individual CLI commands:</p>
+                <ul>
+                    <li><strong>Update Database:</strong>
+                        <pre><code>python src/cli.py update</code></pre>
+                    </li>
+                    <li><strong>Train Model:</strong>
+                        <pre><code>python src/cli.py train</code></pre>
+                    </li>
+                    <li><strong>Generate Predictions:</strong>
+                        <pre><code>python src/cli.py predict --count 10
+python src/cli.py predict-deterministic</code></pre>
+                    </li>
+                    <li><strong>Validate Predictions:</strong>
+                        <pre><code>python src/cli.py validate</code></pre>
+                    </li>
+                    <li><strong>Compare Methods:</strong>
+                        <pre><code>python src/cli.py compare-methods</code></pre>
+                    </li>
+                    <li><strong>Analyze Adaptive Feedback:</strong>
+                        <pre><code>python src/cli.py analyze-feedback --days 30 --detailed</code></pre>
+                    </li>
+                    <li><strong>Rank Reliable Plays:</strong>
+                        <pre><code>python src/cli.py rank-reliable-plays --limit 10 --min-score 0.8 --export reliable_plays.csv</code></pre>
+                    </li>
+                    <li><strong>Adaptive Validation:</strong>
+                        <pre><code>python src/cli.py adaptive-validate --no-learning</code></pre>
+                    </li>
+                    <li><strong>Optimize Weights:</strong>
+                        <pre><code>python src/cli.py optimize-weights --algorithm differential_evolution --days 60</code></pre>
+                    </li>
+                    <li><strong>Backtest Strategy:</strong>
+                        <pre><code>python src/cli.py backtest --count 1000</code></pre>
+                    </li>
+                </ul>
+
+                <h3>Web Dashboard</h3>
+                <p>The web dashboard offers a user-friendly interface for monitoring predictions, providing feedback, and visualizing system performance.</p>
+                <ul>
+                    <li><strong>Access:</strong> Navigate to <code>http://127.0.0.1:8000</code> (or the configured API host/port) after starting the web server with <code>uvicorn src.api:app --reload</code>.</li>
+                    <li><strong>Features:</strong>
+                        <ul>
+                            <li><strong>Pipeline Status Monitor:</strong> Real-time status, execution history, next scheduled run, system health.</li>
+                            <li><strong>Manual Pipeline Control:</strong> Trigger execution, step selection, force execution, execution tracking.</li>
+                            <li><strong>Generated Plays Visualization:</strong> View latest predictions, scoring details, prediction history, method comparison.</li>
+                            <li><strong>System Analytics:</strong> Performance metrics, validation results, trend analysis, resource monitoring.</li>
+                            <li><strong>Log Viewer:</strong> Real-time logs with filtering options.</li>
+                        </ul>
+                    </li>
+                </ul>
+                <h3>API Interaction</h3>
+                <p>The RESTful API allows programmatic interaction with SHIOL+, enabling integration with other systems. All API endpoints are prefixed with <code>/api/v1</code>.</p>
+                <h4>Pipeline Control Endpoints</h4>
+                <ul>
+                    <li><code>GET /api/v1/pipeline/status</code>: Returns current pipeline status, execution history, and system health.</li>
+                    <li><code>POST /api/v1/pipeline/trigger?num_predictions=1&force=false</code>: Manually triggers pipeline execution with optional parameters.</li>
+                    <li><code>GET /api/v1/pipeline/logs?level=INFO&limit=100</code>: Retrieves pipeline logs with filtering and pagination.</li>
+                    <li><code>GET /api/v1/pipeline/health</code>: Comprehensive system health check validating all components.</li>
+                </ul>
+                <h4>Prediction Endpoints</h4>
+                <ul>
+                    <li><code>GET /api/v1/predict?deterministic=true</code>: Generates a single prediction using traditional or deterministic method.</li>
+                    <li><code>GET /api/v1/predict-deterministic</code>: Generates a deterministic prediction with detailed scoring information.</li>
+                    <li><code>GET /api/v1/predict-detailed?deterministic=true</code>: Returns prediction with detailed component scores and analysis.</li>
+                    <li><code>GET /api/v1/compare-methods</code>: Compares traditional vs deterministic prediction methods side-by-side.</li>
+                    <li><code>GET /api/v1/prediction-history?limit=10</code>: Returns recent prediction history with scoring details.</li>
+                </ul>
+                <h4>Adaptive System Endpoints</h4>
+                <ul>
+                    <li><code>GET /api/v1/adaptive/analysis?days_back=30</code>: Provides comprehensive adaptive analysis of system performance.</li>
+                    <li><code>GET /api/v1/adaptive/weights</code>: Returns current adaptive weights configuration.</li>
+                    <li><code>POST /api/v1/adaptive/optimize-weights?algorithm=differential_evolution</code>: Triggers weight optimization using specified algorithm.</li>
+                    <li><code>GET /api/v1/adaptive/performance?days_back=30</code>: Returns detailed performance analytics for the adaptive system.</li>
+                    <li><code>POST /api/v1/adaptive/validate?enable_learning=true</code>: Runs adaptive validation with learning feedback.</li>
+                </ul>
+            </section>
+
+            <section id="api-documentation">
+                <h2>API Documentation</h2>
+                <p>The SHIOL+ API provides comprehensive endpoints for interacting with the prediction engine, managing the pipeline, submitting feedback, and retrieving system status. All API endpoints are prefixed with <code>/api/v1</code>.</p>
+
+                <h3>Authentication</h3>
+                <p>Authentication is handled via session tokens. Users can log in to obtain a token, which must then be included as a Bearer token in the <code>Authorization</code> header for protected endpoints. The system uses <code>bcrypt</code> for secure password hashing.</p>
+                <h4>Authentication Endpoints</h4>
+                <ul>
+                    <li><strong><code>POST /api/v1/auth/login</code></strong>
+                        <p>Authenticates a user with a username and password, returning a session token for accessing protected areas.</p>
+                        <ul>
+                            <li><strong>Request Body:</strong>
+                                <pre><code class="language-json">{
+    "username": "string",
+    "password": "string"
+}</code></pre>
+                            </li>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "success": true,
+    "session_token": "string",
+    "user": {
+        "username": "string",
+        "role": "string",
+        "email": "string"
+    },
+    "expires_in_hours": 24,
+    "message": "Login successful"
+}</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong><code>POST /api/v1/auth/logout</code></strong>
+                        <p>Logs out the current user by invalidating their session token.</p>
+                        <ul>
+                            <li><strong>Headers:</strong> <code>Authorization: Bearer <session_token></code></li>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "success": true,
+    "message": "Logged out successfully"
+}</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong><code>GET /api/v1/auth/verify</code></strong>
+                        <p>Verifies if a session token is valid and returns user information.</p>
+                        <ul>
+                            <li><strong>Headers:</strong> <code>Authorization: Bearer <session_token></code></li>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "valid": true,
+    "user": {
+        "username": "string",
+        "role": "string",
+        "email": "string",
+        "last_login": "datetime (ISO 8601)"
+    }
+}</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong><code>GET /api/v1/auth/dashboard-access</code></strong>
+                        <p>Verifies if the authenticated user has access to the dashboard.</p>
+                        <ul>
+                            <li><strong>Headers:</strong> <code>Authorization: Bearer <session_token></code></li>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "access_granted": true,
+    "user": {
+        "username": "string",
+        "role": "string"
+    },
+    "dashboard_url": "/dashboard"
+}</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+                <h3>Public Endpoints</h3>
+                <p>These endpoints provide public access to information without requiring authentication.</p>
+                <ul>
+                    <li><strong><code>GET /api/v1/public/next-drawing</code></strong>
+                        <p>Retrieves information about the next Powerball drawing and a featured AI prediction.</p>
+                        <ul>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "next_drawing": {
+        "date": "YYYY-MM-DD",
+        "time": "HH:MM:SS",
+        "timezone": "ET",
+        "datetime_iso": "datetime (ISO 8601)",
+        "countdown_seconds": "integer",
+        "is_today": "boolean"
+    },
+    "featured_prediction": {
+        "predictions": [
+            {
+                "numbers": [int, int, int, int, int],
+                "powerball": int,
+                "confidence_score": float,
+                "method": "string",
+                "generated_at": "datetime (ISO 8601)",
+                "rank": int,
+                "component_scores": { ... },
+                "prediction_id": "string"
+            }
+        ],
+        "total_predictions": int,
+        "method": "string",
+        "generated_at": "datetime (ISO 8601)",
+        "source": "string"
+    },
+    "system_status": "operational",
+    "last_updated": "datetime (ISO 8601)"
+}</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong><code>GET /api/v1/public/recent-results?limit=30</code></strong>
+                        <p>Retrieves recent official Powerball results. No prediction comparisons are included in this public endpoint.</p>
+                        <ul>
+                            <li><strong>Parameters:</strong> <code>limit</code> (integer, default: 30, max: 50)</li>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "results": [
+        {
+            "draw_date": "YYYY-MM-DD",
+            "winning_numbers": [int, int, int, int, int],
+            "powerball": int,
+            "jackpot_amount": "string",
+            "multiplier": int
+        }
+    ],
+    "count": int,
+    "total_available": int,
+    "last_updated": "datetime (ISO 8601)"
+}</code></pre>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong><code>GET /api/v1/public/predictions-performance?limit=10</code></strong>
+                        <p>Retrieves AI predictions with comparison to official results, including prize calculations. This endpoint provides data in a "hybrid grouped" format, showing 5 ADAPTIVE predictions per official result.</p>
+                        <ul>
+                            <li><strong>Parameters:</strong> <code>limit</code> (integer, default: 10, max: 20) - number of recent official results to group predictions by.</li>
+                            <li><strong>Response:</strong>
+                                <pre><code class="language-json">{
+    "prediction_groups": [
+        {
+            "group_id": "string",
+            "official_result": {
+                "draw_date": "YYYY-MM-DD",
+                "winning_numbers": [int, int, int, int, int],
+                "winning_powerball": int,
+                "jackpot_amount": "string"
+            },
+            "predictions": [
+                {
+                    "prediction_id": "string",
+                    "prediction_date": "YYYY-MM-DD",
+                    "prediction_numbers": [int, int, int, int, int],
+                    "prediction_powerball": int,
+                    "winning_numbers": [int, int, int, int, int],
+                    "winning_powerball": int,
+                    "number_matches": [
+                        { "number": int, "position": int, "is_match": boolean }
+                    ],
+                    "powerball_match": boolean,
+                    "total_matches": int,
+                    "prize_amount": float,
+                    "prize_description": "string",
+                    "prize_display": "string",
+                    "has_prize": boolean,
+                    "play_number": int
+                }
+            ],
+            "group_summary": {
+                "total_prize": float,
+                "total_prize_display": "string",
+                "predictions_with_prizes": int,
+                "win_rate_percentage": "string",
+                "avg_matches": "string",
+                "best_result": "string",
+                "total_predictions": int
+            }
+        }
+    ],
+    "count": int,
+    "format": "hybrid_grouped",
+    "summary": {
+        "total_official_results": int,
+        "total_predictions": int,
+        "total_prize_won": float,
+        "total_prize_display": "string",
+        "predictions_with_prizes": int,
+        "overall_win_rate_percentage": float,
+        "average_prize_per_prediction": float,
+        "groups_with_prizes": int
+    },
+    "system_info": {
+        "method": "string",
+        "predictions_per_result": int,
+        "tracking_period": "string",
+        "last_updated": "datetime (ISO 8601)"
+    }
+}</code></pre>
+ 775 |                             </li>
+ 776 |                         </ul>
+ 777 |                     </li>
+ 778 |                 </ul>
+ 779 | 
+ 780 |                 <h3>Prediction Endpoints</h3>
+ 781 |                 <p>These endpoints provide various ways to generate and retrieve lottery predictions.</p>
+ 782 |                 <ul>
+ 783 |                     <li><strong><code>GET /api/v1/predict?deterministic=false</code></strong>
+ 784 |                         <p>Generates and returns a single Powerball prediction using either the traditional (random sampling based on ML probabilities) or deterministic (multi-criteria scoring) method.</p>
+ 785 |                         <ul>
+ 786 |                             <li><strong>Parameters:</strong> <code>deterministic</code> (boolean, default: <code>false</code>)</li>
+ 787 |                             <li><strong>Response (Traditional):</strong>
+ 788 |                                 <pre><code class="language-json">{
+ 789 |     "prediction": [int, int, int, int, int, int],
+ 790 |     "method": "traditional"
+ 791 | }</code></pre>
+ 792 |                             </li>
+ 793 |                             <li><strong>Response (Deterministic):</strong>
+ 794 |                                 <pre><code class="language-json">{
+ 795 |     "prediction": [int, int, int, int, int, int],
+ 796 |     "method": "deterministic",
+ 797 |     "score_total": float,
+ 798 |     "dataset_hash": "string"
+ 799 | }</code></pre>
+ 800 |                             </li>
+ 801 |                         </ul>
+ 802 |                     </li>
+ 803 |                     <li><strong><code>GET /api/v1/predict-multiple?count=1</code></strong>
+ 804 |                         <p>Generates and returns a specified number of Powerball predictions using the traditional method.</p>
+ 805 |                         <ul>
+ 806 |                             <li><strong>Parameters:</strong> <code>count</code> (integer, default: 1, min: 1, max: 10)</li>
+ 807 |                             <li><strong>Response:</strong>
+ 808 |                                 <pre><code class="language-json">{
+ 809 |     "predictions": [
+ 810 |         [int, int, int, int, int, int],
+ 811 |         ...
+ 812 |     ]
+ 813 | }</code></pre>
+ 814 |                             </li>
+ 815 |                         </ul>
+ 816 |                     </li>
+ 817 |                     <li><strong><code>GET /api/v1/predict-deterministic</code></strong>
+ 818 |                         <p>Generates and returns a deterministic Powerball prediction with detailed scoring information. This prediction is saved to the database log.</p>
+ 819 |                         <ul>
+ 820 |                             <li><strong>Response:</strong>
+ 821 |                                 <pre><code class="language-json">{
+ 822 |     "prediction": [int, int, int, int, int, int],
+ 823 |     "score_total": float,
+ 824 |     "score_details": {
+ 825 |         "probability": float,
+ 826 |         "diversity": float,
+ 827 |         "historical": float,
+ 828 |         "risk_adjusted": float,
+ 829 |         "total": float
+ 830 |     },
+ 831 |     "model_version": "string",
+ 832 |     "dataset_hash": "string",
+ 833 |     "timestamp": "datetime (ISO 8601)",
+ 834 |     "method": "deterministic",
+ 835 |     "traceability": {
+ 836 |         "dataset_hash": "string",
+ 837 |         "model_version": "string",
+ 838 |         "timestamp": "datetime (ISO 8601)",
+ 839 |         "candidates_evaluated": int
+ 840 |     }
+ 841 | }</code></pre>
+ 842 |                             </li>
+ 843 |                         </ul>
+ 844 |                     </li>
+ 845 |                     <li><strong><code>GET /api/v1/predict-diverse?num_plays=5</code></strong>
+ 846 |                         <p>Generates multiple diverse high-quality predictions for the next lottery drawing using an intelligent selection algorithm.</p>
+ 847 |                         <ul>
+ 848 |                             <li><strong>Parameters:</strong> <code>num_plays</code> (integer, default: 5, min: 1, max: 10)</li>
+ 849 |                             <li><strong>Response:</strong>
+ 850 |                                 <pre><code class="language-json">{
+ 851 |     "plays": [
+ 852 |         {
+ 853 |             "numbers": [int, int, int, int, int],
+ 854 |             "powerball": int,
+ 855 |             "prediction": [int, int, int, int, int, int],
+ 856 |             "score_total": float,
+ 857 |             "score_details": { ... },
+ 858 |             "play_rank": int,
+ 859 |             "diversity_method": "string"
+ 860 |         }
+ 861 |     ],
+ 862 |     "num_plays": int,
+ 863 |     "method": "diverse_deterministic",
+ 864 |     "model_version": "string",
+ 865 |     "dataset_hash": "string",
+ 866 |     "timestamp": "datetime (ISO 8601)",
+ 867 |     "candidates_evaluated": int,
+ 868 |     "generation_summary": {
+ 869 |         "total_plays": int,
+ 870 |         "score_range": { "highest": float, "lowest": float },
+ 871 |         "diversity_algorithm": "string"
+ 872 |     }
+ 873 | }</code></pre>
+ 874 |                             </li>
+ 875 |                         </ul>
+ 876 |                     </li>
+ 877 |                     <li><strong><code>GET /api/v1/predict-detailed?deterministic=true</code></strong>
+ 878 |                         <p>Generates a prediction with detailed component scores and analysis. Currently, detailed scoring is only available with the deterministic method.</p>
+ 879 |                         <ul>
+ 880 |                             <li><strong>Parameters:</strong> <code>deterministic</code> (boolean, default: <code>true</code>)</li>
+ 881 |                             <li><strong>Response:</strong>
+ 882 |                                 <pre><code class="language-json">{
+ 883 |     "prediction": [int, int, int, int, int, int],
+ 884 |     "method": "deterministic",
+ 885 |     "total_score": float,
+ 886 |     "component_scores": {
+ 887 |         "probability_score": float,
+ 888 |         "diversity_score": float,
+ 889 |         "historical_score": float,
+ 890 |         "risk_adjusted_score": float
+ 891 |     },
+ 892 |     "score_weights": {
+ 893 |         "probability": float,
+ 894 |         "diversity": float,
+ 895 |         "historical": float,
+ 896 |         "risk_adjusted": float
+ 897 |     },
+ 898 |     "traceability": {
+ 899 |         "dataset_hash": "string",
+ 900 |         "model_version": "string",
+ 901 |         "timestamp": "datetime (ISO 8601)",
+ 902 |         "candidates_evaluated": int
+ 903 |     }
+ 904 | }</code></pre>
+ 905 |                             </li>
+ 906 |                         </ul>
+ 907 |                     </li>
+ 908 |                     <li><strong><code>GET /api/v1/compare-methods</code></strong>
+ 909 |                         <p>Compares the traditional and deterministic prediction methods side by side, highlighting their characteristics and a recommendation.</p>
+ 910 |                         <ul>
+ 911 |                             <li><strong>Response:</strong>
+ 912 |                                 <pre><code class="language-json">{
+ 913 |     "comparison": {
+ 914 |         "traditional": {
+ 915 |             "prediction": [int, int, int, int, int, int],
+ 916 |             "method": "string",
+ 917 |             "description": "string",
+ 918 |             "characteristics": ["string"]
+ 919 |         },
+ 920 |         "deterministic": {
+ 921 |             "prediction": [int, int, int, int, int, int],
+ 922 |             "method": "string",
+ 923 |             "description": "string",
+ 924 |             "score_total": float,
+ 925 |             "score_details": { ... },
+ 926 |             "characteristics": ["string"],
+ 927 |             "traceability": { ... }
+ 928 |         }
+ 929 |     },
+ 930 |     "recommendation": "string"
+ 931 | }</code></pre>
+ 932 |                             </li>
+ 933 |                         </ul>
+ 934 |                     </li>
+ 935 |                     <li><strong><code>GET /api/v1/prediction-history?limit=10</code></strong>
+ 936 |                         <p>Returns the history of deterministic predictions stored in the database.</p>
+ 937 |                         <ul>
+ 938 |                             <li><strong>Parameters:</strong> <code>limit</code> (integer, default: 10, min: 1, max: 50)</li>
+ 939 |                             <li><strong>Response:</strong>
+ 940 |                                 <pre><code class="language-json">{
+ 941 |     "history": [
+ 942 |         {
+ 943 |             "id": int,
+ 944 |             "timestamp": "datetime (ISO 8601)",
+ 945 |             "n1": int, "n2": int, "n3": int, "n4": int, "n5": int,
+ 946 |             "powerball": int,
+ 947 |             "score_total": float,
+ 948 |             "model_version": "string",
+ 949 |             "dataset_hash": "string",
+ 950 |             "created_at": "datetime (ISO 8601)"
+ 951 |         }
+ 952 |     ],
+ 953 |     "count": int
+ 954 | }</code></pre>
+ 955 |                             </li>
+ 956 |                         </ul>
+ 957 |                     </li>
+ 958 |                 </ul>
+ 959 | 
+ 960 |                 <h3>Adaptive System Endpoints</h3>
+ 961 |                 <p>These endpoints provide access to the adaptive feedback system's functionalities, including analysis, weight management, and performance tracking.</p>
+ 962 |                 <ul>
+ 963 |                     <li><strong><code>GET /api/v1/adaptive/analysis?days_back=30</code></strong>
+ 964 |                         <p>Provides a comprehensive adaptive analysis of system performance over a specified period.</p>
+ 965 |                         <ul>
+ 966 |                             <li><strong>Parameters:</strong> <code>days_back</code> (integer, default: 30, min: 1, max: 365)</li>
+ 967 |                             <li><strong>Response:</strong>
+ 968 |                                 <pre><code class="language-json">{
+ 969 |     "adaptive_analysis": {
+ 970 |         "analysis_period": "string",
+ 971 |         "timestamp": "datetime (ISO 8601)",
+ 972 |         "performance_summary": { ... },
+ 973 |         "reliable_plays_count": int,
+ 974 |         "top_reliable_plays": [ { ... } ],
+ 975 |         "current_adaptive_weights": { ... },
+ 976 |         "system_status": { ... }
+ 977 |     },
+ 978 |     "system_status": "string"
+ 979 | }</code></pre>
+ 980 |                             </li>
+ 981 |                         </ul>
+ 982 |                     </li>
+ 983 |                     <li><strong><code>GET /api/v1/adaptive/reliable-plays?limit=10&min_score=0.7</code></strong>
+ 984 |                         <p>Returns the most reliable play combinations based on historical performance and a minimum reliability score.</p>
+ 985 |                         <ul>
+ 986 |                             <li><strong>Parameters:</strong> <code>limit</code> (integer, default: 10, min: 1, max: 50), <code>min_score</code> (float, default: 0.7, min: 0.0, max: 1.0)</li>
+ 987 |                             <li><strong>Response:</strong>
+ 988 |                                 <pre><code class="language-json">{
+ 989 |     "reliable_plays": [
+ 990 |         {
+ 991 |             "id": int,
+ 992 |             "numbers": [int, int, int, int, int],
+ 993 |             "powerball": int,
+ 994 |             "reliability_score": float,
+ 995 |             "win_rate": float,
+ 996 |             "avg_score": float,
+ 997 |             "times_generated": int,
+ 998 |             "last_generated": "datetime (ISO 8601)",
+ 999 |             "created_at": "datetime (ISO 8601)"
+1000 |         }
+1001 |     ],
+1002 |     "count": int,
+1003 |     "criteria": { "min_reliability_score": float, "limit": int }
+1004 | }</code></pre>
+1005 |                             </li>
+1006 |                         </ul>
+1007 |                     </li>
+1008 |                     <li><strong><code>GET /api/v1/adaptive/weights</code></strong>
+1009 |                         <p>Returns the currently active adaptive weights configuration used by the scoring system.</p>
+1010 |                         <ul>
+1011 |                             <li><strong>Response:</strong>
+1012 |                                 <pre><code class="language-json">{
+1013 |     "adaptive_weights": {
+1014 |         "weight_set_name": "string",
+1015 |         "weights": {
+1016 |             "probability": float,
+1017 |             "diversity": float,
+1018 |             "historical": float,
+1019 |             "risk_adjusted": float
+1020 |         },
+1021 |         "performance_score": float,
+1022 |         "optimization_algorithm": "string",
+1023 |         "dataset_hash": "string"
+1024 |     },
+1025 |     "status": "string",
+1026 |     "last_updated": "string"
+1027 | }</code></pre>
+1028 |                             </li>
+1029 |                         </ul>
+1020 |                     </li>
+1031 |                     <li><strong><code>POST /api/v1/adaptive/optimize-weights?algorithm=differential_evolution</code></strong>
+1032 |                         <p>Triggers an optimization process for the scoring component weights using a specified algorithm. Requires sufficient historical performance data.</p>
+1033 |                         <ul>
+1034 |                             <li><strong>Parameters:</strong> <code>algorithm</code> (string, default: "differential_evolution", options: "differential_evolution", "scipy_minimize", "grid_search")</li>
+1035 |                             <li><strong>Response:</strong>
+1036 |                                 <pre><code class="language-json">{
+1037 |     "optimization_result": "success",
+1038 |     "algorithm_used": "string",
+1039 |     "optimized_weights": { ... },
+1040 |     "previous_weights": { ... },
+1041 |     "performance_improvement": { ... },
+1042 |     "weights_id": int,
+1043 |     "weight_set_name": "string"
+1044 | }</code></pre>
+1045 |                             </li>
+1046 |                         </ul>
+1047 |                     </li>
+1048 |                     <li><strong><code>GET /api/v1/adaptive/performance?days_back=30</code></strong>
+1049 |                         <p>Returns detailed performance analytics for the adaptive system, including win rates, average matches, and prize distribution.</p>
+1050 |                         <ul>
+1051 |                             <li><strong>Parameters:</strong> <code>days_back</code> (integer, default: 30, min: 1, max: 365)</li>
+1052 |                             <li><strong>Response:</strong>
+1053 |                                 <pre><code class="language-json">{
+1054 |     "performance_analytics": {
+1055 |         "period_days": int,
+1056 |         "total_predictions": int,
+1057 |         "avg_accuracy": float,
+1058 |         "avg_main_matches": float,
+1059 |         "avg_pb_matches": float,
+1060 |         "winning_predictions": int,
+1061 |         "win_rate": float,
+1062 |         "prize_distribution": { "string": int },
+1063 |         "accuracy_trends": { "string": float }
+1064 |     },
+1065 |     "analysis_period": "string",
+1066 |     "timestamp": "datetime (ISO 8601)"
+1067 | }</code></pre>
+1068 |                             </li>
+1069 |                         </ul>
+1070 |                     </li>
+1071 |                     <li><strong><code>POST /api/v1/adaptive/validate?enable_learning=true</code></strong>
+1072 |                         <p>Runs adaptive validation, comparing predictions against actual results and optionally feeding back into the learning system to refine models.</p>
+1073 |                         <ul>
+1074 |                             <li><strong>Parameters:</strong> <code>enable_learning</code> (boolean, default: <code>true</code>)</li>
+1075 |                             <li><strong>Response:</strong>
+1076 |                                 <pre><code class="language-json">{
+1077 |     "validation_result": "success",
+1078 |     "csv_path": "string",
+1079 |     "summary": {
+1080 |         "total_predictions": int,
+1081 |         "winning_predictions": int,
+1082 |         "win_rate_percent": float,
+1083 |         "learning_enabled": boolean
+1084 |     },
+1085 |     "adaptive_learning": boolean
+1086 | }</code></pre>
+1087 |                             </li>
+1088 |                         </ul>
+1089 |                     </li>
+1090 |                     <li><strong><code>GET /api/v1/adaptive/predict</code></strong>
+1091 |                         <p>Generates a prediction using the adaptive scoring system with the current optimized weights.</p>
+1092 |                         <ul>
+1093 |                             <li><strong>Response:</strong>
+1094 |                                 <pre><code class="language-json">{
+1095 |     "prediction": [int, int, int, int, int, int],
+1096 |     "method": "adaptive_deterministic",
+1097 |     "adaptive_score": float,
+1098 |     "component_scores": {
+1099 |         "probability": float,
+1100 |         "diversity": float,
+1101 |         "historical": float,
+1102 |         "risk_adjusted": float
+1103 |     },
+1104 |     "weights_used": { ... },
+1105 |     "adaptive_mode": boolean,
+1106 |     "traceability": { ... }
+1107 | }</code></pre>
+1108 |                             </li>
+1109 |                         </ul>
+1110 |                     </li>
+1111 |                 </ul>
+1112 | 
+1113 |                 <h3>Pipeline Control Endpoints</h3>
+1114 |                 <p>These endpoints allow monitoring and manual control of the SHIOL+ pipeline execution.</p>
+1115 |                 <ul>
+1116 |                     <li><strong><code>GET /api/v1/pipeline/status</code></strong>
+1117 |                         <p>Returns the current pipeline status, including execution history, system health metrics, and details about recent runs.</p>
+1118 |                         <ul>
+1119 |                             <li><strong>Response:</strong>
+1120 |                                 <pre><code class="language-json">{
+1121 |     "pipeline_status": {
+1122 |         "last_execution": { ... },
+1123 |         "current_status": "string",
+1124 |         "next_scheduled_execution": "datetime (ISO 8601)",
+1125 |         "recent_execution_history": [ { ... } ],
+1126 |         "system_health": {
+1127 |             "cpu_usage_percent": float,
+1128 |             "memory_usage_percent": float,
+1129 |             "memory_available_gb": float,
+1130 |             "disk_usage_percent": float,
+1131 |             "disk_free_gb": float
+1132 |         }
+1133 |     },
+1134 |     "orchestrator_status": { ... },
+1135 |     "generated_plays_last_run": [ { ... } ],
+1136 |     "timestamp": "datetime (ISO 8601)"
+1137 | }</code></pre>
+1138 |                             </li>
+1139 |                         </ul>
+1140 |                     </li>
+1141 |                     <li><strong><code>POST /api/v1/pipeline/trigger?num_predictions=1&force=false</code></strong>
+1142 |                         <p>Manually triggers pipeline execution. Runs asynchronously in the background and returns an execution ID for tracking.</p>
+1143 |                         <ul>
+1144 |                             <li><strong>Parameters:</strong> <code>num_predictions</code> (integer, default: 1, min: 1, max: 10), <code>steps</code> (string, optional, comma-separated list of steps), <code>force</code> (boolean, default: <code>false</code> - force execution even if another pipeline is running).</li>
+1145 |                             <li><strong>Response:</strong>
+1146 |                                 <pre><code class="language-json">{
+1147 |     "execution_id": "string",
+1148 |     "status": "started",
+1149 |     "message": "string",
+1150 |     "parameters": { ... },
+1151 |     "tracking_url": "string",
+1152 |     "timestamp": "datetime (ISO 8601)"
+1153 | }</code></pre>
+1154 |                             </li>
+1155 |                         </ul>
+1156 |                     </li>
+1157 |                     <li><strong><code>GET /api/v1/pipeline/logs?level=INFO&limit=100</code></strong>
+1158 |                         <p>Retrieves recent pipeline logs with filtering and pagination support.</p>
+1159 |                         <ul>
+1160 |                             <li><strong>Parameters:</strong> <code>level</code> (string, optional, e.g., "INFO", "WARNING", "ERROR"), <code>start_date</code> (string, optional, YYYY-MM-DD), <code>end_date</code> (string, optional, YYYY-MM-DD), <code>limit</code> (integer, default: 100, max: 1000), <code>offset</code> (integer, default: 0).</li>
+1161 |                             <li><strong>Response:</strong>
+1162 |                                 <pre><code class="language-json">{
+1163 |     "logs": [
+1164 |         {
+1165 |             "timestamp": "string",
+1166 |             "level": "string",
+1167 |             "location": "string",
+1168 |             "message": "string",
+1169 |             "raw_line": "string"
+1170 |         }
+1171 |     ],
+1172 |     "total_count": int,
+1173 |     "returned_count": int,
+1174 |     "filters": { ... },
+1175 |     "pagination": { ... },
+1176 |     "timestamp": "datetime (ISO 8601)"
+1177 | }</code></pre>
+1178 |                             </li>
+1179 |                         </ul>
+1180 |                     </li>
+1181 |                     <li><strong><code>GET /api/v1/pipeline/health</code></strong>
+1182 |                         <p>Performs a comprehensive system health check, validating all pipeline components (database, model, configuration, resources).</p>
+1183 |                         <ul>
+1184 |                             <li><strong>Response:</strong>
+1185 |                                 <pre><code class="language-json">{
+1186 |     "overall_status": "string",
+1187 |     "timestamp": "datetime (ISO 8601)",
+1188 |     "checks": {
+1189 |         "pipeline_orchestrator": { "status": "string", "message": "string", "details": { ... } },
+1190 |         "database": { "status": "string", "message": "string", "details": { ... } },
+1191 |         "model": { "status": "string", "message": "string", "details": { ... } },
+1192 |         "configuration": { "status": "string", "message": "string", "details": { ... } },
+1193 |         "system_resources": { "status": "string", "message": "string", "details": { ... } }
+1194 |     }
+1195 | }</code></pre>
+1196 |                             </li>
+1197 |                         </ul>
+1198 |                     </li>
+1199 |                 </ul>
+1200 |             </section>
+1201 | 
+1202 |             <section id="technical-details">
+1203 |                 <h2>Technical Details</h2>
+1204 |                 <p>This section delves into the core algorithms, machine learning models, and key components powering SHIOL+.</p>
+1205 | 
+1206 |                 <h3>Core Algorithms and Models</h3>
+1207 |                 <ul>
+1208 |                     <li><strong>XGBoost (<code>src/predictor.py</code>):</strong>
+1209 |                         <p>A highly efficient and flexible gradient boosting framework. It is used as the primary machine learning model within a <code>MultiOutputClassifier</code> to predict the probability of each number appearing in the next draw. The <code>ModelTrainer</code> class handles its lifecycle, including creating a multi-label target variable, training, evaluation (using AUC and Log Loss), and saving/loading the model.</p>
+1210 |                     </li>
+1211 |                     <li><strong>Variational Autoencoders (VAE) (<code>src/generative_predictor.py</code>):</strong>
+1212 |                         <p>A type of generative model used to generate number combinations. The <code>VariationalAutoencoder</code> class builds an encoder-decoder architecture to learn the latent distribution of historical data, allowing for the generation of new, similar combinations.</p>
+1213 |                     </li>
+1214 |                     <li><strong>Recurrent Neural Networks (RNN) (<code>src/rnn_predictor.py</code>):</strong>
+1215 |                         <p>Employed for sequential data analysis, such as time series forecasting. The <code>RNNPredictor</code> uses an LSTM-based model to capture temporal patterns in the lottery draw sequences and generate predictions.</p>
+1216 |                     </li>
+1217 |                 </ul>
+1218 | 
+1219 |                 <h3>Scoring Systems</h3>
+1220 |                 <ul>
+1221 |                     <li><strong>Multi-Criteria Scoring (<code>src/intelligent_generator.py</code> - <code>PlayScorer</code>):</strong>
+1222 |                         <p>A robust system to evaluate number combinations based on multiple weighted criteria, ensuring a holistic assessment beyond single metrics. It combines four main components:</p>
+1223 |                         <ul>
+1224 |                             <li><strong>Probability Score (40%):</strong> Based on the probabilities predicted by the ML model.</li>
+1225 |                             <li><strong>Diversity Score (25%):</strong> Evaluates the balance of even/odd numbers, range distribution, spread, and consecutive numbers.</li>
+1226 |                             <li><strong>Historical Score (20%):</strong> Considers historical frequency and recency of number appearances.</li>
+1227 |                             <li><strong>Risk-Adjusted Score (15%):</strong> Penalizes combinations with "obvious" or popular patterns (e.g., long sequences, common multiples, extreme sums).</li>
+1228 |                         </ul>
+1229 |                     </li>
+1230 |                     <li><strong>Adaptive Scoring (<code>src/adaptive_feedback.py</code> - <code>AdaptivePlayScorer</code>):</strong>
+1231 |                         <p>Extends the <code>PlayScorer</code> by using dynamically optimized weights instead of fixed ones. These weights are continuously refined based on the system's past performance, allowing for adaptive learning and improved accuracy over time.</p>
+1232 |                     </li>
+1233 |                 </ul>
+1234 | 
+1235 |                 <h3>Key Components and Modules</h3>
+1236 |                 <ul>
+1237 |                     <li><strong>Feature Engineering (<code>src/intelligent_generator.py</code> - <code>FeatureEngineer</code>):</strong>
+1238 |                         <p>Responsible for transforming raw historical data into a rich set of features suitable for machine learning models. This includes basic features (parity, sum, spread, consecutive counts), temporal features (recency, time weights, trends, seasonal patterns), and geometric features (Euclidean distance to recent draws or centroids).</p>
+1239 |                     </li>
+1240 |                     <li><strong>Deterministic Prediction (<code>src/intelligent_generator.py</code> - <code>DeterministicGenerator</code>):</strong>
+1241 |                         <p>Generates highly optimized and reproducible predictions by evaluating numerous candidate combinations using the multi-criteria scoring system. It ensures that for the same historical dataset and model, the same top prediction is always generated. It can also generate diverse sets of high-quality predictions.</p>
+1242 |                     </li>
+1243 |                     <li><strong>Adaptive Feedback System (<code>src/adaptive_feedback.py</code>):</strong>
+1244 |                         <p>The core learning engine that processes prediction results and continuously optimizes the system. It comprises:</p>
+1245 |                         <ul>
+1246 |                             <li><strong><code>AdaptiveValidator</code>:</strong> Extends the basic validation to track prediction performance and feed results back into the learning system.</li>
+1247 |                             <li><strong><code>ModelFeedbackEngine</code>:</strong> Orchestrates the adaptive learning loop, processing results, analyzing patterns, and triggering weight optimization.</li>
+1248 |                             <li><strong><code>WeightOptimizer</code>:</strong> Optimizes the scoring component weights using various algorithms like differential evolution, SciPy minimize, or grid search, based on historical performance data.</li>
+1249 |                             <li><strong><code>PatternAnalyzer</code>:</strong> Identifies and analyzes winning patterns (e.g., consecutive numbers, parity distribution, sum patterns) in lottery data.</li>
+1250 |                             <li><strong><code>ReliablePlayTracker</code>:</strong> Monitors and tracks high-performing play combinations based on their historical reliability scores.</li>
+1251 |                         </ul>
+1252 |                     </li>
+1253 |                     <li><strong>Evaluator (<code>src/evaluator.py</code>):</strong>
+1254 |                         <p>Provides comprehensive evaluation capabilities for lottery plays. It determines prize tiers, runs backtests against historical data to calculate ROI and win distributions, and assesses syndicate-specific metrics like combination coverage, number pattern diversity, expected value, and budget efficiency.</p>
+1255 |                     </li>
+1256 |                     <li><strong>Scheduler (<code>src/scheduler.py</code>):</strong>
+1257 |                         <p>Manages the automatic execution of the SHIOL+ pipeline. The <code>WeeklyScheduler</code> integrates with APScheduler to provide weekly scheduling, timezone support, manual schedule management, and robust error handling with retry logic.</p>
+1258 |                     </li>
+1259 |                 </ul>
+1260 |             </section>
+1261 | 
+1262 |             <section id="database-schema">
+1263 |                 <h2>Database Schema</h2>
+1264 |                 <p>The SHIOL+ system utilizes a SQLite database (<code>data/shiolplus.db</code>) for data persistence. The schema is designed to store essential information, including historical lottery draws, generated predictions, performance tracking, adaptive weights, pattern analysis, reliable play combinations, and user authentication details. The database interactions are centralized and managed by <code>src/database.py</code>.</p>
+1265 | 
+1266 |                 <h3>Key Tables and Relationships</h3>
+1267 |                 <p>The database schema is composed of several interconnected tables:</p>
+1268 |                 <table>
+1269 |                     <thead>
+1270 |                         <tr>
+1271 |                             <th>Table Name</th>
+1272 |                             <th>Description</th>
+1273 |                             <th>Key Columns</th>
+1274 |                             <th>Relationships</th>
+1275 |                         </tr>
+1276 |                     </thead>
+1277 |                     <tbody>
+1278 |                         <tr>
+1279 |                             <td><code>powerball_draws</code></td>
+1280 |                             <td>Stores historical Powerball draw results.</td>
+1281 |                             <td><code>draw_date</code> (PK), <code>n1</code>, <code>n2</code>, <code>n3</code>, <code>n4</code>, <code>n5</code>, <code>pb</code></td>
+1282 |                             <td></td>
+1283 |                         </tr>
+1284 |                         <tr>
+1285 |                             <td><code>predictions_log</code></td>
+1286 |                             <td>Records each prediction generated by the system. Detailed prediction data is stored in external JSON files, with paths referenced here.</td>
+1287 |                             <td><code>id</code> (PK), <code>timestamp</code>, <code>n1</code>, <code>n2</code>, <code>n3</code>, <code>n4</code>, <code>n5</code>, <code>powerball</code>, <code>score_total</code>, <code>model_version</code>, <code>dataset_hash</code>, <code>json_details_path</code>, <code>created_at</code></td>
+1288 |                             <td></td>
+1289 |                         </tr>
+1290 |                         <tr>
+1291 |                             <td><code>performance_tracking</code></td>
+1292 |                             <td>Compares predictions with actual draw results for performance analysis.</td>
+1293 |                             <td><code>id</code> (PK), <code>prediction_id</code> (FK), <code>draw_date</code>, <code>actual_n1</code>, <code>actual_n2</code>, <code>actual_n3</code>, <code>actual_n4</code>, <code>actual_n5</code>, <code>actual_pb</code>, <code>matches_main</code>, <code>matches_pb</code>, <code>prize_tier</code>, <code>score_accuracy</code>, <code>component_accuracy</code>, <code>created_at</code></td>
+1294 |                             <td><code>prediction_id</code> references <code>predictions_log.id</code></td>
+1295 |                         </tr>
+1296 |                         <tr>
+1297 |                             <td><code>adaptive_weights</code></td>
+1298 |                             <td>Stores different sets of adaptive weights used by the scoring system, along with their performance scores and optimization details.</td>
+1299 |                             <td><code>id</code> (PK), <code>weight_set_name</code>, <code>probability_weight</code>, <code>diversity_weight</code>, <code>historical_weight</code>, <code>risk_adjusted_weight</code>, <code>performance_score</code>, <code>optimization_algorithm</code>, <code>dataset_hash</code>, <code>is_active</code>, <code>created_at</code>, <code>updated_at</code></td>
+1300 |                             <td></td>
+1301 |                         </tr>
+1302 |                         <tr>
+1303 |                             <td><code>pattern_analysis</code></td>
+1304 |                             <td>Records identified patterns in lottery data, including their success rates and confidence scores.</td>
+1305 |                             <td><code>id</code> (PK), <code>pattern_type</code>, <code>pattern_description</code>, <code>pattern_data</code>, <code>success_rate</code>, <code>frequency</code>, <code>confidence_score</code>, <code>date_range_start</code>, <code>date_range_end</code>, <code>created_at</code></td>
+1306 |                             <td></td>
+1307 |                         </tr>
+1308 |                         <tr>
+1309 |                             <td><code>reliable_plays</code></td>
+1310 |                             <td>Monitors and tracks high-performing play combinations based on their historical reliability.</td>
+1311 |                             <td><code>id</code> (PK), <code>n1</code>, <code>n2</code>, <code>n3</code>, <code>n4</code>, <code>n5</code>, <code>pb</code>, <code>reliability_score</code>, <code>performance_history</code>, <code>win_rate</code>, <code>avg_score</code>, <code>times_generated</code>, <code>last_generated</code>, <code>created_at</code>, <code>updated_at</code></td>
+1312 |                             <td></td>
+1313 |                         </tr>
+1314 |                         <tr>
+1315 |                             <td><code>model_feedback</code></td>
+1316 |                             <td>Logs feedback related to model adjustments and their impact on performance.</td>
+1317 |                             <td><code>id</code> (PK), <code>feedback_type</code>, <code>component_name</code>, <code>original_value</code>, <code>adjusted_value</code>, <code>adjustment_reason</code>, <code>performance_impact</code>, <code>dataset_hash</code>, <code>model_version</code>, <code>is_applied</code>, <code>created_at</code>, <code>applied_at</code></td>
+1318 |                             <td></td>
+1319 |                         </tr>
+1320 |                         <tr>
+1321 |                             <td><code>users</code></td>
+1322 |                             <td>Stores user authentication details, including hashed passwords and roles.</td>
+1323 |                             <td><code>id</code> (PK), <code>username</code>, <code>password_hash</code>, <code>email</code>, <code>role</code>, <code>is_active</code>, <code>created_at</code>, <code>last_login</code>, <code>subscription_type</code>, <code>subscription_expires</code>, <code>api_key</code>, <code>rate_limit_per_hour</code></td>
+1324 |                             <td></td>
+1325 |                         </tr>
+1326 |                         <tr>
+1327 |                             <td><code>user_sessions</code></td>
+1328 |                             <td>Manages active user sessions with secure tokens.</td>
+1329 |                             <td><code>id</code> (PK), <code>user_id</code> (FK), <code>session_token</code>, <code>expires_at</code>, <code>created_at</code>, <code>ip_address</code>, <code>user_agent</code></td>
+1330 |                             <td><code>user_id</code> references <code>users.id</code></td>
+1331 |                         </tr>
+1332 |                     </tbody>
+1333 |                 </table>
+1334 |             </section>
+1335 | 
+1336 |             <section id="configuration-guide">
+1337 |                 <h2>Configuration Guide</h2>
+1338 |                 <p>SHIOL+ is highly configurable through the <code>config/config.ini</code> file, which centralizes the system's parameters. Additionally, some dynamic settings can be stored and managed within the database.</p>
+1339 | 
+1340 |                 <h3>Key Configuration Sections in <code>config/config.ini</code></h3>
+1341 |                 <p>This file is crucial for setting up various system parameters, including file paths, model hyperparameters, and pipeline execution settings. Below are the main sections and key parameters:</p>
+1342 | 
+1343 |                 <h4><code>[paths]</code></h4>
+1344 |                 <p>Defines paths to essential files and directories.</p>
+1345 |                 <ul>
+1346 |                     <li><code>db_file</code>: Path to the SQLite database file (e.g., <code>data/shiolplus.db</code>).</li>
+1347 |                     <li><code>log_file</code>: Path for system logs (e.g., <code>logs/shiolplus.log</code>).</li>
+1348 |                     <li><code>model_file</code>: Path to the saved machine learning model (e.g., <code>models/shiolplus.pkl</code>).</li>
+1349 |                     <li><code>personal_predictions_file</code>: Output path for personal predictions.</li>
+1350 |                     <li><code>syndicate_predictions_file</code>: Output path for syndicate predictions.</li>
+1351 |                 </ul>
+1352 | 
+1353 |                 <h4><code>[model_params]</code></h4>
+1354 |                 <p>Contains hyperparameters for model training.</p>
+1355 |                 <ul>
+1356 |                     <li><code>n_estimators</code>: Number of boosting rounds or trees for models like XGBoost.</li>
+1357 |                     <li><code>test_size</code>: Proportion of the dataset to include in the test split (e.g., <code>0.2</code> for 20%).</li>
+1358 |                     <li><code>random_state</code>: Seed for random number generation for reproducibility.</li>
+1359 |                 </ul>
+1360 | 
+1361 |                 <h4><code>[Simulation]</code></h4>
+1362 |                 <p>Parameters related to simulation runs.</p>
+1363 |                 <ul>
+1364 |                     <li><code>plays_per_draw</code>: Number of plays to generate per draw in simulations.</li>
+1365 |                 </ul>
+1366 | 
+1367 |                 <h4><code>[Evolutionary]</code></h4>
+1368 |                 <p>Parameters for evolutionary algorithms, often used in optimization.</p>
+1369 |                 <ul>
+1370 |                     <li><code>num_generations</code>: Number of generations for the evolutionary process.</li>
+1371 |                     <li><code>mutation_rate</code>: Probability of mutation in genetic algorithms.</li>
+1372 |                     <li><code>tournament_size</code>: Size of the tournament selection in genetic algorithms.</li>
+1373 |                     <li><code>objective_weights</code>: Weights for multi-objective optimization (e.g., <code>likeliness_score=0.4,diversity_score=0.3</code>).</li>
+1374 |                     <li><code>mandatory_numbers</code>: Comma-separated list of numbers to include in plays.</li>
+1375 |                     <li><code>max_plays</code>: Maximum number of plays in a syndicate.</li>
+1376 |                     <li><code>budget</code>: Budget constraint in dollars.</li>
+1377 |                 </ul>
+1378 | 
+1379 |                 <h4><code>[temporal_analysis]</code></h4>
+1380 |                 <p>Settings for temporal feature engineering.</p>
+1381 |                 <ul>
+1382 |                     <li><code>time_decay_function</code>: Function for time decay (e.g., <code>exponential</code>, <code>linear</code>, <code>inverse_square</code>).</li>
+1383 |                     <li><code>time_decay_rate</code>: Rate of decay for older data importance.</li>
+1384 |                     <li><code>min_weight_percent</code>: Minimum weight for the oldest draw as a percentage of the most recent.</li>
+1385 |                     <li><code>moving_window_size</code>: Size of the moving window in number of draws for trend detection.</li>
+1386 |                     <li><code>num_windows</code>: Number of windows to analyze for trend detection.</li>
+1387 |                     <li><code>seasonality_period</code>: Period to check for seasonality in days (e.g., <code>7</code> for weekly).</li>
+1388 |                     <li><code>seasonality_threshold</code>: Minimum correlation to consider a seasonal pattern.</li>
+1389 |                 </ul>
+1390 | 
+1391 |                 <h4><code>[cli_defaults]</code></h4>
+1392 |                 <p>Default values for Command Line Interface arguments.</p>
+1393 |                 <ul>
+1394 |                     <li><code>count</code>: Default number of plays to generate (e.g., <code>5</code>).</li>
+1395 |                 </ul>
+1396 | 
+1397 |                 <h4><code>[pipeline]</code></h4>
+1398 |                 <p>Comprehensive settings for the automated pipeline execution, scheduling, and notifications.</p>
+1399 |                 <ul>
+1400 |                     <li><code>default_predictions_count</code>: Default number of predictions to generate during a pipeline run.</li>
+1401 |                     <li><code>execution_schedule</code>: Defines the schedule (e.g., <code>weekly</code>).</li>
+1402 |                     <li><code>auto_execution_enabled</code>: Enable or disable automatic pipeline execution (<code>true</code>/<code>false</code>).</li>
+1403 |                     <li><code>pipeline_timeout_seconds</code>: Maximum allowed time for a pipeline execution before it's terminated.</li>
+1404 |                     <li><code>max_concurrent_pipelines</code>: Maximum number of pipelines that can run simultaneously.</li>
+1405 |                     <li><code>smtp_server</code>, <code>smtp_port</code>, <code>smtp_use_tls</code>, <code>smtp_username</code>, <code>smtp_password</code>: SMTP settings for email notifications.</li>
+1406 |                     <li><code>notification_recipients</code>: Comma-separated list of email addresses for notifications.</li>
+1407 |                     <li><code>notification_levels</code>: Types of notifications to send (e.g., <code>error,warning</code>).</li>
+1408 |                     <li><code>generate_reports</code>: Enable or disable report generation.</li>
+1409 |                     <li><code>report_format</code>: Format of generated reports (e.g., <code>html,csv</code>).</li>
+1410 |                     <li><code>report_retention_days</code>: How long to retain generated reports.</li>
+1411 |                     <li><code>weekly_execution_day</code>: Day of the week for weekly execution (0=Monday, 6=Sunday).</li>
+1412 |                     <li><code>execution_time</code>: Time of day for execution (24-hour format HH:MM).</li>
+1413 |                     <li><code>timezone</code>: Timezone for scheduling (e.g., <code>America/New_York</code>).</li>
+1414 |                     <li><code>max_retry_attempts</code>: Number of retry attempts on pipeline failure.</li>
+1415 |                     <li><code>retry_delay_minutes</code>: Initial delay in minutes before retrying a failed pipeline.</li>
+1416 |                     <li><code>retry_backoff_multiplier</code>: Multiplier for exponential backoff in retries.</li>
+1417 |                     <li><code>pipeline_log_level</code>: Logging level for the pipeline (e.g., <code>INFO</code>, <code>DEBUG</code>).</li>
+1418 |                     <li><code>log_retention_days</code>: How long to retain log files.</li>
+1419 |                     <li><code>collect_performance_metrics</code>: Enable or disable collection of performance metrics.</li>
+1420 |                     <li><code>metrics_retention_days</code>: How long to retain performance metrics.</li>
+1421 |                     <li><code>max_log_file_size_mb</code>: Maximum size of log files before rotation.</li>
+1422 |                     <li><code>max_log_files</code>: Maximum number of rotated log files to keep.</li>
+1423 |                     <li><code>step_max_retry_attempts</code>: Maximum retry attempts for individual pipeline steps.</li>
+1424 |                     <li><code>consecutive_failure_threshold</code>: Number of consecutive failures before triggering alerts.</li>
+1425 |                     <li><code>failure_rate_threshold_percent</code>: Percentage of failures over a period to trigger alerts.</li>
+1426 |                     <li><code>recovery_strategy_on_timeout</code>: Strategy to apply on pipeline timeout (e.g., <code>restart</code>, <code>skip</code>, <code>abort</code>).</li>
+1427 |                     <li><code>recovery_strategy_on_error</code>: Strategy to apply on pipeline error.</li>
+1428 |                     <li><code>recovery_strategy_on_critical</code>: Strategy to apply on critical pipeline failure.</li>
+1429 |                     <li><code>circuit_breaker_enabled</code>: Enable or disable the circuit breaker pattern.</li>
+1430 |                     <li><code>circuit_breaker_failure_threshold</code>: Number of failures to trip the circuit breaker.</li>
+1431 |                     <li><code>circuit_breaker_recovery_timeout_minutes</code>: Time in minutes before attempting to close the circuit breaker.</li>
+1432 |                 </ul>
+1433 |             </section>
+1434 | 
+1435 |             <section id="security-considerations">
+1436 |                 <h2>Security Considerations</h2>
+1437 |                 <p>Based on a recent technical audit, several critical security aspects have been identified and require immediate attention to ensure the robustness and integrity of the SHIOL+ system.</p>
+1438 | 
+1439 |                 <h3>Key Security Findings and Mitigations</h3>
+1440 |                 <ul>
+1441 |                     <li><strong>Hardcoded Admin Credentials (Critical 🚨):</strong>
+1442 |                         <p><strong>Issue:</strong> The default administrator password is hardcoded in <code>src/auth.py</code>. This is a severe vulnerability, as exposure of the source code would grant immediate administrative access.</p>
+1443 |                         <p><strong>Resolution/Mitigation:</strong> Immediately remove hardcoded credentials. Initial credentials should be loaded from environment variables. For production, an initialization script should prompt for admin account creation on first boot.</p>
+1444 |                         <pre><code class="language-python"># VULNERABLE in src/auth.py:122
+1445 | default_password = "shiol2024!"
+1446 | 
+1447 | # RECOMMENDED
+1448 | import os
+1449 | default_password = os.environ.get("DEFAULT_ADMIN_PASSWORD", "unsecure-default-for-dev-only")</code></pre>
+1450 |                     </li>
+1451 |                     <li><strong>Overly Permissive CORS Configuration (Critical 🚨):</strong>
+1452 |                         <p><strong>Issue:</strong> The API is configured with <code>allow_origins=["*"]</code>, allowing requests from any domain. This bypasses the Same-Origin Policy and exposes the API to Cross-Site Request Forgery (CSRF) attacks, especially when combined with cookie-based authentication.</p>
+1453 |                         <p><strong>Resolution/Mitigation:</strong> Restrict allowed origins to an explicit whitelist of trusted frontend domains. The wildcard <code>*</code> should never be used in production.</p>
+1454 |                     </li>
+1455 |                     <li><strong>Insecure Session Token Storage (High ⚠️):</strong>
+1456 |                         <p><strong>Issue:</strong> Session tokens are stored in <code>localStorage</code> (if "Remember Me" is checked) in the frontend. <code>localStorage</code> is vulnerable to Cross-Site Scripting (XSS) attacks, allowing attackers to steal tokens and hijack user sessions.</p>
+1457 |                         <p><strong>Resolution/Mitigation:</strong> The backend should set tokens in an <code>HttpOnly</code>, <code>Secure</code>, and <code>SameSite=Strict</code> cookie. This prevents JavaScript access to the token, mitigating XSS-based session hijacking.</p>
+1458 |                     </li>
+1459 |                     <li><strong>Absence of Fundamental HTTP Security Headers (High ⚠️):</strong>
+1460 |                         <p><strong>Issue:</strong> The application does not send important HTTP security headers, leaving the frontend vulnerable to clickjacking and content sniffing.</p>
+1461 |                         <p><strong>Resolution/Mitigation:</strong> Implement a middleware in FastAPI to add headers such as <code>Content-Security-Policy</code> (for XSS prevention), <code>Strict-Transport-Security</code> (to enforce HTTPS), <code>X-Content-Type-Options: nosniff</code>, and <code>X-Frame-Options: DENY</code>.</p>
+1462 |                     </li>
+1463 |                     <li><strong>Dependency Management Vulnerabilities (High ⚠️):</strong>
+1464 |                         <p><strong>Issue:</strong> Dependencies in <code>requirements.txt</code> are not pinned to exact versions, leading to non-reproducible builds and potential security risks from unexpected library updates.</p>
+1465 |                         <p><strong>Resolution/Mitigation:</strong> Use <code>pip freeze > requirements.txt</code> to fix exact versions. For more robust management, consider migrating to tools like Poetry.</p>
+1466 |                     </li>
+1467 |                     <li><strong>Absence of a <code>.gitignore</code> File (High ⚠️):</strong>
+1468 |                         <p><strong>Issue:</strong> The project lacks a <code>.gitignore</code> file, creating a risk of sensitive files (e.g., <code>.env</code> with secrets), local databases (<code>shiolplus.db</code>), and build artifacts being accidentally committed to version control.</p>
+1469 |                         <p><strong>Resolution/Mitigation:</strong> Create a comprehensive <code>.gitignore</code> file immediately, using standard templates for Python and explicitly adding project-specific paths and files that should not be versioned.</p>
+1470 |                     </li>
+1471 |                     <li><strong>Generic Error Handling (High ⚠️):</strong>
+1472 |                         <p><strong>Issue:</strong> Widespread use of generic <code>try...except Exception</code> blocks "silences" all types of errors, making debugging and monitoring difficult and potentially masking critical issues.</p>
+1473 |                         <p><strong>Resolution/Mitigation:</strong> Capture specific exceptions (e.g., <code>ValueError</code>, <code>KeyError</code>). Implement custom FastAPI exception handlers to convert expected business errors into clear HTTP 4xx responses, allowing unexpected errors to surface with detailed tracebacks in logs.</p>
+1474 |                     </li>
+1475 |                     <li><strong>Missing Indexes in Key Database Columns (High ⚠️):</strong>
+1476 |                         <p><strong>Issue:</strong> Database tables like <code>predictions_log</code> and <code>performance_tracking</code> lack indexes on frequently queried columns (e.g., <code>created_at</code>, <code>prediction_id</code>, <code>draw_date</code>). This will severely degrade performance as data grows.</p>
+1477 |                         <p><strong>Resolution/Mitigation:</strong> Add indexes to these columns to accelerate read operations. This is a high-impact, low-effort optimization.</p>
+1478 |                         <pre><code class="language-sql">-- Example SQL statements to create indexes
+1479 | CREATE INDEX idx_predictions_log_created_at ON predictions_log (created_at DESC);
+1480 | CREATE INDEX idx_performance_tracking_prediction_id ON performance_tracking (prediction_id);</code></pre>
+1481 |                     </li>
+1482 |                 </ul>
+1483 |             </section>
+1484 | 
+1485 |             <section id="troubleshooting-faq">
+1486 |                 <h2>Troubleshooting & FAQ</h2>
+1487 |                 <p>This section provides solutions to common issues and answers frequently asked questions to help users effectively manage and resolve problems with SHIOL+.</p>
+1488 | 
+1489 |                 <h3>Common Issues and Solutions</h3>
+1490 |                 <ul>
+1491 |                     <li><strong>Issue: "Database is locked"</strong>
+1492 |                         <p><strong>Cause:</strong> Another instance of SHIOL+ is running or didn't shut down properly, causing a lock on the SQLite database file.</p>
+1493 |                         <p><strong>Solution:</strong> Check for running Python processes related to SHIOL+ and terminate them. On Linux/macOS, use <code>ps aux | grep python</code> and then <code>kill <process_id></code>. On Windows, use Task Manager. Then, restart the system.</p>
+1494 |                     </li>
+1495 |                     <li><strong>Issue: "Model not found"</strong>
+1496 |                         <p><strong>Cause:</strong> The machine learning model has not been trained or the model file is missing/corrupted.</p>
+1497 |                         <p><strong>Solution:</strong> Run the full pipeline using <code>python main.py</code>, which includes a model training step. Alternatively, train the model manually via the CLI: <code>python src/cli.py train</code>.</p>
+1498 |                     </li>
+1499 |                     <li><strong>Issue: "Permission denied" errors</strong>
+1500 |                         <p><strong>Cause:</strong> Insufficient file system permissions to read/write to necessary directories (e.g., <code>logs/</code>, <code>data/</code>, <code>models/</code>, <code>reports/</code>).</p>
+1501 |                         <p><strong>Solution:</strong> Check file and directory permissions using <code>ls -la</code> (Linux/macOS) or checking properties (Windows). Ensure the user running SHIOL+ has write access to these directories. Adjust permissions using <code>chmod</code> if necessary.</p>
+1502 |                     </li>
+1503 |                     <li><strong>Issue: "Memory error" during execution</strong>
+1504 |                         <p><strong>Cause:</strong> Insufficient RAM for processing large datasets or complex models.</p>
+1505 |                         <p><strong>Solution:</strong> Close other memory-intensive applications. Reduce batch sizes or data processing limits in the <code>config/config.ini</code> file if applicable. Consider upgrading your system's RAM.</p>
+1506 |                     </li>
+1507 |                     <li><strong>Issue: Web dashboard not accessible</strong>
+1508 |                         <p><strong>Cause:</strong> Port conflict, the web server is not started, or firewall issues.</p>
+1509 |                         <p><strong>Solution:</strong> Check if the default port (8000) is in use using network utilities (e.g., <code>netstat -an | grep 8000</code>). Try starting the web server on a different port (e.g., <code>uvicorn src.api:app --reload --port 8001</code>). Verify your firewall settings are not blocking the port.</p>
+1510 |                     </li>
+1511 |                     <li><strong>Issue: Pipeline execution fails</strong>
+1512 |                         <p><strong>Cause:</strong> Various reasons, often detailed in the logs.</p>
+1513 |                         <p><strong>Solution:</strong> Check the system logs for detailed error messages (<code>logs/shiolplus.log</code>). Run the pipeline with verbose output (<code>python main.py --verbose</code>) for more diagnostic information. Check the overall system status using <code>python main.py --status</code>.</p>
+1514 |                     </li>
+1515 |                 </ul>
+1516 | 
+1517 |                 <h3>Log Analysis</h3>
+1518 |                 <p>System logs are crucial for troubleshooting. They are located at <code>logs/shiolplus.log</code>.</p>
+1519 |                 <ul>
+1520 |                     <li><strong>Log Levels:</strong> Messages are categorized by severity: <code>DEBUG</code> (detailed diagnostic), <code>INFO</code> (general operation), <code>WARNING</code> (potential issues), <code>ERROR</code> (failures), <code>CRITICAL</code> (severe failures).</li>
+1521 |                     <li><strong>Log Locations:</strong> Main log file is <code>logs/shiolplus.log</code>. Rotated logs are stored as <code>logs/shiolplus.log.1</code>, etc.</li>
+1522 |                     <li><strong>Log Filtering:</strong> Use command-line tools like <code>grep</code> (Linux/macOS) or text editors to filter logs by level, date, or keywords.
+1523 |                         <pre><code># View only errors
+1524 | grep "ERROR" logs/shiolplus.log
+1525 | 
+1526 | # View recent logs
+1527 | tail -f logs/shiolplus.log
+1528 | 
+1529 | # View logs for specific date
+1530 | grep "2025-01-26" logs/shiolplus.log</code></pre>
+1531 |                     </li>
+1532 |                 </ul>
+1533 | 
+1534 |                 <h3>Performance Optimization Tips</h3>
+1535 |                 <ul>
+1536 |                     <li><strong>Database Optimization:</strong> Regularly maintain the database, optimize indexes on frequently queried columns, and tune query performance. Consider migrating to a more robust database like PostgreSQL for production.</li>
+1537 |                     <li><strong>Memory Optimization:</strong> Adjust batch sizes in configuration, enable garbage collection, and monitor memory usage patterns. Consider a RAM upgrade for large datasets.</li>
+1538 |                     <li><strong>CPU Optimization:</strong> Adjust thread pool sizes, enable parallel processing where appropriate, and monitor CPU usage patterns.</li>
+1539 |                 </ul>
+1540 | 
+1541 |                 <h3>Frequently Asked Questions (FAQ)</h3>
+1542 |                 <dl>
+1543 |                     <dt>Q: Will this program guarantee lottery winnings?</dt>
+1544 |                     <dd>A: No. The lottery is fundamentally a game of chance. SHIOL+ is a data analysis tool for educational and entertainment purposes and cannot guarantee any prizes. Always play responsibly.</dd>
+1545 | 
+1546 |                     <dt>Q: How often should I run the pipeline?</dt>
+1547 |                     <dd>A: The system automatically runs weekly by default. You can also run it manually whenever you want updated predictions or analysis.</dd>
+1548 | 
+1549 |                     <dt>Q: What's the difference between traditional and deterministic predictions?</dt>
+1550 |                     <dd>A: Traditional predictions use random sampling based on ML probabilities and produce different results each time. Deterministic predictions use a multi-criteria scoring system and always produce the same result for the same dataset, making them reproducible.</dd>
+1551 | 
+1552 |                     <dt>Q: How does the adaptive learning work?</dt>
+1553 |                     <dd>A: The system analyzes the performance of past predictions against actual lottery results and adjusts its scoring weights to improve future predictions, creating a continuous learning loop.</dd>
+1554 | 
+1555 |                     <dt>Q: Can I run multiple instances of SHIOL+ simultaneously?</dt>
+1556 |                     <dd>A: No, the current SQLite database implementation does not support concurrent write access. Only run one instance at a time to avoid database locking issues.</dd>
+1557 | 
+1558 |                     <dt>Q: How much disk space does the system need?</dt>
+1559 |                     <dd>A: Approximately 1GB for the database, logs, and generated files. The system automatically manages log rotation to prevent excessive disk usage.</dd>
+1560 | 
+1561 |                     <dt>Q: Can I customize the prediction scoring weights?</dt>
+1562 |                     <dd>A: Yes, the system can automatically optimize weights based on performance data, or you can manually adjust them in the configuration file (<code>config/config.ini</code>).</dd>
+1563 | 
+1564 |                     <dt>Q: What happens if the pipeline fails during execution?</dt>
+1565 |                     <dd>A: The system has built-in retry logic with exponential backoff. It will attempt to retry failed steps up to 3 times by default. Details of failures are logged.</dd>
+1566 | 
+1567 |                     <dt>Q: How do I interpret the validation results?</dt>
+1568 |                     <dd>A: Validation results show how your predictions would have performed against actual lottery draws. A win rate above 5% is generally considered good for lottery prediction systems, but remember the inherent randomness.</dd>
+1569 | 
+1570 |                     <dt>Q: Can I access the system remotely?</dt>
+1571 |                     <dd>A: Yes, you can configure the web dashboard to accept connections from other machines by modifying the Uvicorn startup parameters (e.g., binding to <code>0.0.0.0</code> instead of <code>127.0.0.1</code>).</dd>
+1572 |                 </dl>
+1573 | 
+1574 |                 <h3>Responsible Gaming Warning</h3>
+1575 |                 <p>This software was created as an educational project to explore data science and artificial intelligence applications. No system can reliably predict lottery numbers; the results are fundamentally random. Always play responsibly and never spend more money than you can afford to lose. The lottery is a form of entertainment, not an investment strategy. If you feel that gambling is becoming a problem, seek help from organizations dedicated to responsible gaming.</p>
+1576 |             </section>
+1577 | 
+1578 |             <section id="contributing-guidelines">
+1579 |                 <h2>Contributing Guidelines</h2>
+1580 |                 <p>We welcome contributions to the SHIOL+ project! Please follow these guidelines to ensure a smooth collaboration and maintain code quality.</p>
+1581 | 
+1582 |                 <h3>How to Contribute</h3>
+1583 |                 <ol>
+1584 |                     <li><strong>Fork the repository:</strong> Create your own fork of the SHIOL+ repository on GitHub.</li>
+1585 |                     <li><strong>Clone your fork:</strong> Clone your forked repository to your local machine.
+1586 |                         <pre><code>git clone <YOUR_FORK_URL>
+1587 | cd SHIOL-PLUS-V5</code></pre>
+1588 |                     </li>
+1589 |                     <li><strong>Create a new branch:</strong> Create a new branch for your feature or bug fix. Use descriptive names like <code>feature/add-new-model</code> or <code>fix/database-connection</code>.
+1590 |                         <pre><code>git checkout -b feature/your-feature-name</code></pre>
+1591 |                     </li>
+1592 |                     <li><strong>Make your changes:</strong> Implement your feature or fix the bug. Ensure your changes adhere to the project's coding standards.</li>
+1593 |                     <li><strong>Add a New Feature:</strong>
+1594 |                         <p>If you are adding a new feature, especially related to data processing or model inputs:</p>
+1595 |                         <ol>
+1596 |                             <li>Open <code>src/intelligent_generator.py</code>.</li>
+1597 |                             <li>Inside the <code>FeatureEngineer</code> class, add a new private method (e.g., <code>_calculate_my_new_feature</code>) to implement your feature logic.</li>
+1598 |                             <li>Call this new method from the <code>engineer_features</code> method.</li>
+1599 |                             <li>Ensure the new feature column is added to the <code>feature_cols</code> list in the <code>_get_feature_matrix</code> method of <code>ModelTrainer</code> in <code>src/predictor.py</code>.</li>
+1600 |                             <li>Retrain the model with <code>python src/cli.py train</code> for the new feature to be used.</li>
+1601 |                         </ol>
+1602 |                     </li>
+1603 |                     <li><strong>Add a New Command to the CLI:</strong>
+1604 |                         <p>To extend the command-line interface:</p>
+1605 |                         <ol>
+1606 |                             <li>Open <code>src/cli.py</code>.</li>
+1607 |                             <li>In the <code>main</code> function, add a new <code>subparser</code> using <code>subparsers.add_parser('my_command', ...)</code>.</li>
+1608 |                             <li>Create a new function to handle the command (e.g., <code>def my_command_handler(args):</code>).</li>
+1609 |                             <li>Set the handler function with <code>parser_new_command.set_defaults(func=my_command_handler)</code>.</li>
+1610 |                             <li>Implement the logic for your new command, calling the necessary modules.</li>
+1611 |                         </ol>
+1612 |                     </li>
+1613 |                     <li><strong>Write unit tests:</strong> Create or update unit tests to cover your changes. Ensure all existing tests pass.</li>
+1614 |                     <li><strong>Commit your changes:</strong> Write clear and concise commit messages. Use conventional commits (e.g., <code>feat: Add new feature X</code> or <code>fix: Resolve bug Y</code>).
+1615 |                         <pre><code>git commit -m "feat: Add new feature X"</code></pre>
+1616 |                     </li>
+1617 |                     <li><strong>Push your branch:</strong> Push your branch to your forked repository.
+1618 |                         <pre><code>git push origin feature/your-feature-name</code></pre>
+1619 |                     </li>
+1620 |                     <li><strong>Open a Pull Request:</strong> Open a Pull Request from your branch to the <code>main</code> branch of the original SHIOL+ repository. Provide a detailed description of your changes.</li>
+1621 |                 </ol>
+1622 | 
+1623 |                 <h3>Coding Standards</h3>
+1624 |                 <ul>
+1625 |                     <li>Follow <a href="https://www.python.org/dev/peps/pep-0008/" target="_blank">PEP 8</a> for Python code.</li>
+1626 |                     <li>Use clear and descriptive variable and function names.</li>
+1627 |                     <li>Add comprehensive comments for complex logic, especially for algorithms and ML models.</li>
+1628 |                     <li>Ensure code is well-documented using docstrings for functions and classes.</li>
+1629 |                     <li>Utilize automated formatting tools like <a href="https://github.com/psf/black" target="_blank">Black</a> and <a href="https://github.com/PyCQA/isort" target="_blank">isort</a> for Python, and <a href="https://prettier.io/" target="_blank">Prettier</a> for JavaScript/CSS.</li>
+1630 |                 </ul>
+1631 | 
+1632 |                 <h3>Reporting Bugs</h3>
+1633 |                 <p>If you find a bug, please open an issue on the GitHub repository. Provide a detailed description, steps to reproduce, expected behavior, and any relevant error messages or logs.</p>
+1634 |             </section>
+1635 |         </main>
+1636 |     </div>
+1637 | 
+1638 |     <footer>
+1639 |         <p>&copy; 2025 SHIOL+ Project. All rights reserved.</p>
+1640 |     </footer>
+1641 | 
+1642 |     <script>
+1643 |         document.addEventListener('DOMContentLoaded', function() {
+1644 |             // Smooth scrolling for navigation links
+1645 |             document.querySelectorAll('nav a, aside a').forEach(anchor => {
+1646 |                 anchor.addEventListener('click', function (e) {
+1647 |                     e.preventDefault();
+1648 |                     document.querySelector(this.getAttribute('href')).scrollIntoView({
+1649 |                         behavior: 'smooth'
+1650 |                     });
+1651 |                     // Update active class for main nav
+1652 |                     document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+1653 |                     this.classList.add('active');
+1654 |                 });
+1655 |             });
+1656 | 
+1657 |             // Highlight active section in sidebar on scroll
+1658 |             const sections = document.querySelectorAll('section');
+1659 |             const asideLinks = document.querySelectorAll('aside ul li a');
+1660 | 
+1661 |             window.addEventListener('scroll', () => {
+1662 |                 let current = '';
+1663 |                 sections.forEach(section => {
+1664 |                     const sectionTop = section.offsetTop - 100; // Offset for header/nav
+1665 |                     const sectionHeight = section.clientHeight;
+1666 |                     if (pageYOffset >= sectionTop && pageYOffset < sectionTop + sectionHeight) {
+1667 |                         current = section.getAttribute('id');
+1668 |                     }
+1669 |                 });
+1670 | 
+1671 |                 asideLinks.forEach(link => {
+1672 |                     link.classList.remove('active');
+1673 |                     if (link.getAttribute('href').includes(current)) {
+1674 |                         link.classList.add('active');
+1675 |                     }
+1676 |                 });
+1677 |             });
+1678 | 
+1679 |             // Basic client-side search functionality
+1680 |             const searchInput = document.getElementById('searchInput');
+1681 |             searchInput.addEventListener('keyup', function() {
+1682 |                 const searchTerm = searchInput.value.toLowerCase();
+1683 |                 sections.forEach(section => {
+1684 |                     const sectionText = section.textContent.toLowerCase();
+1685 |                     if (sectionText.includes(searchTerm) || searchTerm === '') {
+1686 |                         section.style.display = 'block';
+1687 |                     } else {
+1688 |                         section.style.display = 'none';
+1689 |                     }
+1690 |                 });
+1691 |             });
+1692 |         });
+1693 |     </script>
+1694 | </body>
+1695 | </html>

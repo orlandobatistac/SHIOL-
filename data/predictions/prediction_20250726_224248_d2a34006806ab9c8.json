@@ -1,0 +1,29 @@
+{
+  "prediction": {
+    "numbers": [
+      5,
+      13,
+      32,
+      34,
+      39
+    ],
+    "powerball": 15,
+    "timestamp": "2025-07-26T22:42:48.499751"
+  },
+  "scoring": {
+    "total_score": 0.582998254717681,
+    "score_details": {
+      "probability": 0.16163356782868504,
+      "diversity": 0.92,
+      "historical": 0.6917241379310345,
+      "risk_adjusted": 1.0,
+      "total": 0.582998254717681
+    },
+    "num_candidates_evaluated": 2000
+  },
+  "metadata": {
+    "model_version": "1.0.0",
+    "dataset_hash": "d2a34006806ab9c8",
+    "created_at": "2025-07-26T22:42:48.549616"
+  }
+}
