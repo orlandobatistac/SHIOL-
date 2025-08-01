@@ -854,7 +854,7 @@ class AdaptivePlayScorer(PlayScorer):
     """
     
     def __init__(self, historical_data: pd.DataFrame):
-        super().__init__(historical_data)
+        # Removed incorrect super() call
         self.adaptive_weights = None
         self.load_adaptive_weights()
         logger.info("AdaptivePlayScorer initialized with adaptive weight system")
@@ -1085,7 +1085,7 @@ class AdaptivePlayScorer:
     """
     
     def __init__(self, historical_data: pd.DataFrame):
-        super().__init__(historical_data)
+        PlayScorer.__init__(self, historical_data)
         self.adaptive_weights = None
         self.load_adaptive_weights()
         logger.info("AdaptivePlayScorer initialized with adaptive weight system")

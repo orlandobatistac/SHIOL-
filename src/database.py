@@ -87,7 +87,7 @@ def initialize_database():
                     score_total REAL NOT NULL,
                     model_version TEXT NOT NULL,
                     dataset_hash TEXT NOT NULL,
-                    json_details_path TEXT NOT NULL,
+                    json_details_path TEXT,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -281,14 +281,15 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
         ID de la predicción insertada o None si hay error
     """
     try:
+        logger.debug(f"Saving prediction log with data: {prediction_data}")
         # Insertar registro en SQLite
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO predictions_log
                 (timestamp, n1, n2, n3, n4, n5, powerball, score_total,
-                 model_version, dataset_hash)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 model_version, dataset_hash, json_details_path)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 prediction_data['timestamp'],
                 int(prediction_data['numbers'][0]),
@@ -299,7 +300,8 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
                 int(prediction_data['powerball']),
                 float(prediction_data['score_total']),
                 prediction_data['model_version'],
-                prediction_data['dataset_hash']
+                prediction_data['dataset_hash'],
+                prediction_data.get('json_details_path', None)
             ))
             
             prediction_id = cursor.lastrowid

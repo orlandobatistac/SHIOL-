@@ -398,8 +398,8 @@ class PipelineOrchestrator:
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
             
-            # Generate 5 diverse predictions for the next drawing (includes saving to log)
-            diverse_predictions = predictor.predict_diverse_plays(num_plays=5, save_to_log=True)
+            # Generate 100 diverse predictions for the next drawing (includes saving to log)
+            diverse_predictions = predictor.predict_diverse_plays(num_plays=100, save_to_log=True)
             
             # Prepare result with all 5 plays
             plays_info = []

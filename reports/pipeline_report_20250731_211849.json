@@ -1,0 +1,48 @@
+{
+  "pipeline_execution": {
+    "start_time": "2025-07-31T21:17:18.690689",
+    "end_time": "2025-07-31T21:18:49.551876",
+    "total_execution_time": "0:01:30.861187",
+    "status": {
+      "data_update": {
+        "status": "success",
+        "execution_time": "0:00:00.468918",
+        "timestamp": "2025-07-31T21:17:19.159607"
+      },
+      "adaptive_analysis": {
+        "status": "failed",
+        "error": "Step adaptive_analysis failed: object.__init__() takes exactly one argument (the instance to initialize)",
+        "execution_time": "0:00:00.002127",
+        "timestamp": "2025-07-31T21:17:19.161734"
+      },
+      "weight_optimization": {
+        "status": "failed",
+        "error": "Step weight_optimization failed: object.__init__() takes exactly one argument (the instance to initialize)",
+        "execution_time": "0:00:00.001749",
+        "timestamp": "2025-07-31T21:17:19.166593"
+      },
+      "prediction_generation": {
+        "status": "success",
+        "execution_time": "0:01:30.373416",
+        "timestamp": "2025-07-31T21:18:49.541354"
+      },
+      "historical_validation": {
+        "status": "failed",
+        "error": "Step historical_validation failed: object.__init__() takes exactly one argument (the instance to initialize)",
+        "execution_time": "0:00:00.002329",
+        "timestamp": "2025-07-31T21:18:49.543683"
+      },
+      "performance_analysis": {
+        "status": "success",
+        "execution_time": "0:00:00.006162",
+        "timestamp": "2025-07-31T21:18:49.551876"
+      }
+    }
+  },
+  "system_info": {
+    "config_file": "config/config.ini",
+    "historical_data_records": 2207,
+    "adaptive_system_initialized": false
+  },
+  "generated_at": "2025-07-31T21:18:49.551876"
+}
