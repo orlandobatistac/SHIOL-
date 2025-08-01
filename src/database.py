@@ -272,7 +272,7 @@ def get_all_draws() -> pd.DataFrame:
 
 def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
     """
-    Guarda una predicción en la tabla predictions_log y crea el archivo JSON complementario.
+    Guarda una predicción en la tabla predictions_log.
     
     Args:
         prediction_data: Diccionario con los datos de la predicción
@@ -281,60 +281,14 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
         ID de la predicción insertada o None si hay error
     """
     try:
-        # Crear directorio para archivos JSON si no existe
-        json_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'predictions')
-        os.makedirs(json_dir, exist_ok=True)
-        
-        # Generar nombre único para el archivo JSON
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        dataset_hash = prediction_data.get('dataset_hash', 'unknown')
-        json_filename = f"prediction_{timestamp}_{dataset_hash}.json"
-        json_path = os.path.join(json_dir, json_filename)
-        
-        # Convertir numpy types a tipos nativos de Python
-        def convert_numpy_types(obj):
-            if isinstance(obj, np.integer):
-                return int(obj)
-            elif isinstance(obj, np.floating):
-                return float(obj)
-            elif isinstance(obj, np.ndarray):
-                return obj.tolist()
-            elif isinstance(obj, list):
-                return [convert_numpy_types(item) for item in obj]
-            elif isinstance(obj, dict):
-                return {key: convert_numpy_types(value) for key, value in obj.items()}
-            return obj
-        
-        # Guardar archivo JSON con detalles completos
-        json_data = {
-            'prediction': {
-                'numbers': convert_numpy_types(prediction_data['numbers']),
-                'powerball': convert_numpy_types(prediction_data['powerball']),
-                'timestamp': prediction_data['timestamp']
-            },
-            'scoring': {
-                'total_score': convert_numpy_types(prediction_data['score_total']),
-                'score_details': convert_numpy_types(prediction_data['score_details']),
-                'num_candidates_evaluated': prediction_data.get('num_candidates_evaluated', 0)
-            },
-            'metadata': {
-                'model_version': prediction_data['model_version'],
-                'dataset_hash': prediction_data['dataset_hash'],
-                'created_at': datetime.now().isoformat()
-            }
-        }
-        
-        with open(json_path, 'w', encoding='utf-8') as f:
-            json.dump(json_data, f, indent=2, ensure_ascii=False, cls=NumpyEncoder)
-        
         # Insertar registro en SQLite
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO predictions_log
                 (timestamp, n1, n2, n3, n4, n5, powerball, score_total,
-                 model_version, dataset_hash, json_details_path)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 model_version, dataset_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 prediction_data['timestamp'],
                 int(prediction_data['numbers'][0]),
@@ -345,14 +299,13 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
                 int(prediction_data['powerball']),
                 float(prediction_data['score_total']),
                 prediction_data['model_version'],
-                prediction_data['dataset_hash'],
-                json_path
+                prediction_data['dataset_hash']
             ))
             
             prediction_id = cursor.lastrowid
             conn.commit()
             
-            logger.info(f"Prediction saved with ID {prediction_id}. JSON details: {json_path}")
+            logger.info(f"Prediction saved with ID {prediction_id}.")
             return prediction_id
             
     except Exception as e:
