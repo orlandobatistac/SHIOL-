@@ -706,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'High': 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300',
                 'Medium': 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300',
                 'Standard': 'text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:text-gray-300'
-            Completing the code modifications to implement the Smart AI prediction feature, including API endpoint update and display function.`;
+            };
 
             const tierClass = tierColors[tier] || tierColors['Standard'];
 
@@ -793,4 +793,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize UI state
     initializePipelineDashboard();
+
+    // Function to show toast notifications
+    function showToast(message, type = 'info') {
+        const toast = document.getElementById('toast-notification');
+        if (!toast) return;
+
+        const typeClasses = {
+            success: 'bg-green-500',
+            error: 'bg-red-500',
+            warning: 'bg-yellow-500',
+            info: 'bg-blue-500'
+        };
+
+        toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-xl opacity-100 transition-opacity duration-300 z-50 ${typeClasses[type] || typeClasses.info}`;
+        toast.innerHTML = `<i class="fas fa-info mr-2"></i>${message}`;
+
+        setTimeout(() => {
+            toast.classList.remove('opacity-100');
+            toast.classList.add('opacity-0');
+        }, 3000);
+    }
 });
