@@ -102,12 +102,14 @@ app.add_middleware(
 try:
     logger.info("Loading model and generator instances...")
     predictor = Predictor()
-    intelligent_generator = IntelligentGenerator()
     
-    # Initialize deterministic generator with historical data
+    # Load historical data first
     from src.loader import DataLoader
     data_loader = DataLoader()
     historical_data = data_loader.load_historical_data()
+    
+    # Initialize generators with historical data
+    intelligent_generator = IntelligentGenerator(historical_data)
     deterministic_generator = DeterministicGenerator(historical_data)
     
     logger.info("Model and generators loaded successfully.")
