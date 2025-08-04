@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getApiBaseUrl() {
         // Use current origin for API calls - automatically adapts to any server IP
         const baseUrl = window.location.origin + '/api/v1';
-        
+
         // Log the detected configuration for debugging
         console.log('API Base URL detected:', baseUrl);
         console.log('Current location:', {
@@ -38,10 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
             port: window.location.port,
             origin: window.location.origin
         });
-        
+
         return baseUrl;
     }
-    
+
     const API_BASE_URL = getApiBaseUrl();
 
     let lastPredictions = [];
@@ -71,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirmTriggerBtn) {
         confirmTriggerBtn.addEventListener('click', triggerPipeline);
     }
-    
+
     // Close modal when clicking outside
     if (pipelineTriggerModal) {
         pipelineTriggerModal.addEventListener('click', (e) => {
@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Syndicate predictions event listeners
     const generateSyndicateBtn = document.getElementById('generate-syndicate-btn');
     const exportSyndicateBtn = document.getElementById('export-syndicate-btn');
-    
+
     if (generateSyndicateBtn) {
         generateSyndicateBtn.addEventListener('click', generateSyndicatePredictions);
     }
@@ -140,7 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const health = pipelineStatus.system_health || {};
             let healthStatus = 'unknown';
             let healthDetails = 'No health information available';
-            
+
             // Determine health status based on system metrics
             if (health.cpu_usage_percent !== undefined) {
                 if (health.cpu_usage_percent < 80 && health.memory_usage_percent < 85 && health.disk_usage_percent < 90) {
@@ -151,7 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     healthDetails = `High resource usage - CPU: ${health.cpu_usage_percent}%, Memory: ${health.memory_usage_percent}%`;
                 }
             }
-            
+
             systemHealthIndicator.className = `w-3 h-3 rounded-full health-${healthStatus}`;
             systemHealthText.textContent = healthStatus.charAt(0).toUpperCase() + healthStatus.slice(1);
             systemHealthDetails.textContent = healthDetails;
@@ -225,13 +225,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const startTime = execution.start_time ? new Date(execution.start_time).toLocaleString() : 'N/A';
             const endTime = execution.end_time ? new Date(execution.end_time) : null;
             const startTimeObj = execution.start_time ? new Date(execution.start_time) : null;
-            
+
             let duration = 'N/A';
             if (startTimeObj && endTime) {
                 const durationMs = endTime - startTimeObj;
                 duration = `${Math.round(durationMs / 1000)}s`;
             }
-            
+
             const status = execution.status || 'unknown';
             const executionId = execution.execution_id || 'unknown';
 
@@ -292,11 +292,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function triggerPipeline() {
         hideTriggerModal();
-        
+
         try {
             triggerPipelineBtn.disabled = true;
             triggerPipelineBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Triggering...';
-            
+
             const response = await fetch(`${API_BASE_URL}/pipeline/trigger`, {
                 method: 'POST',
                 headers: {
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const data = await response.json();
             showPipelineNotification('Pipeline triggered successfully!', 'success');
-            
+
             // Refresh status after a short delay
             setTimeout(() => {
                 refreshPipelineStatus();
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             const data = await response.json();
-            
+
             // Create a simple modal to display logs
             const logsModal = document.createElement('div');
             logsModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -362,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
             document.body.appendChild(logsModal);
-            
+
         } catch (error) {
             console.error('Logs fetch error:', error);
             showPipelineNotification('Failed to fetch logs', 'error');
@@ -374,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const originalHTML = refreshPipelineBtn.innerHTML;
             refreshPipelineBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Refreshing...';
             refreshPipelineBtn.disabled = true;
-            
+
             fetchPipelineStatus().finally(() => {
                 refreshPipelineBtn.innerHTML = originalHTML;
                 refreshPipelineBtn.disabled = false;
@@ -445,7 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log('✅ API connectivity confirmed');
                 // Initial status fetch
                 fetchPipelineStatus();
-                
+
                 // Start auto-refresh if enabled
                 if (autoRefreshCheckbox && autoRefreshCheckbox.checked) {
                     handleAutoRefreshToggle();
@@ -499,34 +499,170 @@ document.addEventListener('DOMContentLoaded', () => {
             loadingDiv.classList.remove('hidden');
             resultsDiv.classList.add('hidden');
 
-            // Make API request
-            const response = await fetch(`${API_BASE_URL}/predict/syndicate?num_plays=${numPlays}&method=${method}`);
-            
+            // Make API request to Smart AI endpoint
+            const response = await fetch(`${API_BASE_URL}/predict/smart?num_plays=${numPlays}`);
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.detail || `HTTP error! Status: ${response.status}`);
+                throw new Error(errorData?.detail || `HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
-            syndicateData = data;
 
-            // Update UI with results
-            updateSyndicateResults(data);
-
-            // Show results
-            loadingDiv.classList.add('hidden');
-            resultsDiv.classList.remove('hidden');
-
-            PowerballUtils.showToast(`Generated ${data.total_plays} syndicate predictions successfully!`, 'success');
+            // Process and display results
+            if (data.smart_predictions && data.smart_predictions.length > 0) {
+                displaySmartAIResults(data);
+                PowerballUtils.showToast(`AI generated ${data.total_predictions} smart predictions successfully!`, 'success');
+            } else {
+                throw new Error('No predictions generated');
+            }
 
         } catch (error) {
             console.error('Syndicate generation error:', error);
             loadingDiv.classList.add('hidden');
             PowerballUtils.showToast('Failed to generate syndicate predictions: ' + error.message, 'error');
         } finally {
+            // Reset button state
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate';
+            btn.innerHTML = '<i class="fas fa-brain mr-2"></i>Generate Smart AI Predictions';
+            loadingDiv.classList.add('hidden');
         }
+    }
+
+    function displaySmartAIResults(data) {
+        const resultsDiv = document.getElementById('syndicate-results');
+        if (!resultsDiv) return;
+
+        const predictions = data.smart_predictions;
+        const analysis = data.ai_analysis;
+
+        let html = `
+            <div class="space-y-6">
+                <!-- AI Analysis Summary -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <div class="flex items-center space-x-3 mb-4">
+                        <i class="fas fa-brain text-2xl text-blue-600 dark:text-blue-400"></i>
+                        <h3 class="text-lg font-bold text-blue-800 dark:text-blue-200">Smart AI Analysis</h3>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                            <div class="font-semibold text-gray-700 dark:text-gray-300">Candidates Evaluated</div>
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${analysis.candidates_evaluated.toLocaleString()}</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                            <div class="font-semibold text-gray-700 dark:text-gray-300">AI Methods Used</div>
+                            <div class="text-sm text-blue-600 dark:text-blue-400">${analysis.methods_used.join(', ').toUpperCase()}</div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                            <div class="font-semibold text-gray-700 dark:text-gray-300">Average AI Score</div>
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">${(analysis.score_range.average * 100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                        <p class="text-sm text-green-800 dark:text-green-200">
+                            <i class="fas fa-lightbulb mr-2"></i>
+                            <strong>AI Recommendation:</strong> ${data.recommendation}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Predictions Table -->
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Smart AI Predictions (Ranked by AI Score)
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                            Top ${predictions.length} predictions automatically selected and ranked by AI
+                        </p>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-900">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Numbers</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">PB</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Score</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tier</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Method</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        `;
+
+        predictions.forEach((pred, index) => {
+            const tierColor = getTierColor(pred.tier);
+            const methodBadge = getMethodBadge(pred.ai_method);
+
+            html += `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${index < 10 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' : 'bg-gray-100 text-gray-800'} text-sm font-bold">
+                                ${pred.rank}
+                            </span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex space-x-1">
+                            ${pred.numbers.map(num => `
+                                <span class="powerball-number small bg-blue-600 text-white">${num}</span>
+                            `).join('')}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="powerball-number small bg-red-600 text-white">${pred.powerball}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">
+                            ${(pred.smart_ai_score * 100).toFixed(1)}%
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                            Base: ${(pred.base_score * 100).toFixed(1)}%
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tierColor}">
+                            ${pred.tier}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${methodBadge}
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        resultsDiv.innerHTML = html;
+        resultsDiv.classList.remove('hidden');
+    }
+
+    function getTierColor(tier) {
+        const colors = {
+            'Premium': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+            'High': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+            'Medium': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+            'Standard': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+        };
+        return colors[tier] || colors['Standard'];
+    }
+
+    function getMethodBadge(method) {
+        const badges = {
+            'ensemble': '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">Ensemble</span>',
+            'deterministic': '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">Deterministic</span>',
+            'adaptive': '<span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">Adaptive</span>'
+        };
+        return badges[method] || '<span class="text-xs text-gray-500">Unknown</span>';
     }
 
     function updateSyndicateResults(data) {
@@ -570,7 +706,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'High': 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300',
                 'Medium': 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300',
                 'Standard': 'text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-300'
-            };
+            Completing the code modifications to implement the Smart AI prediction feature, including API endpoint update and display function.`;
 
             const tierClass = tierColors[tier] || tierColors['Standard'];
 
@@ -630,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const csvContent = csvRows.join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
-            
+
             if (link.download !== undefined) {
                 const url = URL.createObjectURL(blob);
                 link.setAttribute('href', url);
@@ -639,7 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
-                
+
                 PowerballUtils.showToast('Syndicate data exported successfully!', 'success');
             }
         } catch (error) {
