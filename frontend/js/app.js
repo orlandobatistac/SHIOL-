@@ -473,22 +473,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Syndicate Predictions Functions ---
     async function generateSyndicatePredictions() {
-        const methodSelect = document.getElementById('syndicate-method');
         const playsInput = document.getElementById('syndicate-plays');
         const loadingDiv = document.getElementById('syndicate-loading');
         const resultsDiv = document.getElementById('syndicate-results');
         const btn = document.getElementById('generate-syndicate-btn');
 
-        if (!methodSelect || !playsInput || !loadingDiv || !resultsDiv || !btn) {
-            console.error('Syndicate elements not found');
+        if (!playsInput || !loadingDiv || !resultsDiv || !btn) {
+            console.error('Required syndicate elements not found');
             return;
         }
 
-        const method = methodSelect.value;
         const numPlays = parseInt(playsInput.value);
 
         if (numPlays < 10 || numPlays > 500) {
-            PowerballUtils.showToast('Number of plays must be between 10 and 500', 'error');
+            showToast('Number of plays must be between 10 and 500', 'error');
             return;
         }
 
@@ -511,8 +509,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Process and display results
             if (data.smart_predictions && data.smart_predictions.length > 0) {
+                syndicateData = data; // Store data for export
                 displaySmartAIResults(data);
-                PowerballUtils.showToast(`AI generated ${data.total_predictions} smart predictions successfully!`, 'success');
+                showToast(`AI generated ${data.total_predictions} smart predictions successfully!`, 'success');
             } else {
                 throw new Error('No predictions generated');
             }
@@ -520,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Syndicate generation error:', error);
             loadingDiv.classList.add('hidden');
-            PowerballUtils.showToast('Failed to generate syndicate predictions: ' + error.message, 'error');
+            showToast('Failed to generate syndicate predictions: ' + error.message, 'error');
         } finally {
             // Reset button state
             btn.disabled = false;
