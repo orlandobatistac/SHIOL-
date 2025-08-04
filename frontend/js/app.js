@@ -705,7 +705,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 'Premium': 'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-300',
                 'High': 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300',
                 'Medium': 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300',
-                'Standard': 'text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-300'
+                'Standard': 'text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:text-gray-300'
             Completing the code modifications to implement the Smart AI prediction feature, including API endpoint update and display function.`;
 
             const tierClass = tierColors[tier] || tierColors['Standard'];
