@@ -166,12 +166,12 @@ body {
     .method-comparison .grid {
         grid-template-columns: 1fr;
     }
-    
+
     .deterministic-feature {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
-    
+
     .deterministic-feature button {
         padding: 0.75rem 1rem;
     }
@@ -624,18 +624,18 @@ input:focus,
     .pipeline-status-card {
         margin-bottom: 1rem;
     }
-    
+
     #pipeline-trigger-modal .bg-white {
         margin: 1rem;
         max-width: calc(100vw - 2rem);
     }
-    
+
     #pipeline-notification {
         left: 1rem;
         right: 1rem;
         min-width: auto;
     }
-    
+
     .pipeline-dashboard-bg {
         padding: 1rem;
     }
@@ -645,15 +645,15 @@ input:focus,
     .pipeline-status-card h3 {
         font-size: 0.75rem;
     }
-    
+
     .pipeline-status-card div:first-child {
         font-size: 1rem;
     }
-    
+
     #execution-history-tbody {
         font-size: 0.75rem;
     }
-    
+
     .status-badge {
         font-size: 0.625rem;
         padding: 0.125rem 0.5rem;
@@ -678,11 +678,11 @@ input:focus,
     .pipeline-status-card {
         border-width: 2px;
     }
-    
+
     .status-badge {
         border-width: 2px;
     }
-    
+
     #pipeline-status-indicator,
     #system-health-indicator {
         border: 2px solid currentColor;
@@ -697,7 +697,7 @@ input:focus,
     #execution-history-tbody tr {
         transition: none;
     }
-    
+
     #pipeline-status-indicator.status-running,
     #pipeline-status-indicator.status-failed,
     #pipeline-status-indicator.status-warning,
@@ -705,4 +705,157 @@ input:focus,
     .pipeline-progress-bar {
         animation: none;
     }
+}
+
+/* Toast notifications */
+.success {
+    background-color: #10b981;
+}
+
+.error {
+    background-color: #ef4444;
+}
+
+.warning {
+    background-color: #f59e0b;
+}
+
+.info {
+    background-color: #3b82f6;
+}
+
+/* Syndicate-specific styles */
+.syndicate-section {
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f8fafc 100%);
+    border: 2px solid #22c55e;
+}
+
+.tier-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.tier-premium {
+    background-color: #faf5ff;
+    color: #7c3aed;
+    border: 1px solid #c4b5fd;
+}
+
+.tier-high {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #93c5fd;
+}
+
+.tier-medium {
+    background-color: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #86efac;
+}
+
+.tier-standard {
+    background-color: #f9fafb;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+.syndicate-loading {
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: 1rem;
+    padding: 3rem;
+}
+
+.syndicate-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.syndicate-table-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.syndicate-table-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.syndicate-table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+.syndicate-table-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.number-ball {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 0.25rem;
+}
+
+.number-ball.white {
+    background-color: #f3f4f6;
+    color: #1f2937;
+    border: 1px solid #d1d5db;
+}
+
+.number-ball.power {
+    background-color: #ef4444;
+    color: white;
+    border: 1px solid #dc2626;
+}
+
+.coverage-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+}
+
+.coverage-stat {
+    background: white;
+    border-radius: 0.75rem;
+    padding: 1rem;
+    text-align: center;
+    border: 2px solid #e5e7eb;
+    transition: all 0.3s ease;
+}
+
+.coverage-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.coverage-stat.premium {
+    border-color: #a855f7;
+    background: linear-gradient(135deg, #faf5ff, #f3e8ff);
+}
+
+.coverage-stat.high {
+    border-color: #3b82f6;
+    background: linear-gradient(135deg, #eff6ff, #dbeafe);
+}
+
+.coverage-stat.medium {
+    border-color: #22c55e;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+}
+
+.coverage-stat.standard {
+    border-color: #6b7280;
+    background: linear-gradient(135deg, #f9fafb, #f3f4f6);
 }

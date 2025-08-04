@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentMethod = 'traditional';
     let autoRefreshInterval = null;
     let countdownInterval = null;
+    let syndicateData = null;
 
     // --- Event Listeners ---
     // Pipeline dashboard event listeners
@@ -78,6 +79,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideTriggerModal();
             }
         });
+    }
+
+    // Syndicate predictions event listeners
+    const generateSyndicateBtn = document.getElementById('generate-syndicate-btn');
+    const exportSyndicateBtn = document.getElementById('export-syndicate-btn');
+    
+    if (generateSyndicateBtn) {
+        generateSyndicateBtn.addEventListener('click', generateSyndicatePredictions);
+    }
+    if (exportSyndicateBtn) {
+        exportSyndicateBtn.addEventListener('click', exportSyndicateData);
     }
 
     // --- Pipeline Dashboard Functions ---
@@ -456,6 +468,190 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('API connectivity test failed:', error);
             return false;
+        }
+    }
+
+    // --- Syndicate Predictions Functions ---
+    async function generateSyndicatePredictions() {
+        const methodSelect = document.getElementById('syndicate-method');
+        const playsInput = document.getElementById('syndicate-plays');
+        const loadingDiv = document.getElementById('syndicate-loading');
+        const resultsDiv = document.getElementById('syndicate-results');
+        const btn = document.getElementById('generate-syndicate-btn');
+
+        if (!methodSelect || !playsInput || !loadingDiv || !resultsDiv || !btn) {
+            console.error('Syndicate elements not found');
+            return;
+        }
+
+        const method = methodSelect.value;
+        const numPlays = parseInt(playsInput.value);
+
+        if (numPlays < 10 || numPlays > 500) {
+            PowerballUtils.showToast('Number of plays must be between 10 and 500', 'error');
+            return;
+        }
+
+        try {
+            // Show loading state
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+            loadingDiv.classList.remove('hidden');
+            resultsDiv.classList.add('hidden');
+
+            // Make API request
+            const response = await fetch(`${API_BASE_URL}/predict/syndicate?num_plays=${numPlays}&method=${method}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.detail || `HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            syndicateData = data;
+
+            // Update UI with results
+            updateSyndicateResults(data);
+
+            // Show results
+            loadingDiv.classList.add('hidden');
+            resultsDiv.classList.remove('hidden');
+
+            PowerballUtils.showToast(`Generated ${data.total_plays} syndicate predictions successfully!`, 'success');
+
+        } catch (error) {
+            console.error('Syndicate generation error:', error);
+            loadingDiv.classList.add('hidden');
+            PowerballUtils.showToast('Failed to generate syndicate predictions: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-magic mr-2"></i>Generate';
+        }
+    }
+
+    function updateSyndicateResults(data) {
+        if (!data || !data.syndicate_predictions) {
+            console.error('Invalid syndicate data received');
+            return;
+        }
+
+        // Update coverage analysis
+        const coverage = data.coverage_analysis || {};
+        updateElementText('premium-tier-count', coverage.premium_tier || 0);
+        updateElementText('high-tier-count', coverage.high_tier || 0);
+        updateElementText('medium-tier-count', coverage.medium_tier || 0);
+        updateElementText('standard-tier-count', coverage.standard_tier || 0);
+
+        // Update total plays
+        updateElementText('syndicate-total-plays', `${data.total_plays} plays`);
+
+        // Update plays table
+        const tbody = document.getElementById('syndicate-plays-tbody');
+        if (!tbody) return;
+
+        const playsHTML = data.syndicate_predictions.map((prediction, index) => {
+            const numbers = prediction.numbers || [];
+            const powerball = prediction.powerball || 0;
+            const score = prediction.score || 0;
+            const tier = prediction.tier || 'Standard';
+            const method = prediction.method || data.method;
+            const rank = prediction.rank || (index + 1);
+
+            // Create number balls display
+            const whiteBalls = numbers.map(num => 
+                `<span class="inline-flex items-center justify-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full text-xs font-semibold text-gray-800 dark:text-white mr-1">${num}</span>`
+            ).join('');
+
+            const powerBall = `<span class="inline-flex items-center justify-center w-6 h-6 bg-red-500 rounded-full text-xs font-semibold text-white">${powerball}</span>`;
+
+            // Tier color coding
+            const tierColors = {
+                'Premium': 'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-300',
+                'High': 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300',
+                'Medium': 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300',
+                'Standard': 'text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-300'
+            };
+
+            const tierClass = tierColors[tier] || tierColors['Standard'];
+
+            return `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">${rank}</td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center">
+                            ${whiteBalls}
+                            <span class="mx-2 text-red-500">•</span>
+                            ${powerBall}
+                        </div>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${(score * 100).toFixed(2)}%</td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 text-xs font-medium rounded-full ${tierClass}">${tier}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">${method}</td>
+                </tr>
+            `;
+        }).join('');
+
+        tbody.innerHTML = playsHTML;
+    }
+
+    function exportSyndicateData() {
+        if (!syndicateData || !syndicateData.syndicate_predictions) {
+            PowerballUtils.showToast('No syndicate data to export', 'warning');
+            return;
+        }
+
+        try {
+            // Create CSV content
+            const headers = ['Rank', 'Number1', 'Number2', 'Number3', 'Number4', 'Number5', 'Powerball', 'Score', 'Tier', 'Method'];
+            const csvRows = [headers.join(',')];
+
+            syndicateData.syndicate_predictions.forEach((prediction, index) => {
+                const numbers = prediction.numbers || [];
+                const powerball = prediction.powerball || 0;
+                const score = prediction.score || 0;
+                const tier = prediction.tier || 'Standard';
+                const method = prediction.method || syndicateData.method;
+                const rank = prediction.rank || (index + 1);
+
+                const row = [
+                    rank,
+                    ...numbers,
+                    powerball,
+                    (score * 100).toFixed(2),
+                    tier,
+                    method
+                ];
+                csvRows.push(row.join(','));
+            });
+
+            // Create and download file
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `shiol_syndicate_${syndicateData.total_plays}_plays_${new Date().toISOString().slice(0, 10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                PowerballUtils.showToast('Syndicate data exported successfully!', 'success');
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            PowerballUtils.showToast('Failed to export syndicate data', 'error');
+        }
+    }
+
+    function updateElementText(elementId, text) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = text;
         }
     }
 
