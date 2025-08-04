@@ -389,7 +389,7 @@ class PipelineOrchestrator:
     
     def step_prediction_generation(self) -> Dict[str, Any]:
         """
-        Step 4: Prediction Generation - Generate 5 diverse high-quality plays for next drawing.
+        Step 4: Prediction Generation - Generate 100 Smart AI predictions for next drawing.
         
         Returns:
             Dict with prediction generation results
@@ -398,12 +398,13 @@ class PipelineOrchestrator:
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
             
-            # Generate 100 diverse predictions for the next drawing (includes saving to log)
-            diverse_predictions = predictor.predict_diverse_plays(num_plays=100, save_to_log=True)
+            # Generate 100 Smart AI predictions for the next drawing (includes saving to log)
+            logger.info("Generating 100 Smart AI predictions...")
+            smart_predictions = predictor.predict_diverse_plays(num_plays=100, save_to_log=True)
             
-            # Prepare result with all 5 plays
+            # Prepare result with all 100 plays
             plays_info = []
-            for i, prediction in enumerate(diverse_predictions):
+            for i, prediction in enumerate(smart_predictions):
                 play_info = {
                     'play_number': i + 1,
                     'prediction_id': prediction.get('log_id'),
@@ -411,30 +412,44 @@ class PipelineOrchestrator:
                     'powerball': prediction['powerball'],
                     'total_score': prediction['score_total'],
                     'score_details': prediction['score_details'],
-                    'play_rank': prediction.get('play_rank', i + 1)
+                    'play_rank': prediction.get('play_rank', i + 1),
+                    'method': 'smart_ai'
                 }
                 plays_info.append(play_info)
             
+            # Calculate statistics
+            avg_score = sum(p['score_total'] for p in smart_predictions) / len(smart_predictions)
+            top_10_avg = sum(p['score_total'] for p in smart_predictions[:10]) / 10
+            
             result = {
                 'predictions_generated': True,
-                'num_plays_generated': len(diverse_predictions),
+                'method': 'smart_ai',
+                'num_plays_generated': len(smart_predictions),
                 'plays': plays_info,
-                'model_version': diverse_predictions[0]['model_version'],
-                'dataset_hash': diverse_predictions[0]['dataset_hash'],
-                'candidates_evaluated': diverse_predictions[0]['num_candidates_evaluated'],
-                'generation_method': 'diverse_deterministic',
-                'diversity_algorithm': 'intelligent_selection'
+                'statistics': {
+                    'average_score': avg_score,
+                    'top_10_average_score': top_10_avg,
+                    'best_score': smart_predictions[0]['score_total'],
+                    'worst_score': smart_predictions[-1]['score_total']
+                },
+                'model_version': smart_predictions[0]['model_version'],
+                'dataset_hash': smart_predictions[0]['dataset_hash'],
+                'candidates_evaluated': smart_predictions[0]['num_candidates_evaluated'],
+                'generation_method': 'smart_ai_diverse_deterministic',
+                'diversity_algorithm': 'intelligent_selection_100_plays'
             }
             
             # Log summary of generated plays
-            logger.info(f"Generated {len(diverse_predictions)} diverse plays for next drawing:")
-            for i, prediction in enumerate(diverse_predictions):
-                logger.info(f"  Play {i+1}: {prediction['numbers']} + {prediction['powerball']} (Score: {prediction['score_total']:.4f})")
+            logger.info(f"Generated {len(smart_predictions)} Smart AI predictions for next drawing")
+            logger.info(f"Average score: {avg_score:.4f}")
+            logger.info(f"Top 10 average score: {top_10_avg:.4f}")
+            logger.info(f"Best prediction: {smart_predictions[0]['numbers']} + {smart_predictions[0]['powerball']} (Score: {smart_predictions[0]['score_total']:.4f})")
+            logger.info("All 100 Smart AI predictions have been saved to the database")
             
             return result
             
         except Exception as e:
-            logger.error(f"Prediction generation step failed: {e}")
+            logger.error(f"Smart AI prediction generation step failed: {e}")
             raise
     
     def step_historical_validation(self) -> Dict[str, Any]:
