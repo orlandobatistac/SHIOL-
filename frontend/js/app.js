@@ -501,8 +501,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE_URL}/predict/smart?num_plays=${numPlays}`);
 
             if (!response.ok) {
-                const errorData = await response.json().catch(() => null);
-                throw new Error(errorData?.detail || `HTTP error! status: ${response.status}`);
+                let errorMessage = `HTTP error! status: ${response.status}`;
+                try {
+                    const errorData = await response.json();
+                    if (errorData?.detail) {
+                        errorMessage = errorData.detail;
+                    } else if (errorData?.message) {
+                        errorMessage = errorData.message;
+                    }
+                } catch (parseError) {
+                    console.warn('Could not parse error response:', parseError);
+                }
+                throw new Error(errorMessage);
             }
 
             const data = await response.json();
@@ -519,7 +529,17 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Syndicate generation error:', error);
             loadingDiv.classList.add('hidden');
-            showToast('Failed to generate syndicate predictions: ' + error.message, 'error');
+            
+            let errorMessage = 'Failed to generate syndicate predictions';
+            if (error.message && error.message !== '[object Object]') {
+                errorMessage += ': ' + error.message;
+            } else if (error.detail) {
+                errorMessage += ': ' + error.detail;
+            } else {
+                errorMessage += '. Please check server logs.';
+            }
+            
+            showToast(errorMessage, 'error');
         } finally {
             // Reset button state
             btn.disabled = false;

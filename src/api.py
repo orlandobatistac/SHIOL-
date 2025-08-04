@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
     global pipeline_orchestrator
     # On startup
     logger.info("Application startup...")
-    
+
     # Initialize pipeline orchestrator
     try:
         pipeline_orchestrator = PipelineOrchestrator()
@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to initialize pipeline orchestrator: {e}")
         pipeline_orchestrator = None
-    
+
     # Initial data update
     logger.info("Performing initial data update on startup.")
     update_database_from_source()
@@ -102,16 +102,16 @@ app.add_middleware(
 try:
     logger.info("Loading model and generator instances...")
     predictor = Predictor()
-    
+
     # Load historical data first
     from src.loader import DataLoader
     data_loader = DataLoader()
     historical_data = data_loader.load_historical_data()
-    
+
     # Initialize generators with historical data
     intelligent_generator = IntelligentGenerator(historical_data)
     deterministic_generator = DeterministicGenerator(historical_data)
-    
+
     logger.info("Model and generators loaded successfully.")
 except Exception as e:
     logger.critical(f"Fatal error during startup: Failed to load model. Error: {e}")
@@ -126,7 +126,7 @@ api_router = APIRouter(prefix="/api/v1")
 async def get_prediction(deterministic: bool = Query(False, description="Use deterministic method")):
     """
     Generates and returns a single Powerball prediction.
-    
+
     - **deterministic**: If true, uses deterministic method; otherwise uses traditional method
     """
     if not predictor or not intelligent_generator:
@@ -134,25 +134,25 @@ async def get_prediction(deterministic: bool = Query(False, description="Use det
         raise HTTPException(
             status_code=500, detail="Model is not available. Please check server logs."
         )
-    
+
     if deterministic and not deterministic_generator:
         logger.error("Deterministic generator not available.")
         raise HTTPException(
             status_code=500, detail="Deterministic generator is not available."
         )
-    
+
     try:
         logger.info(f"Received request for {'deterministic' if deterministic else 'traditional'} prediction.")
         wb_probs, pb_probs = predictor.predict_probabilities()
-        
+
         if deterministic:
             # Use deterministic method
             result = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
             prediction = result['numbers'] + [result['powerball']]
-            
+
             # Save to database
             save_prediction_log(result)
-            
+
             return {
                 "prediction": convert_numpy_types(prediction),
                 "method": "deterministic",
@@ -165,12 +165,12 @@ async def get_prediction(deterministic: bool = Query(False, description="Use det
                 wb_probs, pb_probs, num_plays=1
             )
             prediction = play_df.iloc[0].astype(int).tolist()
-            
+
             return {
                 "prediction": convert_numpy_types(prediction),
                 "method": "traditional"
             }
-            
+
     except Exception as e:
         logger.error(f"An error occurred during prediction: {e}")
         raise HTTPException(status_code=500, detail="Model prediction failed.")
@@ -179,7 +179,7 @@ async def get_prediction(deterministic: bool = Query(False, description="Use det
 async def get_multiple_predictions(count: int = Query(1, ge=1, le=10)):
     """
     Generates and returns a specified number of Powerball predictions.
-    
+
     - **count**: Number of plays to generate (default: 1, min: 1, max: 10).
     """
     if not predictor or not intelligent_generator:
@@ -214,10 +214,10 @@ async def get_deterministic_prediction():
         logger.info("Received request for deterministic prediction.")
         wb_probs, pb_probs = predictor.predict_probabilities()
         result = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
-        
+
         # Save to database
         save_prediction_log(result)
-        
+
         logger.info(f"Generated deterministic prediction with score: {result['score_total']:.4f}")
         prediction_list = convert_numpy_types(result['numbers'] + [result['powerball']])
         return {
@@ -243,7 +243,7 @@ async def get_deterministic_prediction():
 async def get_diverse_predictions(num_plays: int = Query(5, ge=1, le=10, description="Number of diverse plays to generate")):
     """
     Generates multiple diverse high-quality predictions for the next lottery drawing.
-    
+
     - **num_plays**: Number of diverse plays to generate (default: 5, min: 1, max: 10)
     """
     if not predictor or not deterministic_generator:
@@ -253,10 +253,10 @@ async def get_diverse_predictions(num_plays: int = Query(5, ge=1, le=10, descrip
         )
     try:
         logger.info(f"Received request for {num_plays} diverse predictions.")
-        
+
         # Generate diverse predictions using the new method
         diverse_predictions = predictor.predict_diverse_plays(num_plays=num_plays, save_to_log=True)
-        
+
         # Format response
         plays = []
         for prediction in diverse_predictions:
@@ -270,7 +270,7 @@ async def get_diverse_predictions(num_plays: int = Query(5, ge=1, le=10, descrip
                 "diversity_method": prediction.get('diversity_method', 'intelligent_selection')
             }
             plays.append(play)
-        
+
         response = {
             "plays": plays,
             "num_plays": len(plays),
@@ -288,13 +288,13 @@ async def get_diverse_predictions(num_plays: int = Query(5, ge=1, le=10, descrip
                 "diversity_algorithm": "intelligent_selection"
             }
         }
-        
+
         logger.info(f"Generated {len(plays)} diverse predictions with scores ranging from "
                    f"{response['generation_summary']['score_range']['lowest']:.4f} to "
                    f"{response['generation_summary']['score_range']['highest']:.4f}")
-        
+
         return response
-        
+
     except Exception as e:
         logger.error(f"An error occurred during diverse prediction generation: {e}")
         raise HTTPException(status_code=500, detail="Diverse prediction generation failed.")
@@ -303,7 +303,7 @@ async def get_diverse_predictions(num_plays: int = Query(5, ge=1, le=10, descrip
 async def get_detailed_prediction(deterministic: bool = Query(True, description="Use deterministic method for detailed scoring")):
     """
     Generates a prediction with detailed component scores and analysis.
-    
+
     - **deterministic**: If true, uses deterministic method with detailed scoring
     """
     if not predictor:
@@ -311,20 +311,20 @@ async def get_detailed_prediction(deterministic: bool = Query(True, description=
         raise HTTPException(
             status_code=500, detail="Predictor is not available."
         )
-    
+
     if deterministic and not deterministic_generator:
         logger.error("Deterministic generator not available for detailed prediction.")
         raise HTTPException(
             status_code=500, detail="Deterministic generator is not available."
         )
-    
+
     try:
         logger.info("Received request for detailed prediction.")
         wb_probs, pb_probs = predictor.predict_probabilities()
-        
+
         if deterministic:
             result = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
-            
+
             prediction_list = convert_numpy_types(result['numbers'] + [result['powerball']])
             return {
                 "prediction": prediction_list,
@@ -353,13 +353,13 @@ async def get_detailed_prediction(deterministic: bool = Query(True, description=
             # For traditional method, provide basic info
             play_df = intelligent_generator.generate_plays(wb_probs, pb_probs, num_plays=1)
             prediction = play_df.iloc[0].astype(int).tolist()
-            
+
             return {
                 "prediction": convert_numpy_types(prediction),
                 "method": "traditional",
                 "note": "Detailed scoring only available with deterministic method"
             }
-            
+
     except Exception as e:
         logger.error(f"An error occurred during detailed prediction: {e}")
         raise HTTPException(status_code=500, detail="Detailed prediction failed.")
@@ -374,19 +374,19 @@ async def compare_prediction_methods():
         raise HTTPException(
             status_code=500, detail="Required prediction components are not available."
         )
-    
+
     try:
         logger.info("Received request for method comparison.")
         wb_probs, pb_probs = predictor.predict_probabilities()
-        
+
         # Generate traditional prediction
         traditional_play_df = intelligent_generator.generate_plays(wb_probs, pb_probs, num_plays=1)
         traditional_prediction = traditional_play_df.iloc[0].astype(int).tolist()
-        
+
         # Generate deterministic prediction
         deterministic_result = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
         deterministic_prediction = deterministic_result['numbers'] + [deterministic_result['powerball']]
-        
+
         return {
             "comparison": {
                 "traditional": {
@@ -421,7 +421,7 @@ async def compare_prediction_methods():
             },
             "recommendation": "deterministic" if convert_numpy_types(deterministic_result['score_total']) > 0.5 else "traditional"
         }
-        
+
     except Exception as e:
         logger.error(f"An error occurred during method comparison: {e}")
         raise HTTPException(status_code=500, detail="Method comparison failed.")
@@ -430,13 +430,13 @@ async def compare_prediction_methods():
 async def get_prediction_history(limit: int = Query(10, ge=1, le=50, description="Number of recent predictions to return")):
     """
     Returns the history of deterministic predictions.
-    
+
     - **limit**: Number of recent predictions to return (max 50)
     """
     try:
         logger.info(f"Received request for prediction history (limit: {limit}).")
         history = db.get_prediction_history(limit=limit)
-        
+
         # Check if history is empty
         if history.empty:
             logger.info("No prediction history found.")
@@ -444,7 +444,7 @@ async def get_prediction_history(limit: int = Query(10, ge=1, le=50, description
                 "history": [],
                 "count": 0
             }
-        
+
         # Convert DataFrame to list of dictionaries and handle numpy types
         history_list = []
         for _, row in history.iterrows():
@@ -463,12 +463,12 @@ async def get_prediction_history(limit: int = Query(10, ge=1, le=50, description
                 "created_at": row['created_at']
             }
             history_list.append(history_item)
-        
+
         return {
             "history": history_list,
             "count": len(history_list)
         }
-        
+
     except Exception as e:
         logger.error(f"An error occurred retrieving prediction history: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve prediction history.")
@@ -490,22 +490,22 @@ except Exception as e:
 async def get_adaptive_analysis(days_back: int = Query(30, ge=1, le=365, description="Days to analyze")):
     """
     Provides comprehensive adaptive analysis of system performance.
-    
+
     - **days_back**: Number of days to analyze (default: 30, max: 365)
     """
     try:
         logger.info(f"Received request for adaptive analysis ({days_back} days)")
-        
+
         analysis_results = run_adaptive_analysis(days_back)
-        
+
         if 'error' in analysis_results:
             raise HTTPException(status_code=500, detail=analysis_results['error'])
-        
+
         return {
             "adaptive_analysis": analysis_results,
             "system_status": "active" if adaptive_system else "inactive"
         }
-        
+
     except Exception as e:
         logger.error(f"Error in adaptive analysis: {e}")
         raise HTTPException(status_code=500, detail="Adaptive analysis failed.")
@@ -515,22 +515,22 @@ async def get_reliable_plays(limit: int = Query(10, ge=1, le=50, description="Nu
                            min_score: float = Query(0.7, ge=0.0, le=1.0, description="Minimum reliability score")):
     """
     Returns the most reliable play combinations based on historical performance.
-    
+
     - **limit**: Maximum number of plays to return (default: 10, max: 50)
     - **min_score**: Minimum reliability score threshold (default: 0.7)
     """
     try:
         logger.info(f"Received request for reliable plays (limit: {limit}, min_score: {min_score})")
-        
+
         reliable_plays = db.get_reliable_plays(limit=limit, min_reliability_score=min_score)
-        
+
         if reliable_plays.empty:
             return {
                 "reliable_plays": [],
                 "count": 0,
                 "message": "No reliable plays found with the specified criteria"
             }
-        
+
         # Convert DataFrame to list of dictionaries
         plays_list = []
         for _, play in reliable_plays.iterrows():
@@ -550,7 +550,7 @@ async def get_reliable_plays(limit: int = Query(10, ge=1, le=50, description="Nu
                 "created_at": play['created_at']
             }
             plays_list.append(play_dict)
-        
+
         return {
             "reliable_plays": plays_list,
             "count": len(plays_list),
@@ -559,7 +559,7 @@ async def get_reliable_plays(limit: int = Query(10, ge=1, le=50, description="Nu
                 "limit": limit
             }
         }
-        
+
     except Exception as e:
         logger.error(f"Error retrieving reliable plays: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve reliable plays.")
@@ -571,9 +571,9 @@ async def get_adaptive_weights():
     """
     try:
         logger.info("Received request for adaptive weights")
-        
+
         active_weights = db.get_active_adaptive_weights()
-        
+
         if not active_weights:
             return {
                 "adaptive_weights": None,
@@ -586,13 +586,13 @@ async def get_adaptive_weights():
                 },
                 "message": "No adaptive weights configured, using default weights"
             }
-        
+
         return {
             "adaptive_weights": active_weights,
             "status": "active",
             "last_updated": active_weights.get('weight_set_name', 'unknown')
         }
-        
+
     except Exception as e:
         logger.error(f"Error retrieving adaptive weights: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve adaptive weights.")
@@ -602,31 +602,31 @@ async def optimize_weights(algorithm: str = Query("differential_evolution",
                                                 description="Optimization algorithm to use")):
     """
     Triggers weight optimization using the specified algorithm.
-    
+
     - **algorithm**: Optimization algorithm ('differential_evolution', 'scipy_minimize', 'grid_search')
     """
     try:
         logger.info(f"Received request for weight optimization using {algorithm}")
-        
+
         if not adaptive_system:
             raise HTTPException(status_code=503, detail="Adaptive system not available")
-        
+
         # Get recent performance data
         performance_data = db.get_performance_analytics(30)
-        
+
         if performance_data.get('total_predictions', 0) < 10:
             raise HTTPException(
                 status_code=400,
                 detail="Insufficient data for optimization. Need at least 10 predictions."
             )
-        
+
         # Get current weights
         current_weights = db.get_active_adaptive_weights()
         if not current_weights:
             current_weights = {
                 'weights': {'probability': 0.4, 'diversity': 0.25, 'historical': 0.2, 'risk_adjusted': 0.15}
             }
-        
+
         # Perform optimization
         weight_optimizer = adaptive_system['weight_optimizer']
         optimized_weights = weight_optimizer.optimize_weights(
@@ -634,14 +634,14 @@ async def optimize_weights(algorithm: str = Query("differential_evolution",
             performance_data,
             algorithm
         )
-        
+
         if not optimized_weights:
             raise HTTPException(status_code=500, detail="Weight optimization failed")
-        
+
         # Save optimized weights
         weight_set_name = f"api_optimized_{algorithm}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         performance_score = performance_data.get('avg_accuracy', 0.0)
-        
+
         weights_id = db.save_adaptive_weights(
             weight_set_name=weight_set_name,
             weights=optimized_weights,
@@ -650,7 +650,7 @@ async def optimize_weights(algorithm: str = Query("differential_evolution",
             dataset_hash="api_request",
             is_active=True
         )
-        
+
         return {
             "optimization_result": "success",
             "algorithm_used": algorithm,
@@ -663,7 +663,7 @@ async def optimize_weights(algorithm: str = Query("differential_evolution",
             "weights_id": weights_id,
             "weight_set_name": weight_set_name
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -674,20 +674,20 @@ async def optimize_weights(algorithm: str = Query("differential_evolution",
 async def get_performance_analytics(days_back: int = Query(30, ge=1, le=365, description="Days to analyze")):
     """
     Returns detailed performance analytics for the adaptive system.
-    
+
     - **days_back**: Number of days to analyze (default: 30, max: 365)
     """
     try:
         logger.info(f"Received request for performance analytics ({days_back} days)")
-        
+
         analytics = db.get_performance_analytics(days_back)
-        
+
         return {
             "performance_analytics": analytics,
             "analysis_period": f"{days_back} days",
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error retrieving performance analytics: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve performance analytics.")
@@ -696,22 +696,22 @@ async def get_performance_analytics(days_back: int = Query(30, ge=1, le=365, des
 async def run_adaptive_validation(enable_learning: bool = Query(True, description="Enable adaptive learning")):
     """
     Runs adaptive validation with learning feedback.
-    
+
     - **enable_learning**: Whether to enable adaptive learning from validation results
     """
     try:
         logger.info(f"Received request for adaptive validation (learning: {enable_learning})")
-        
+
         if not adaptive_system:
             raise HTTPException(status_code=503, detail="Adaptive system not available")
-        
+
         # Run adaptive validation
         adaptive_validator = adaptive_system['adaptive_validator']
         csv_path = adaptive_validator.adaptive_validate_predictions(enable_learning=enable_learning)
-        
+
         if not csv_path:
             raise HTTPException(status_code=500, detail="Adaptive validation failed")
-        
+
         # Get validation summary
         try:
             import pandas as pd
@@ -719,7 +719,7 @@ async def run_adaptive_validation(enable_learning: bool = Query(True, descriptio
             total_predictions = len(validation_df)
             winners = len(validation_df[validation_df['prize_category'] != 'Non-winning'])
             win_rate = (winners / total_predictions * 100) if total_predictions > 0 else 0.0
-            
+
             summary = {
                 "total_predictions": total_predictions,
                 "winning_predictions": winners,
@@ -728,14 +728,14 @@ async def run_adaptive_validation(enable_learning: bool = Query(True, descriptio
             }
         except Exception:
             summary = {"message": "Validation completed but summary unavailable"}
-        
+
         return {
             "validation_result": "success",
             "csv_path": csv_path,
             "summary": summary,
             "adaptive_learning": enable_learning
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -749,26 +749,26 @@ async def get_smart_predictions(
     """
     AI-powered unified prediction system that automatically combines all methods
     and returns the best predictions ranked by comprehensive AI scoring.
-    
+
     - **num_plays**: Number of best predictions to return (50-500)
     """
     try:
         logger.info(f"Starting Smart AI Prediction system for {num_plays} best plays...")
-        
+
         if not predictor:
             raise HTTPException(status_code=503, detail="Prediction system not available")
-        
+
         # 1. Generate large pool from all methods (3x requested amount)
         total_candidates = num_plays * 3
-        
+
         logger.info("Phase 1: Generating candidates from all AI methods...")
-        
+
         # Get base probabilities
         wb_probs, pb_probs = predictor.predict_probabilities()
-        
+
         all_candidates = []
         method_scores = {}
-        
+
         # Method 1: Ensemble (40% weight) - Best overall performance
         try:
             ensemble_count = int(total_candidates * 0.4)
@@ -782,7 +782,7 @@ async def get_smart_predictions(
             logger.info(f"Generated {len(ensemble_predictions)} ensemble candidates")
         except Exception as e:
             logger.warning(f"Ensemble method failed: {e}")
-        
+
         # Method 2: Deterministic (35% weight) - Most consistent
         try:
             deterministic_count = int(total_candidates * 0.35)
@@ -796,7 +796,7 @@ async def get_smart_predictions(
             logger.info(f"Generated {len(deterministic_predictions)} deterministic candidates")
         except Exception as e:
             logger.warning(f"Deterministic method failed: {e}")
-        
+
         # Method 3: Adaptive (25% weight) - Learning-based
         try:
             adaptive_count = int(total_candidates * 0.25)
@@ -806,53 +806,51 @@ async def get_smart_predictions(
                 data_loader = get_data_loader()
                 historical_data = data_loader.load_historical_data()
                 adaptive_scorer = AdaptivePlayScorer(historical_data)
-                
+
                 # Generate adaptive predictions
                 adaptive_predictions = []
                 for i in range(adaptive_count):
                     # Generate using deterministic but score with adaptive
                     det_pred = predictor.predict_deterministic(save_to_log=False)
-                    
+
                     # Re-score with adaptive weights
                     adaptive_scores = adaptive_scorer.calculate_total_score(
                         det_pred['numbers'], det_pred['powerball'], wb_probs, pb_probs
                     )
-                    
+
                     adaptive_pred = det_pred.copy()
-                    adaptive_pred['score_total'] = adaptive_scores['total']
-                    adaptive_pred['score_details'] = adaptive_scores
+                    adaptive_pred['score_total'] = convert_numpy_types(adaptive_scores['total'])
+                    adaptive_pred['score_details'] = convert_numpy_types(adaptive_scores)
                     adaptive_pred['ai_method'] = 'adaptive'
                     adaptive_pred['method_weight'] = 0.25
-                    adaptive_pred['base_score'] = adaptive_scores['total']
-                    
-                    adaptive_predictions.append(adaptive_pred)
-                
-                all_candidates.extend(adaptive_predictions)
+                    adaptive_pred['base_score'] = convert_numpy_types(adaptive_scores['total'])
+
+                    adaptive_predictions.extend(adaptive_predictions)
                 method_scores['adaptive'] = len(adaptive_predictions)
                 logger.info(f"Generated {len(adaptive_predictions)} adaptive candidates")
             else:
                 logger.warning("Adaptive system not available, using deterministic as fallback")
         except Exception as e:
             logger.warning(f"Adaptive method failed: {e}")
-        
+
         if not all_candidates:
             raise HTTPException(status_code=500, detail="No candidates generated from any method")
-        
+
         logger.info(f"Phase 2: AI Ranking of {len(all_candidates)} total candidates...")
-        
+
         # 2. Apply unified AI scoring system
         smart_scored_candidates = []
-        
+
         for candidate in all_candidates:
             # Calculate Smart AI Score (combines method score + meta-features)
             base_score = candidate.get('base_score', candidate.get('score_total', 0))
             method_weight = candidate.get('method_weight', 0.3)
-            
+
             # Meta-features for AI enhancement
             diversity_bonus = _calculate_smart_diversity_bonus(candidate, all_candidates[:50])
             consistency_bonus = _calculate_consistency_bonus(candidate)
             historical_performance = _calculate_historical_performance_bonus(candidate)
-            
+
             # Smart AI Final Score
             smart_score = (
                 base_score * method_weight * 0.6 +  # Base method score (60%)
@@ -860,7 +858,7 @@ async def get_smart_predictions(
                 consistency_bonus * 0.15 +         # Consistency factor (15%)
                 historical_performance * 0.05      # Historical factor (5%)
             )
-            
+
             smart_candidate = {
                 'numbers': candidate['numbers'],
                 'powerball': candidate['powerball'],
@@ -873,32 +871,32 @@ async def get_smart_predictions(
                 'historical_bonus': historical_performance,
                 'rank': 0  # Will be set after sorting
             }
-            
+
             smart_scored_candidates.append(smart_candidate)
-        
+
         # 3. Sort by Smart AI Score and take top results
         smart_scored_candidates.sort(key=lambda x: x['smart_ai_score'], reverse=True)
-        
+
         # Remove duplicates based on number combination
         seen_combinations = set()
         unique_candidates = []
-        
+
         for candidate in smart_scored_candidates:
             combination_key = tuple(sorted(candidate['numbers']) + [candidate['powerball']])
             if combination_key not in seen_combinations:
                 seen_combinations.add(combination_key)
                 unique_candidates.append(candidate)
-                
+
             if len(unique_candidates) >= num_plays:
                 break
-        
+
         # 4. Finalize rankings and metadata
         final_predictions = unique_candidates[:num_plays]
-        
+
         for i, pred in enumerate(final_predictions):
             pred['rank'] = i + 1
             pred['tier'] = _assign_smart_tier(pred['smart_ai_score'])
-        
+
         # 5. Generate response with comprehensive metadata
         response = {
             "smart_predictions": final_predictions,
@@ -924,12 +922,12 @@ async def get_smart_predictions(
             "generation_timestamp": datetime.now().isoformat(),
             "recommendation": "Top 10 predictions are AI-optimized for highest win probability"
         }
-        
+
         logger.info(f"Smart AI Prediction completed: {len(final_predictions)} predictions generated")
         logger.info(f"Score range: {response['ai_analysis']['score_range']['highest']:.4f} - {response['ai_analysis']['score_range']['lowest']:.4f}")
-        
+
         return response
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -940,35 +938,35 @@ def _calculate_smart_diversity_bonus(candidate: Dict, reference_pool: List[Dict]
     """Calculate diversity bonus for Smart AI scoring."""
     if not reference_pool:
         return 0.5
-    
+
     candidate_nums = set(candidate['numbers'] + [candidate['powerball']])
     diversity_scores = []
-    
+
     for ref in reference_pool[:20]:  # Compare with top 20
         if ref == candidate:
             continue
         ref_nums = set(ref['numbers'] + [ref['powerball']])
         jaccard_div = 1.0 - len(candidate_nums.intersection(ref_nums)) / len(candidate_nums.union(ref_nums))
         diversity_scores.append(jaccard_div)
-    
+
     return np.mean(diversity_scores) if diversity_scores else 0.5
 
 def _calculate_consistency_bonus(candidate: Dict) -> float:
     """Calculate consistency bonus based on number patterns."""
     numbers = candidate['numbers']
-    
+
     # Balanced parity
     even_count = sum(1 for n in numbers if n % 2 == 0)
     parity_score = 1.0 if even_count in [2, 3] else 0.5
-    
+
     # Good sum range
     total_sum = sum(numbers)
     sum_score = 1.0 if 120 <= total_sum <= 240 else 0.6
-    
+
     # Decent spread
     spread = max(numbers) - min(numbers)
     spread_score = min(1.0, spread / 50.0)
-    
+
     return (parity_score + sum_score + spread_score) / 3.0
 
 def _calculate_historical_performance_bonus(candidate: Dict) -> float:
@@ -976,14 +974,14 @@ def _calculate_historical_performance_bonus(candidate: Dict) -> float:
     # Simplified historical bonus - can be enhanced with actual historical data
     numbers = candidate['numbers']
     powerball = candidate['powerball']
-    
+
     # Prefer balanced number selection
     range_distribution = [
         sum(1 for n in numbers if 1 <= n <= 23),
-        sum(1 for n in numbers if 24 <= n <= 46), 
+        sum(1 for n in numbers if 24 <= n <= 46),
         sum(1 for n in numbers if 47 <= n <= 69)
     ]
-    
+
     balance_score = 1.0 - (max(range_distribution) - min(range_distribution)) / 5.0
     return max(0.0, balance_score)
 
@@ -1006,16 +1004,16 @@ async def get_syndicate_predictions(
     """
     Legacy endpoint - use /predict/smart for best AI experience.
     Generates optimized predictions for syndicate play.
-    
+
     - **num_plays**: Number of plays to generate (10-500)
     - **method**: Prediction method (ensemble, deterministic, adaptive)
     """
     try:
         logger.info(f"Received syndicate prediction request: {num_plays} plays using {method} method")
-        
+
         if not predictor:
             raise HTTPException(status_code=503, detail="Prediction system not available")
-        
+
         # Generate syndicate predictions based on method
         if method == "ensemble":
             predictions = predictor.predict_ensemble_syndicate(num_plays)
@@ -1023,7 +1021,7 @@ async def get_syndicate_predictions(
             predictions = predictor.predict_syndicate_plays(num_plays)
         else:
             predictions = predictor.predict_diverse_plays(num_plays)
-        
+
         # Format response
         formatted_predictions = []
         for pred in predictions:
@@ -1037,7 +1035,7 @@ async def get_syndicate_predictions(
                 "ensemble_score": convert_numpy_types(pred.get('ensemble_score', pred['score_total']))
             }
             formatted_predictions.append(formatted_pred)
-        
+
         return {
             "syndicate_predictions": formatted_predictions,
             "total_plays": len(formatted_predictions),
@@ -1050,7 +1048,7 @@ async def get_syndicate_predictions(
                 "standard_tier": len([p for p in predictions if p.get('syndicate_tier') == 'Standard'])
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1064,38 +1062,38 @@ async def get_adaptive_prediction():
     """
     try:
         logger.info("Received request for adaptive prediction")
-        
+
         if not predictor or not adaptive_system:
             raise HTTPException(status_code=503, detail="Adaptive prediction system not available")
-        
+
         # Get probabilities from the model
         wb_probs, pb_probs = predictor.predict_probabilities()
-        
+
         # Use adaptive scorer
         adaptive_scorer = adaptive_system['adaptive_scorer']
-        
+
         # Generate candidates and score them
         from src.intelligent_generator import DeterministicGenerator
         deterministic_gen = DeterministicGenerator(historical_data)
-        
+
         # Generate top prediction using adaptive scoring
         result = deterministic_gen.generate_top_prediction(wb_probs, pb_probs)
-        
+
         # Re-score using adaptive weights
         adaptive_scores = adaptive_scorer.calculate_total_score(
             result['numbers'], result['powerball'], wb_probs, pb_probs
         )
-        
+
         # Save prediction with adaptive scoring
         adaptive_result = result.copy()
-        adaptive_result['score_total'] = adaptive_scores['total']
-        adaptive_result['score_details'] = adaptive_scores
+        adaptive_result['score_total'] = convert_numpy_types(adaptive_scores['total'])
+        adaptive_result['score_details'] = convert_numpy_types(adaptive_scores)
         adaptive_result['method'] = 'adaptive_deterministic'
-        
+
         prediction_id = save_prediction_log(adaptive_result)
-        
+
         prediction_list = convert_numpy_types(result['numbers'] + [result['powerball']])
-        
+
         return {
             "prediction": prediction_list,
             "method": "adaptive_deterministic",
@@ -1115,7 +1113,7 @@ async def get_adaptive_prediction():
                 "timestamp": result['timestamp']
             }
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1131,13 +1129,13 @@ async def get_pipeline_status():
     """
     try:
         logger.info("Received request for pipeline status")
-        
+
         if not pipeline_orchestrator:
             raise HTTPException(status_code=503, detail="Pipeline orchestrator not available")
-        
+
         # Get pipeline status from orchestrator
         orchestrator_status = pipeline_orchestrator.get_pipeline_status()
-        
+
         # Get recent execution history from global tracking
         recent_executions = []
         for exec_id, execution in list(pipeline_executions.items())[-5:]:
@@ -1150,7 +1148,7 @@ async def get_pipeline_status():
                 "steps_completed": execution.get("steps_completed", 0),
                 "total_steps": execution.get("total_steps", 7)
             })
-        
+
         # Get next scheduled execution (from scheduler)
         next_execution = None
         try:
@@ -1161,7 +1159,7 @@ async def get_pipeline_status():
                     break
         except Exception as e:
             logger.warning(f"Could not get next scheduled execution: {e}")
-        
+
         # Get recent predictions for generated plays
         recent_plays = []
         try:
@@ -1176,13 +1174,13 @@ async def get_pipeline_status():
                 })
         except Exception as e:
             logger.warning(f"Could not get recent plays: {e}")
-        
+
         # Get system health metrics
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
             memory = psutil.virtual_memory()
             disk = psutil.disk_usage('.')
-            
+
             system_health = {
                 "cpu_usage_percent": cpu_percent,
                 "memory_usage_percent": memory.percent,
@@ -1193,7 +1191,7 @@ async def get_pipeline_status():
         except Exception as e:
             logger.warning(f"Could not get system health metrics: {e}")
             system_health = {"error": "System metrics unavailable"}
-        
+
         return {
             "pipeline_status": {
                 "last_execution": recent_executions[-1] if recent_executions else None,
@@ -1206,7 +1204,7 @@ async def get_pipeline_status():
             "generated_plays_last_run": recent_plays,
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1226,10 +1224,10 @@ async def trigger_pipeline_execution(
     """
     try:
         logger.info(f"Received request to trigger pipeline (predictions: {num_predictions}, steps: {steps})")
-        
+
         if not pipeline_orchestrator:
             raise HTTPException(status_code=503, detail="Pipeline orchestrator not available")
-        
+
         # Check if pipeline is already running
         running_executions = [ex for ex in pipeline_executions.values() if ex.get("status") == "running"]
         if running_executions and not force:
@@ -1237,10 +1235,10 @@ async def trigger_pipeline_execution(
                 status_code=409,
                 detail=f"Pipeline execution already running (ID: {running_executions[0].get('execution_id')}). Use force=true to override."
             )
-        
+
         # Generate execution ID
         execution_id = str(uuid.uuid4())[:8]
-        
+
         # Parse steps if provided
         step_list = None
         if steps:
@@ -1253,7 +1251,7 @@ async def trigger_pipeline_execution(
                     status_code=400,
                     detail=f"Invalid steps: {invalid_steps}. Valid steps: {valid_steps}"
                 )
-        
+
         # Initialize execution tracking
         pipeline_executions[execution_id] = {
             "execution_id": execution_id,
@@ -1266,7 +1264,7 @@ async def trigger_pipeline_execution(
             "requested_steps": step_list,
             "error": None
         }
-        
+
         # Add background task
         if step_list:
             # Run specific steps
@@ -1274,7 +1272,7 @@ async def trigger_pipeline_execution(
         else:
             # Run full pipeline
             background_tasks.add_task(run_full_pipeline_background, execution_id, num_predictions)
-        
+
         return {
             "execution_id": execution_id,
             "status": "started",
@@ -1287,7 +1285,7 @@ async def trigger_pipeline_execution(
             "tracking_url": f"/api/v1/pipeline/status",
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1307,12 +1305,12 @@ async def get_pipeline_logs(
     """
     try:
         logger.info(f"Received request for pipeline logs (level: {level}, limit: {limit})")
-        
+
         # Get log file path from config or use default
         log_file = "logs/shiolplus.log"
         if pipeline_orchestrator and pipeline_orchestrator.config:
             log_file = pipeline_orchestrator.config.get("paths", "log_file", fallback=log_file)
-        
+
         if not os.path.exists(log_file):
             return {
                 "logs": [],
@@ -1326,19 +1324,19 @@ async def get_pipeline_logs(
                     "offset": offset
                 }
             }
-        
+
         # Read and parse log file
         logs = []
         try:
             with open(log_file, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
-            
+
             # Parse log lines (basic parsing - assumes loguru format)
             for line in reversed(lines):  # Most recent first
                 line = line.strip()
                 if not line:
                     continue
-                
+
                 try:
                     # Basic log parsing - extract timestamp, level, message
                     parts = line.split(' | ')
@@ -1347,11 +1345,11 @@ async def get_pipeline_logs(
                         log_level = parts[1].strip()
                         location = parts[2]
                         message = ' | '.join(parts[3:])
-                        
+
                         # Apply level filter
                         if level and log_level.upper() != level.upper():
                             continue
-                        
+
                         # Apply date filters
                         try:
                             log_date = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
@@ -1366,7 +1364,7 @@ async def get_pipeline_logs(
                         except ValueError:
                             # Skip if timestamp parsing fails
                             continue
-                        
+
                         logs.append({
                             "timestamp": timestamp_str,
                             "level": log_level.strip(),
@@ -1374,15 +1372,15 @@ async def get_pipeline_logs(
                             "message": message,
                             "raw_line": line
                         })
-                        
+
                 except Exception:
                     # Skip malformed lines
                     continue
-            
+
             # Apply pagination
             total_count = len(logs)
             paginated_logs = logs[offset:offset + limit]
-            
+
             return {
                 "logs": paginated_logs,
                 "total_count": total_count,
@@ -1400,7 +1398,7 @@ async def get_pipeline_logs(
                 },
                 "timestamp": datetime.now().isoformat()
             }
-            
+
         except Exception as e:
             logger.error(f"Error reading log file: {e}")
             return {
@@ -1415,7 +1413,7 @@ async def get_pipeline_logs(
                     "offset": offset
                 }
             }
-        
+
     except Exception as e:
         logger.error(f"Error getting pipeline logs: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve pipeline logs")
@@ -1427,13 +1425,13 @@ async def get_pipeline_health():
     """
     try:
         logger.info("Received request for pipeline health check")
-        
+
         health_status = {
             "overall_status": "healthy",
             "timestamp": datetime.now().isoformat(),
             "checks": {}
         }
-        
+
         # Check pipeline orchestrator
         try:
             if pipeline_orchestrator:
@@ -1458,7 +1456,7 @@ async def get_pipeline_health():
                 "message": f"Pipeline orchestrator error: {str(e)}"
             }
             health_status["overall_status"] = "degraded"
-        
+
         # Check database connectivity
         try:
             test_data = db.get_all_draws()
@@ -1476,7 +1474,7 @@ async def get_pipeline_health():
                 "message": f"Database connectivity error: {str(e)}"
             }
             health_status["overall_status"] = "unhealthy"
-        
+
         # Check model availability
         try:
             if predictor:
@@ -1502,14 +1500,14 @@ async def get_pipeline_health():
                 "message": f"Model error: {str(e)}"
             }
             health_status["overall_status"] = "degraded"
-        
+
         # Check configuration validation
         try:
             if pipeline_orchestrator and pipeline_orchestrator.config:
                 config = pipeline_orchestrator.config
                 required_sections = ['paths', 'database']
                 missing_sections = [section for section in required_sections if not config.has_section(section)]
-                
+
                 if missing_sections:
                     health_status["checks"]["configuration"] = {
                         "status": "unhealthy",
@@ -1536,21 +1534,21 @@ async def get_pipeline_health():
                 "message": f"Configuration error: {str(e)}"
             }
             health_status["overall_status"] = "degraded"
-        
+
         # Check disk space and system resources
         try:
             disk = shutil.disk_usage('.')
             memory = psutil.virtual_memory()
-            
+
             disk_free_gb = disk.free / (1024**3)
             memory_available_gb = memory.available / (1024**3)
-            
+
             resource_issues = []
             if disk_free_gb < 1.0:  # Less than 1GB free
                 resource_issues.append(f"Low disk space: {disk_free_gb:.1f}GB free")
             if memory.percent > 90:  # More than 90% memory usage
                 resource_issues.append(f"High memory usage: {memory.percent:.1f}%")
-            
+
             if resource_issues:
                 health_status["checks"]["system_resources"] = {
                     "status": "warning",
@@ -1578,14 +1576,14 @@ async def get_pipeline_health():
                 "status": "warning",
                 "message": f"Could not check system resources: {str(e)}"
             }
-        
+
         # Set overall status based on individual checks
         unhealthy_checks = [check for check in health_status["checks"].values() if check["status"] == "unhealthy"]
         if unhealthy_checks:
             health_status["overall_status"] = "unhealthy"
-        
+
         return health_status
-        
+
     except Exception as e:
         logger.error(f"Error in pipeline health check: {e}")
         raise HTTPException(status_code=500, detail="Health check failed")
@@ -1596,10 +1594,10 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
     try:
         pipeline_executions[execution_id]["status"] = "running"
         pipeline_executions[execution_id]["current_step"] = "starting"
-        
+
         # Run the full pipeline
         result = pipeline_orchestrator.run_full_pipeline()
-        
+
         # Update execution status
         pipeline_executions[execution_id].update({
             "status": "completed" if result.get("status") == "success" else "failed",
@@ -1608,9 +1606,9 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
             "steps_completed": 7,
             "error": result.get("error") if result.get("status") != "success" else None
         })
-        
+
         logger.info(f"Background pipeline execution {execution_id} completed with status: {result.get('status')}")
-        
+
     except Exception as e:
         pipeline_executions[execution_id].update({
             "status": "failed",
@@ -1624,23 +1622,23 @@ async def run_pipeline_steps_background(execution_id: str, steps: List[str], num
     """Run specific pipeline steps in background task."""
     try:
         pipeline_executions[execution_id]["status"] = "running"
-        
+
         results = {}
         for i, step in enumerate(steps):
             pipeline_executions[execution_id]["current_step"] = step
             pipeline_executions[execution_id]["steps_completed"] = i
-            
+
             try:
                 result = pipeline_orchestrator.run_single_step(step)
                 results[step] = result
-                
+
                 if result.get("status") != "success":
                     raise Exception(f"Step {step} failed: {result.get('error', 'Unknown error')}")
-                    
+
             except Exception as e:
                 results[step] = {"status": "failed", "error": str(e)}
                 raise
-        
+
         # Update execution status
         pipeline_executions[execution_id].update({
             "status": "completed",
@@ -1648,9 +1646,9 @@ async def run_pipeline_steps_background(execution_id: str, steps: List[str], num
             "result": {"status": "success", "results": results},
             "steps_completed": len(steps)
         })
-        
+
         logger.info(f"Background pipeline steps execution {execution_id} completed successfully")
-        
+
     except Exception as e:
         pipeline_executions[execution_id].update({
             "status": "failed",
