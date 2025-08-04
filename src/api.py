@@ -742,6 +742,64 @@ async def run_adaptive_validation(enable_learning: bool = Query(True, descriptio
         logger.error(f"Error in adaptive validation: {e}")
         raise HTTPException(status_code=500, detail="Adaptive validation failed.")
 
+@api_router.get("/predict/syndicate")
+async def get_syndicate_predictions(
+    num_plays: int = Query(100, ge=10, le=500, description="Number of plays for syndicate"),
+    method: str = Query("ensemble", regex="^(ensemble|deterministic|adaptive)$", description="Prediction method")
+):
+    """
+    Generates optimized predictions for syndicate play.
+    
+    - **num_plays**: Number of plays to generate (10-500)
+    - **method**: Prediction method (ensemble, deterministic, adaptive)
+    """
+    try:
+        logger.info(f"Received syndicate prediction request: {num_plays} plays using {method} method")
+        
+        if not predictor:
+            raise HTTPException(status_code=503, detail="Prediction system not available")
+        
+        # Generate syndicate predictions based on method
+        if method == "ensemble":
+            predictions = predictor.predict_ensemble_syndicate(num_plays)
+        elif method == "adaptive" and adaptive_system:
+            predictions = predictor.predict_syndicate_plays(num_plays)
+        else:
+            predictions = predictor.predict_diverse_plays(num_plays)
+        
+        # Format response
+        formatted_predictions = []
+        for pred in predictions:
+            formatted_pred = {
+                "numbers": convert_numpy_types(pred['numbers']),
+                "powerball": convert_numpy_types(pred['powerball']),
+                "score": convert_numpy_types(pred['score_total']),
+                "rank": pred.get('syndicate_rank', pred.get('play_rank', 0)),
+                "tier": pred.get('syndicate_tier', 'Standard'),
+                "method": pred.get('model_source', method),
+                "ensemble_score": convert_numpy_types(pred.get('ensemble_score', pred['score_total']))
+            }
+            formatted_predictions.append(formatted_pred)
+        
+        return {
+            "syndicate_predictions": formatted_predictions,
+            "total_plays": len(formatted_predictions),
+            "method": method,
+            "generation_timestamp": datetime.now().isoformat(),
+            "coverage_analysis": {
+                "premium_tier": len([p for p in predictions if p.get('syndicate_tier') == 'Premium']),
+                "high_tier": len([p for p in predictions if p.get('syndicate_tier') == 'High']),
+                "medium_tier": len([p for p in predictions if p.get('syndicate_tier') == 'Medium']),
+                "standard_tier": len([p for p in predictions if p.get('syndicate_tier') == 'Standard'])
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in syndicate predictions: {e}")
+        raise HTTPException(status_code=500, detail="Syndicate prediction failed.")
+
 @api_router.get("/adaptive/predict")
 async def get_adaptive_prediction():
     """

@@ -313,6 +313,224 @@ class Predictor:
         logger.info(f"Generated {len(diverse_predictions)} diverse plays successfully")
         return diverse_predictions
 
+    def predict_syndicate_plays(self, num_plays: int = 100, save_to_log: bool = True) -> List[Dict]:
+        """
+        Genera un gran número de predicciones optimizadas para juego en sindicato.
+        
+        Args:
+            num_plays: Número de jugadas para sindicato (default: 100)
+            save_to_log: Si True, guarda las predicciones en el log
+            
+        Returns:
+            Lista de predicciones optimizadas para sindicato
+        """
+        logger.info(f"Generating {num_plays} syndicate plays with advanced scoring...")
+        
+        # Obtener probabilidades del modelo
+        wb_probs, pb_probs = self.predict_probabilities()
+        
+        # Obtener datos históricos
+        data_loader = get_data_loader()
+        historical_data = data_loader.load_historical_data()
+        
+        if historical_data.empty:
+            raise ValueError("Historical data is empty. Cannot generate syndicate predictions.")
+        
+        # Crear generador con más candidatos para mayor diversidad
+        deterministic_generator = DeterministicGenerator(historical_data)
+        
+        # Generar un pool más grande de candidatos (5x el número solicitado)
+        candidate_pool_size = max(5000, num_plays * 5)
+        
+        # Generar candidatos con scoring avanzado
+        syndicate_predictions = deterministic_generator.generate_diverse_predictions(
+            wb_probs, pb_probs, 
+            num_plays=num_plays,
+            num_candidates=candidate_pool_size
+        )
+        
+        # Aplicar análisis adicional para sindicatos
+        for i, prediction in enumerate(syndicate_predictions):
+            prediction['syndicate_rank'] = i + 1
+            prediction['syndicate_tier'] = self._classify_syndicate_tier(prediction['score_total'])
+            prediction['expected_coverage'] = self._calculate_coverage_score(prediction, syndicate_predictions)
+        
+        # Guardar en log si se solicita
+        if save_to_log:
+            saved_count = 0
+            for prediction in syndicate_predictions:
+                prediction_id = save_prediction_log(prediction)
+                if prediction_id:
+                    prediction['log_id'] = prediction_id
+                    saved_count += 1
+            
+            logger.info(f"Saved {saved_count}/{len(syndicate_predictions)} syndicate predictions to log")
+        
+        logger.info(f"Generated {len(syndicate_predictions)} syndicate plays successfully")
+        return syndicate_predictions
+    
+    def _classify_syndicate_tier(self, score: float) -> str:
+        """Clasifica las jugadas por tiers para sindicatos."""
+        if score >= 0.8:
+            return "Premium"
+        elif score >= 0.6:
+            return "High"
+        elif score >= 0.4:
+            return "Medium"
+        else:
+            return "Standard"
+    
+    def _calculate_coverage_score(self, prediction: Dict, all_predictions: List[Dict]) -> float:
+        """Calcula qué tan bien una jugada complementa las otras en el sindicato."""
+        numbers = set(prediction['numbers'] + [prediction['powerball']])
+        
+        coverage_scores = []
+        for other_pred in all_predictions[:20]:  # Comparar con las top 20
+            if other_pred == prediction:
+                continue
+            
+            other_numbers = set(other_pred['numbers'] + [other_pred['powerball']])
+            overlap = len(numbers.intersection(other_numbers))
+            coverage = 1.0 - (overlap / 6.0)  # Menos overlap = mejor coverage
+            coverage_scores.append(coverage)
+        
+        return np.mean(coverage_scores) if coverage_scores else 0.5
+
+    def predict_ensemble_syndicate(self, num_plays: int = 100) -> List[Dict]:
+        """
+        Genera jugadas usando múltiples modelos y selecciona las mejores basado en ensemble scoring.
+        
+        Args:
+            num_plays: Número final de jugadas a generar
+            
+        Returns:
+            Lista de las mejores jugadas seleccionadas de múltiples modelos
+        """
+        logger.info(f"Generating ensemble syndicate predictions with multiple models...")
+        
+        # Obtener probabilidades base
+        wb_probs, pb_probs = self.predict_probabilities()
+        
+        # Obtener datos históricos
+        data_loader = get_data_loader()
+        historical_data = data_loader.load_historical_data()
+        
+        all_candidates = []
+        
+        # 1. Generador Determinístico (60% del pool)
+        deterministic_gen = DeterministicGenerator(historical_data)
+        deterministic_candidates = deterministic_gen.generate_diverse_predictions(
+            wb_probs, pb_probs, 
+            num_plays=int(num_plays * 0.6),
+            num_candidates=num_plays * 3
+        )
+        
+        for candidate in deterministic_candidates:
+            candidate['model_source'] = 'deterministic'
+            candidate['ensemble_weight'] = 0.6
+        
+        all_candidates.extend(deterministic_candidates)
+        
+        # 2. Sistema Adaptativo (25% del pool)
+        if hasattr(self, 'adaptive_system'):
+            try:
+                from src.adaptive_feedback import AdaptivePlayScorer
+                adaptive_scorer = AdaptivePlayScorer(historical_data)
+                
+                # Generar candidatos con scoring adaptativo
+                adaptive_candidates = []
+                for i in range(int(num_plays * 0.25)):
+                    # Usar el generador determinístico pero con scoring adaptativo
+                    candidate = deterministic_gen.generate_top_prediction(wb_probs, pb_probs)
+                    
+                    # Recalcular score con sistema adaptativo
+                    adaptive_scores = adaptive_scorer.calculate_total_score(
+                        candidate['numbers'], candidate['powerball'], wb_probs, pb_probs
+                    )
+                    
+                    candidate['score_total'] = adaptive_scores['total']
+                    candidate['score_details'] = adaptive_scores
+                    candidate['model_source'] = 'adaptive'
+                    candidate['ensemble_weight'] = 0.25
+                    
+                    adaptive_candidates.append(candidate)
+                
+                all_candidates.extend(adaptive_candidates)
+                
+            except Exception as e:
+                logger.warning(f"Adaptive model not available: {e}")
+        
+        # 3. Generador Inteligente Híbrido (15% del pool)
+        try:
+            from src.intelligent_generator import IntelligentGenerator
+            intelligent_gen = IntelligentGenerator(historical_data)
+            
+            intelligent_candidates = []
+            hybrid_plays = intelligent_gen.generate_plays(int(num_plays * 0.15))
+            
+            for play in hybrid_plays:
+                # Calcular scores para estas jugadas
+                scores = deterministic_gen.scorer.calculate_total_score(
+                    play, play[-1] if len(play) > 5 else 1, wb_probs, pb_probs
+                )
+                
+                candidate = {
+                    'numbers': play[:5] if len(play) >= 5 else play,
+                    'powerball': play[5] if len(play) > 5 else 1,
+                    'score_total': scores['total'],
+                    'score_details': scores,
+                    'model_source': 'intelligent',
+                    'ensemble_weight': 0.15,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                intelligent_candidates.append(candidate)
+            
+            all_candidates.extend(intelligent_candidates)
+            
+        except Exception as e:
+            logger.warning(f"Intelligent generator not available: {e}")
+        
+        # Combinar y rankear todos los candidatos
+        ensemble_scores = []
+        for candidate in all_candidates:
+            # Score ensemble ponderado
+            base_score = candidate['score_total']
+            weight = candidate['ensemble_weight']
+            diversity_bonus = self._calculate_ensemble_diversity(candidate, all_candidates)
+            
+            ensemble_score = (base_score * weight) + (diversity_bonus * 0.1)
+            
+            candidate['ensemble_score'] = ensemble_score
+            ensemble_scores.append(candidate)
+        
+        # Ordenar por ensemble score y tomar los mejores
+        ensemble_scores.sort(key=lambda x: x['ensemble_score'], reverse=True)
+        final_predictions = ensemble_scores[:num_plays]
+        
+        # Agregar metadatos ensemble
+        for i, prediction in enumerate(final_predictions):
+            prediction['ensemble_rank'] = i + 1
+            prediction['method'] = 'ensemble_syndicate'
+        
+        logger.info(f"Generated {len(final_predictions)} ensemble syndicate predictions")
+        return final_predictions
+    
+    def _calculate_ensemble_diversity(self, candidate: Dict, all_candidates: List[Dict]) -> float:
+        """Calcula bonus de diversidad para ensemble."""
+        candidate_nums = set(candidate['numbers'] + [candidate['powerball']])
+        
+        diversity_scores = []
+        for other in all_candidates:
+            if other == candidate:
+                continue
+            
+            other_nums = set(other['numbers'] + [other['powerball']])
+            jaccard_div = 1.0 - len(candidate_nums.intersection(other_nums)) / len(candidate_nums.union(other_nums))
+            diversity_scores.append(jaccard_div)
+        
+        return np.mean(diversity_scores) if diversity_scores else 0.5
+    
     def compare_prediction_methods(self) -> Dict:
         """
         Compara el método tradicional con el determinístico para análisis.
