@@ -112,8 +112,8 @@ class PublicInterface {
             // Show loading state
             this.showLoadingState();
             
-            // Load 100 Smart AI predictions
-            const data = await PowerballUtils.apiRequest('/predict/smart?num_plays=100');
+            // Load 100 Smart AI predictions from the smart endpoint
+            const data = await PowerballUtils.apiRequest('/predict/smart?limit=100');
             
             // Update last updated timestamps
             const updateTime = new Date().toLocaleString();

@@ -754,7 +754,13 @@ async def get_smart_predictions(
         logger.info(f"Received request for {limit} Smart AI predictions from database")
 
         # Get latest Smart AI predictions from database
-        predictions_list = get_prediction_history(limit=limit, return_format="list")
+        predictions_df = get_prediction_history(limit=limit)
+        
+        # Convert DataFrame to list of dictionaries
+        if not predictions_df.empty:
+            predictions_list = predictions_df.to_dict('records')
+        else:
+            predictions_list = []
 
         # Convert database records to Smart AI format
         smart_predictions = []
