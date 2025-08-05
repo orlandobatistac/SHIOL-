@@ -103,13 +103,17 @@ class PublicInterface {
     }
 
     /**
-     * Load next drawing information and featured prediction
+     * Load Smart AI predictions from pipeline
      */
     async loadNextDrawingInfo() {
         try {
-            console.log('Loading next drawing info...');
+            console.log('Loading Smart AI predictions...');
             
-            const data = await PowerballUtils.apiRequest('/public/next-drawing');
+            // Show loading state
+            this.showLoadingState();
+            
+            // Load 100 Smart AI predictions
+            const data = await PowerballUtils.apiRequest('/predict/smart?num_plays=100');
             
             // Update last updated timestamps
             const updateTime = new Date().toLocaleString();
@@ -118,73 +122,136 @@ class PublicInterface {
                 footerLastUpdated.textContent = updateTime;
             }
 
-            // Display featured prediction
-            if (data.featured_prediction) {
-                this.displayDashboardStylePredictions(data.featured_prediction);
+            // Display Smart AI predictions
+            if (data.smart_predictions && data.smart_predictions.length > 0) {
+                this.displaySmartPredictions(data);
+            } else {
+                this.showPredictionError();
             }
 
-            console.log('Next drawing info loaded successfully');
+            console.log('Smart AI predictions loaded successfully');
         } catch (error) {
-            console.error('Error loading next drawing info:', error);
-            this.showFeaturedPredictionError();
+            console.error('Error loading Smart AI predictions:', error);
+            this.showPredictionError();
         }
     }
 
     /**
-     * Display multiple predictions in the dashboard style
-     * @param {Object} data - Prediction data
+     * Display Smart AI predictions
+     * @param {Object} data - Smart AI prediction data
      */
-    displayDashboardStylePredictions(data) {
-        const aiPredictions = document.getElementById('ai-predictions');
-        if (!aiPredictions) return;
+    displaySmartPredictions(data) {
+        const container = document.getElementById('predictions-container');
+        const loading = document.getElementById('predictions-loading');
+        if (!container || !loading) return;
 
-        const predictions = data.predictions || [data];
+        const predictions = data.smart_predictions || [];
         
         const predictionsHtml = `
-            <div id="last-generated-plays" class="mt-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
-                        <i class="fas fa-star mr-2 text-yellow-500"></i>
-                        AI-Generated Plays
-                    </h3>
-                    <span id="last-plays-timestamp" class="text-sm text-gray-500 dark:text-gray-400">Generated: ${new Date().toLocaleString()}</span>
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <!-- Header -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                                <i class="fas fa-brain mr-2 text-blue-600"></i>
+                                Smart AI Predictions
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                ${predictions.length} predictions ranked by AI confidence score
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${predictions.length}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Total Plays</div>
+                        </div>
+                    </div>
                 </div>
-                <div id="last-plays-container" class="space-y-3">
-                    ${predictions.map((prediction, index) => {
-                        const numbersHtml = PowerballUtils.createNumbersDisplay(
-                            PowerballUtils.sortNumbers(prediction.numbers),
-                            prediction.powerball,
-                            'small'
-                        );
 
-                        return `
-                            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                                <div class="flex items-center space-x-2">
-                                    <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Play ${index + 1}:</span>
-                                    ${numbersHtml}
-                                </div>
-                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                    Confidence: ${(prediction.confidence_score * 100).toFixed(1)}%
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+                <!-- Predictions Table -->
+                <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-900 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Numbers</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">PB</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Score</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                            ${predictions.map((pred, index) => {
+                                const isTopTen = index < 10;
+                                return `
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopTen ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}">
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isTopTen ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' : 'bg-gray-100 text-gray-800'} text-sm font-bold">
+                                                ${pred.rank || (index + 1)}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <div class="flex space-x-1">
+                                                ${pred.numbers.map(num => `
+                                                    <span class="inline-flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded-full text-xs font-semibold">${num}</span>
+                                                `).join('')}
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <span class="inline-flex items-center justify-center w-7 h-7 bg-red-600 text-white rounded-full text-xs font-semibold">${pred.powerball}</span>
+                                        </td>
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                ${(pred.total_score * 100).toFixed(1)}%
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer Info -->
+                <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 text-center">
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                        Generated by SHIOL+ AI Pipeline • Last updated: ${new Date().toLocaleString()}
+                    </p>
                 </div>
             </div>
         `;
         
-        aiPredictions.innerHTML = predictionsHtml;
+        loading.classList.add('hidden');
+        container.innerHTML = predictionsHtml;
+        container.classList.remove('hidden');
     }
 
     /**
-     * Show error in featured prediction area
+     * Show loading state
      */
-    showFeaturedPredictionError() {
-        const aiPredictions = document.getElementById('ai-predictions');
-        if (aiPredictions) {
-            aiPredictions.innerHTML = PowerballUtils.createErrorPlaceholder('Unable to load prediction').innerHTML;
-        }
+    showLoadingState() {
+        const loading = document.getElementById('predictions-loading');
+        const container = document.getElementById('predictions-container');
+        const error = document.getElementById('predictions-error');
+
+        if (loading) loading.classList.remove('hidden');
+        if (container) container.classList.add('hidden');
+        if (error) error.classList.add('hidden');
     }
+
+    /**
+     * Show error state
+     */
+    showPredictionError() {
+        const loading = document.getElementById('predictions-loading');
+        const container = document.getElementById('predictions-container');
+        const error = document.getElementById('predictions-error');
+
+        if (loading) loading.classList.add('hidden');
+        if (container) container.classList.add('hidden');
+        if (error) error.classList.remove('hidden');
+    }
+
+    
 
     /**
      * Show login modal

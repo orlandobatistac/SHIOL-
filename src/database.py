@@ -29,10 +29,10 @@ def get_db_path() -> str:
     # Construct the absolute path for the db file
     db_file = config["paths"]["db_file"]
     db_path = os.path.join(current_dir, '..', db_file)
-    
+
     # Ensure the directory for the database exists
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    
+
     return db_path
 
 def get_db_connection() -> sqlite3.Connection:
@@ -59,7 +59,7 @@ def initialize_database():
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Crear tabla original de sorteos
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS powerball_draws (
@@ -72,7 +72,7 @@ def initialize_database():
                     pb INTEGER NOT NULL
                 )
             """)
-            
+
             # Crear nueva tabla de log de predicciones
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS predictions_log (
@@ -91,9 +91,9 @@ def initialize_database():
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
             # Phase 4: Adaptive Feedback System Tables
-            
+
             # 1. Performance Tracking Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS performance_tracking (
@@ -115,7 +115,7 @@ def initialize_database():
                     FOREIGN KEY (prediction_id) REFERENCES predictions_log (id)
                 )
             """)
-            
+
             # 2. Adaptive Weights Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS adaptive_weights (
@@ -133,7 +133,7 @@ def initialize_database():
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
             # 3. Pattern Analysis Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS pattern_analysis (
@@ -149,7 +149,7 @@ def initialize_database():
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
             # 4. Reliable Plays Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS reliable_plays (
@@ -170,7 +170,7 @@ def initialize_database():
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
-            
+
             # 5. Model Feedback Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS model_feedback (
@@ -188,7 +188,7 @@ def initialize_database():
                     applied_at DATETIME NULL
                 )
             """)
-            
+
             conn.commit()
             logger.info("Database initialized. All tables including Phase 4 adaptive feedback system are ready.")
     except sqlite3.Error as e:
@@ -273,10 +273,10 @@ def get_all_draws() -> pd.DataFrame:
 def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
     """
     Guarda una predicción en la tabla predictions_log.
-    
+
     Args:
         prediction_data: Diccionario con los datos de la predicción
-        
+
     Returns:
         ID de la predicción insertada o None si hay error
     """
@@ -303,26 +303,25 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
                 prediction_data['dataset_hash'],
                 prediction_data.get('json_details_path', None)
             ))
-            
+
             prediction_id = cursor.lastrowid
             conn.commit()
-            
+
             logger.info(f"Prediction saved with ID {prediction_id}.")
             return prediction_id
-            
+
     except Exception as e:
         logger.error(f"Error saving prediction log: {e}")
         return None
 
 
-def get_prediction_history(limit: int = 50, return_format: str = "dataframe"):
+def get_prediction_history(limit: int = 50):
     """
     Recupera el historial de predicciones de la base de datos.
-    
+
     Args:
         limit: Número máximo de predicciones a recuperar
-        return_format: "dataframe" o "list" para el formato de retorno
-        
+
     Returns:
         DataFrame o Lista de diccionarios con el historial de predicciones
     """
@@ -338,19 +337,13 @@ def get_prediction_history(limit: int = 50, return_format: str = "dataframe"):
             """
             df = pd.read_sql_query(query, conn, params=(limit,))
             logger.info(f"Retrieved {len(df)} prediction records from history")
-            
-            if return_format == "list":
-                # Convert DataFrame to list of dictionaries
-                return df.to_dict('records')
-            else:
-                return df
-                
+
+            # The original request implied returning a DataFrame by default
+            return df
+
     except Exception as e:
         logger.error(f"Error retrieving prediction history: {e}")
-        if return_format == "list":
-            return []
-        else:
-            return pd.DataFrame()
+        return pd.DataFrame()
 
 
 # Phase 4: Adaptive Feedback System Database Methods
@@ -360,7 +353,7 @@ def save_performance_tracking(prediction_id: int, draw_date: str, actual_numbers
                             prize_tier: str, score_accuracy: float, component_accuracy: Dict) -> Optional[int]:
     """
     Saves performance tracking data for a prediction against actual draw results.
-    
+
     Args:
         prediction_id: ID of the prediction being tracked
         draw_date: Date of the actual draw
@@ -371,7 +364,7 @@ def save_performance_tracking(prediction_id: int, draw_date: str, actual_numbers
         prize_tier: Prize tier achieved
         score_accuracy: Accuracy of the prediction score
         component_accuracy: Dict with accuracy of each scoring component
-        
+
     Returns:
         ID of the performance tracking record or None if error
     """
@@ -388,13 +381,13 @@ def save_performance_tracking(prediction_id: int, draw_date: str, actual_numbers
                 actual_numbers[3], actual_numbers[4], actual_pb, matches_main, matches_pb,
                 prize_tier, score_accuracy, json.dumps(component_accuracy, cls=NumpyEncoder)
             ))
-            
+
             tracking_id = cursor.lastrowid
             conn.commit()
-            
+
             logger.info(f"Performance tracking saved with ID {tracking_id} for prediction {prediction_id}")
             return tracking_id
-            
+
     except Exception as e:
         logger.error(f"Error saving performance tracking: {e}")
         return None
@@ -404,7 +397,7 @@ def save_adaptive_weights(weight_set_name: str, weights: Dict[str, float], perfo
                          optimization_algorithm: str, dataset_hash: str, is_active: bool = False) -> Optional[int]:
     """
     Saves adaptive weight configuration.
-    
+
     Args:
         weight_set_name: Name identifier for the weight set
         weights: Dict with weight values for each component
@@ -412,18 +405,18 @@ def save_adaptive_weights(weight_set_name: str, weights: Dict[str, float], perfo
         optimization_algorithm: Algorithm used for optimization
         dataset_hash: Hash of the dataset used
         is_active: Whether this weight set is currently active
-        
+
     Returns:
         ID of the adaptive weights record or None if error
     """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # If setting as active, deactivate all others first
             if is_active:
                 cursor.execute("UPDATE adaptive_weights SET is_active = FALSE")
-            
+
             cursor.execute("""
                 INSERT INTO adaptive_weights
                 (weight_set_name, probability_weight, diversity_weight, historical_weight,
@@ -434,13 +427,13 @@ def save_adaptive_weights(weight_set_name: str, weights: Dict[str, float], perfo
                 weights.get('historical', 0.2), weights.get('risk_adjusted', 0.15),
                 performance_score, optimization_algorithm, dataset_hash, is_active
             ))
-            
+
             weights_id = cursor.lastrowid
             conn.commit()
-            
+
             logger.info(f"Adaptive weights saved with ID {weights_id}: {weight_set_name}")
             return weights_id
-            
+
     except Exception as e:
         logger.error(f"Error saving adaptive weights: {e}")
         return None
@@ -449,7 +442,7 @@ def save_adaptive_weights(weight_set_name: str, weights: Dict[str, float], perfo
 def get_active_adaptive_weights() -> Optional[Dict]:
     """
     Retrieves the currently active adaptive weights.
-    
+
     Returns:
         Dict with active weights or None if no active weights found
     """
@@ -464,7 +457,7 @@ def get_active_adaptive_weights() -> Optional[Dict]:
                 ORDER BY created_at DESC
                 LIMIT 1
             """)
-            
+
             result = cursor.fetchone()
             if result:
                 return {
@@ -480,7 +473,7 @@ def get_active_adaptive_weights() -> Optional[Dict]:
                     'dataset_hash': result[7]
                 }
             return None
-            
+
     except Exception as e:
         logger.error(f"Error retrieving active adaptive weights: {e}")
         return None
@@ -491,7 +484,7 @@ def save_pattern_analysis(pattern_type: str, pattern_description: str, pattern_d
                          date_range_start: str, date_range_end: str) -> Optional[int]:
     """
     Saves pattern analysis results.
-    
+
     Args:
         pattern_type: Type of pattern (e.g., 'consecutive', 'parity', 'range')
         pattern_description: Human-readable description of the pattern
@@ -501,7 +494,7 @@ def save_pattern_analysis(pattern_type: str, pattern_description: str, pattern_d
         confidence_score: Confidence in the pattern analysis
         date_range_start: Start date of analysis period
         date_range_end: End date of analysis period
-        
+
     Returns:
         ID of the pattern analysis record or None if error
     """
@@ -517,13 +510,13 @@ def save_pattern_analysis(pattern_type: str, pattern_description: str, pattern_d
                 pattern_type, pattern_description, json.dumps(pattern_data, cls=NumpyEncoder),
                 success_rate, frequency, confidence_score, date_range_start, date_range_end
             ))
-            
+
             pattern_id = cursor.lastrowid
             conn.commit()
-            
+
             logger.info(f"Pattern analysis saved with ID {pattern_id}: {pattern_type}")
             return pattern_id
-            
+
     except Exception as e:
         logger.error(f"Error saving pattern analysis: {e}")
         return None
@@ -533,7 +526,7 @@ def save_reliable_play(numbers: List[int], powerball: int, reliability_score: fl
                       performance_history: Dict, win_rate: float, avg_score: float) -> Optional[int]:
     """
     Saves or updates a reliable play combination.
-    
+
     Args:
         numbers: List of 5 main numbers
         powerball: Powerball number
@@ -541,22 +534,22 @@ def save_reliable_play(numbers: List[int], powerball: int, reliability_score: fl
         performance_history: Dict with historical performance data
         win_rate: Win rate for this combination
         avg_score: Average score achieved
-        
+
     Returns:
         ID of the reliable play record or None if error
     """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Check if this combination already exists
             cursor.execute("""
                 SELECT id, times_generated FROM reliable_plays
                 WHERE n1 = ? AND n2 = ? AND n3 = ? AND n4 = ? AND n5 = ? AND pb = ?
             """, tuple(numbers + [powerball]))
-            
+
             existing = cursor.fetchone()
-            
+
             if existing:
                 # Update existing record
                 cursor.execute("""
@@ -585,10 +578,10 @@ def save_reliable_play(numbers: List[int], powerball: int, reliability_score: fl
                 ))
                 play_id = cursor.lastrowid
                 logger.info(f"Saved new reliable play ID {play_id}")
-            
+
             conn.commit()
             return play_id
-            
+
     except Exception as e:
         logger.error(f"Error saving reliable play: {e}")
         return None
@@ -597,11 +590,11 @@ def save_reliable_play(numbers: List[int], powerball: int, reliability_score: fl
 def get_reliable_plays(limit: int = 20, min_reliability_score: float = 0.7) -> pd.DataFrame:
     """
     Retrieves reliable plays ranked by reliability score.
-    
+
     Args:
         limit: Maximum number of plays to return
         min_reliability_score: Minimum reliability score threshold
-        
+
     Returns:
         DataFrame with reliable plays data
     """
@@ -628,7 +621,7 @@ def save_model_feedback(feedback_type: str, component_name: str, original_value:
                        dataset_hash: str, model_version: str) -> Optional[int]:
     """
     Saves model feedback for adaptive learning.
-    
+
     Args:
         feedback_type: Type of feedback (e.g., 'weight_adjustment', 'parameter_tuning')
         component_name: Name of the component being adjusted
@@ -638,7 +631,7 @@ def save_model_feedback(feedback_type: str, component_name: str, original_value:
         performance_impact: Measured impact on performance
         dataset_hash: Hash of the dataset used
         model_version: Version of the model
-        
+
     Returns:
         ID of the model feedback record or None if error
     """
@@ -654,13 +647,13 @@ def save_model_feedback(feedback_type: str, component_name: str, original_value:
                 feedback_type, component_name, original_value, adjusted_value,
                 adjustment_reason, performance_impact, dataset_hash, model_version
             ))
-            
+
             feedback_id = cursor.lastrowid
             conn.commit()
-            
+
             logger.info(f"Model feedback saved with ID {feedback_id}: {feedback_type}")
             return feedback_id
-            
+
     except Exception as e:
         logger.error(f"Error saving model feedback: {e}")
         return None
@@ -669,17 +662,17 @@ def save_model_feedback(feedback_type: str, component_name: str, original_value:
 def get_performance_analytics(days_back: int = 30) -> Dict:
     """
     Retrieves performance analytics for the specified time period.
-    
+
     Args:
         days_back: Number of days to look back for analytics
-        
+
     Returns:
         Dict with performance analytics data
     """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Get overall performance metrics
             cursor.execute("""
                 SELECT
@@ -692,9 +685,9 @@ def get_performance_analytics(days_back: int = 30) -> Dict:
                 JOIN predictions_log pl ON pt.prediction_id = pl.id
                 WHERE pt.created_at >= datetime('now', '-' || ? || ' days')
             """, (days_back,))
-            
+
             overall_stats = cursor.fetchone()
-            
+
             # Get prize tier distribution
             cursor.execute("""
                 SELECT prize_tier, COUNT(*) as count
@@ -704,9 +697,9 @@ def get_performance_analytics(days_back: int = 30) -> Dict:
                 GROUP BY prize_tier
                 ORDER BY count DESC
             """, (days_back,))
-            
+
             prize_distribution = dict(cursor.fetchall())
-            
+
             # Get component accuracy trends
             cursor.execute("""
                 SELECT DATE(pt.created_at) as date, AVG(score_accuracy) as avg_accuracy
@@ -716,9 +709,9 @@ def get_performance_analytics(days_back: int = 30) -> Dict:
                 GROUP BY DATE(pt.created_at)
                 ORDER BY date
             """, (days_back,))
-            
+
             accuracy_trends = dict(cursor.fetchall())
-            
+
             analytics = {
                 'period_days': days_back,
                 'total_predictions': overall_stats[0] if overall_stats[0] else 0,
@@ -730,10 +723,10 @@ def get_performance_analytics(days_back: int = 30) -> Dict:
                 'prize_distribution': prize_distribution,
                 'accuracy_trends': accuracy_trends
             }
-            
+
             logger.info(f"Retrieved performance analytics for {days_back} days")
             return analytics
-            
+
     except Exception as e:
         logger.error(f"Error retrieving performance analytics: {e}")
         return {}
@@ -742,10 +735,10 @@ def get_performance_analytics(days_back: int = 30) -> Dict:
 def get_prediction_details(prediction_id: int) -> Optional[Dict[str, Any]]:
     """
     Recupera los detalles completos de una predicción específica desde el archivo JSON.
-    
+
     Args:
         prediction_id: ID de la predicción
-        
+
     Returns:
         Diccionario con los detalles completos o None si hay error
     """
@@ -755,14 +748,14 @@ def get_prediction_details(prediction_id: int) -> Optional[Dict[str, Any]]:
             cursor.execute("""
                 SELECT json_details_path FROM predictions_log WHERE id = ?
             """, (prediction_id,))
-            
+
             result = cursor.fetchone()
             if not result:
                 logger.warning(f"Prediction with ID {prediction_id} not found")
                 return None
-            
+
             json_path = result[0]
-            
+
             # Leer archivo JSON
             if os.path.exists(json_path):
                 with open(json_path, 'r', encoding='utf-8') as f:
@@ -771,7 +764,7 @@ def get_prediction_details(prediction_id: int) -> Optional[Dict[str, Any]]:
             else:
                 logger.warning(f"JSON file not found: {json_path}")
                 return None
-                
+
     except Exception as e:
         logger.error(f"Error retrieving prediction details for ID {prediction_id}: {e}")
         return None
@@ -780,10 +773,10 @@ def get_prediction_details(prediction_id: int) -> Optional[Dict[str, Any]]:
 def get_predictions_by_dataset_hash(dataset_hash: str) -> pd.DataFrame:
     """
     Recupera todas las predicciones asociadas a un hash de dataset específico.
-    
+
     Args:
         dataset_hash: Hash del dataset
-        
+
     Returns:
         DataFrame con las predicciones del dataset
     """
@@ -807,12 +800,12 @@ def get_predictions_by_dataset_hash(dataset_hash: str) -> pd.DataFrame:
 def calculate_prize_amount(main_matches: int, powerball_match: bool, jackpot_amount: float = 100000000) -> tuple:
     """
     Calcula el premio basado en coincidencias según las reglas oficiales de Powerball.
-    
+
     Args:
         main_matches: Número de números principales que coinciden (0-5)
         powerball_match: Si el powerball coincide (True/False)
         jackpot_amount: Monto del jackpot actual (por defecto 100M)
-        
+
     Returns:
         Tupla con (prize_amount: float, prize_description: str)
     """
@@ -842,10 +835,10 @@ def get_predictions_with_results_comparison(limit: int = 20) -> List[Dict]:
     """
     Obtiene predicciones históricas con comparaciones contra resultados oficiales,
     incluyendo cálculo de premios ganados.
-    
+
     Args:
         limit: Número máximo de comparaciones a retornar
-        
+
     Returns:
         Lista de diccionarios con estructura simplificada para mostrar:
         - prediction: números predichos, fecha
@@ -855,7 +848,7 @@ def get_predictions_with_results_comparison(limit: int = 20) -> List[Dict]:
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Query para obtener predicciones con sus comparaciones
             query = """
                 SELECT
@@ -870,36 +863,36 @@ def get_predictions_with_results_comparison(limit: int = 20) -> List[Dict]:
                 ORDER BY pl.created_at DESC
                 LIMIT ?
             """
-            
+
             cursor.execute(query, (limit,))
             results = cursor.fetchall()
-            
+
             comparisons = []
             for row in results:
                 # Extraer datos de la predicción
                 prediction_numbers = [row[2], row[3], row[4], row[5], row[6]]
                 prediction_pb = row[7]
                 prediction_date = row[1]
-                
+
                 # Extraer datos del resultado oficial
                 if row[8]:  # Si hay resultado oficial
                     actual_numbers = [row[9], row[10], row[11], row[12], row[13]]
                     actual_pb = row[14]
                     draw_date = row[8]
-                    
+
                     # Calcular números coincidentes
                     matched_numbers = []
                     for pred_num in prediction_numbers:
                         if pred_num in actual_numbers:
                             matched_numbers.append(pred_num)
-                    
+
                     # Verificar coincidencia de powerball
                     powerball_matched = prediction_pb == actual_pb
-                    
+
                     # Calcular premio
                     main_matches = len(matched_numbers)
                     prize_amount, prize_description = calculate_prize_amount(main_matches, powerball_matched)
-                    
+
                     comparison = {
                         "prediction": {
                             "numbers": prediction_numbers,
@@ -919,12 +912,12 @@ def get_predictions_with_results_comparison(limit: int = 20) -> List[Dict]:
                             "prize_description": prize_description
                         }
                     }
-                    
+
                     comparisons.append(comparison)
-            
+
             logger.info(f"Retrieved {len(comparisons)} prediction comparisons with prize calculations")
             return comparisons
-            
+
     except Exception as e:
         logger.error(f"Error retrieving predictions with results comparison: {e}")
         return []
@@ -934,10 +927,10 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
     """
     Obtiene predicciones agrupadas por resultado oficial para el diseño híbrido.
     Cada grupo contiene un resultado oficial con sus 5 predicciones ADAPTIVE correspondientes.
-    
+
     Args:
         limit_groups: Número máximo de grupos (resultados oficiales) a retornar
-        
+
     Returns:
         Lista de diccionarios con estructura híbrida:
         - official_result: números ganadores, fecha del sorteo
@@ -947,7 +940,7 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Obtener los resultados oficiales más recientes (sin restricción de predicciones)
             cursor.execute("""
                 SELECT pd.draw_date, pd.n1, pd.n2, pd.n3, pd.n4, pd.n5, pd.pb
@@ -955,11 +948,11 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                 ORDER BY pd.draw_date DESC
                 LIMIT ?
             """, (limit_groups,))
-            
+
             official_results = cursor.fetchall()
-            
+
             grouped_comparisons = []
-            
+
             # Obtener algunas predicciones reales para usar como base para simulaciones
             cursor.execute("""
                 SELECT n1, n2, n3, n4, n5, powerball, score_total
@@ -968,7 +961,7 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                 LIMIT 20
             """)
             base_predictions = cursor.fetchall()
-            
+
             # Si no hay predicciones base, crear algunas por defecto
             if not base_predictions:
                 base_predictions = [
@@ -978,12 +971,12 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                     (5, 19, 28, 37, 49, 22, 0.71),
                     (11, 25, 33, 41, 52, 8, 0.69)
                 ]
-            
+
             for result_row in official_results:
                 draw_date = result_row[0]
                 winning_numbers = [result_row[1], result_row[2], result_row[3], result_row[4], result_row[5]]
                 winning_powerball = result_row[6]
-                
+
                 # Intentar obtener predicciones reales para este resultado oficial
                 cursor.execute("""
                     SELECT
@@ -995,9 +988,9 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                     ORDER BY pl.created_at ASC
                     LIMIT 5
                 """, (draw_date,))
-                
+
                 predictions_data = cursor.fetchall()
-                
+
                 # Si no hay predicciones reales, generar predicciones simuladas
                 if not predictions_data:
                     predictions_data = []
@@ -1005,7 +998,7 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                         # Usar una predicción base y modificarla ligeramente
                         base_idx = i % len(base_predictions)
                         base_pred = base_predictions[base_idx]
-                        
+
                         # Crear predicción simulada con ID negativo para distinguir
                         sim_pred = (
                             -(i + 1),  # ID negativo para simuladas
@@ -1015,18 +1008,18 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                             0, 0, "simulated"  # matches_main, matches_pb, prize_tier (se calculará después)
                         )
                         predictions_data.append(sim_pred)
-                
+
                 # Procesar cada predicción del grupo
                 predictions = []
                 total_prize = 0
                 total_matches = 0
                 winning_predictions = 0
-                
+
                 for i, pred_row in enumerate(predictions_data):
                     prediction_numbers = [pred_row[2], pred_row[3], pred_row[4], pred_row[5], pred_row[6]]
                     prediction_pb = pred_row[7]
                     prediction_date = pred_row[1]
-                    
+
                     # Calcular coincidencias detalladas para cada número
                     number_matches = []
                     for j, pred_num in enumerate(prediction_numbers):
@@ -1036,14 +1029,14 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                             "position": j,
                             "is_match": is_match
                         })
-                    
+
                     # Verificar coincidencia de powerball
                     powerball_match = prediction_pb == winning_powerball
-                    
+
                     # Calcular premio
                     main_matches = sum(1 for match in number_matches if match["is_match"])
                     prize_amount, prize_description = calculate_prize_amount(main_matches, powerball_match)
-                    
+
                     # Formatear premio para display
                     if prize_amount >= 1000000:
                         prize_display = f"${prize_amount/1000000:.0f}M"
@@ -1053,7 +1046,7 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                         prize_display = f"${prize_amount:.2f}"
                     else:
                         prize_display = "$0.00"
-                    
+
                     prediction_data = {
                         "prediction_id": pred_row[0],
                         "prediction_date": prediction_date,
@@ -1070,22 +1063,22 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                         "has_prize": prize_amount > 0,
                         "play_number": i + 1
                     }
-                    
+
                     predictions.append(prediction_data)
-                    
+
                     # Acumular estadísticas del grupo
                     total_prize += prize_amount
                     total_matches += main_matches
                     if prize_amount > 0:
                         winning_predictions += 1
-                
+
                 # Calcular estadísticas del grupo de manera más coherente
                 num_predictions = len(predictions)
                 avg_matches = total_matches / num_predictions if num_predictions > 0 else 0
-                
+
                 # Win rate: porcentaje de predicciones que ganaron algún premio
                 win_rate = (winning_predictions / num_predictions * 100) if num_predictions > 0 else 0
-                
+
                 # Formatear total de premios de manera más realista
                 # Si hay jackpots, mostrar solo el número de jackpots en lugar de sumar cantidades enormes
                 jackpot_count = sum(1 for p in predictions if p["prize_amount"] >= 100000000)
@@ -1102,7 +1095,7 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                     total_prize_display = f"${total_prize:.0f}"
                 else:
                     total_prize_display = "$0"
-                
+
                 # Encontrar el mejor resultado de manera más clara
                 best_prediction = max(predictions, key=lambda p: (p["total_matches"], p["powerball_match"], p["prize_amount"]))
                 if best_prediction["total_matches"] == 5 and best_prediction["powerball_match"]:
@@ -1125,7 +1118,7 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                     best_result = "PB Only"
                 else:
                     best_result = "No Match"
-                
+
                 group_data = {
                     "draw_date": draw_date,
                     "winning_numbers": winning_numbers,
@@ -1142,12 +1135,12 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
                         "total_predictions": len(predictions)
                     }
                 }
-                
+
                 grouped_comparisons.append(group_data)
-            
+
             logger.info(f"Retrieved {len(grouped_comparisons)} grouped prediction comparisons with {sum(len(g['predictions']) for g in grouped_comparisons)} total predictions")
             return grouped_comparisons
-            
+
     except Exception as e:
         logger.error(f"Error retrieving grouped predictions with results comparison: {e}")
         return []

@@ -44,7 +44,32 @@
             <main>
                 <!-- AI Predictions Section -->
                 <section id="ai-predictions" class="mb-12">
-                    <!-- Predictions will be loaded here by public.js -->
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                            <i class="fas fa-brain mr-2 text-blue-600"></i>
+                            Latest Smart AI Predictions
+                        </h2>
+                        <p class="text-gray-600 dark:text-gray-400">
+                            Top 100 AI-generated predictions from our advanced pipeline system
+                        </p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="predictions-loading" class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400">Loading predictions...</p>
+                    </div>
+
+                    <!-- Predictions Container -->
+                    <div id="predictions-container" class="hidden">
+                        <!-- Predictions will be loaded here -->
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="predictions-error" class="hidden text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                        <p class="text-red-600 dark:text-red-400">Unable to load predictions. Please try again later.</p>
+                    </div>
                 </section>
             </main>
         </div>
