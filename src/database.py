@@ -315,15 +315,16 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
         return None
 
 
-def get_prediction_history(limit: int = 50) -> pd.DataFrame:
+def get_prediction_history(limit: int = 50, return_format: str = "dataframe"):
     """
     Recupera el historial de predicciones de la base de datos.
     
     Args:
         limit: Número máximo de predicciones a recuperar
+        return_format: "dataframe" o "list" para el formato de retorno
         
     Returns:
-        DataFrame con el historial de predicciones
+        DataFrame o Lista de diccionarios con el historial de predicciones
     """
     try:
         with get_db_connection() as conn:
@@ -337,10 +338,19 @@ def get_prediction_history(limit: int = 50) -> pd.DataFrame:
             """
             df = pd.read_sql_query(query, conn, params=(limit,))
             logger.info(f"Retrieved {len(df)} prediction records from history")
-            return df
+            
+            if return_format == "list":
+                # Convert DataFrame to list of dictionaries
+                return df.to_dict('records')
+            else:
+                return df
+                
     except Exception as e:
         logger.error(f"Error retrieving prediction history: {e}")
-        return pd.DataFrame()
+        if return_format == "list":
+            return []
+        else:
+            return pd.DataFrame()
 
 
 # Phase 4: Adaptive Feedback System Database Methods
