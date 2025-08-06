@@ -259,9 +259,9 @@ class PublicInterface {
                                 return `
                                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopThree ? 'bg-green-50 dark:bg-green-900/20' : isTopTen ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}">
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isTopThree ? 'bg-green-100 text-green-800 border-2 border-green-400' : isTopTen ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' : 'bg-gray-100 text-gray-800'} text-sm font-bold">
-                                                ${displayRank}
-                                            </span>
+                                            <div class="inline-flex items-center px-3 py-1 rounded-lg ${isTopThree ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' : isTopTen ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md' : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm'} text-xs font-bold uppercase tracking-wider">
+                                                #${displayRank}
+                                            </div>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <div class="flex space-x-1">
