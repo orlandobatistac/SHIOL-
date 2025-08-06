@@ -153,16 +153,22 @@ class ModelPoolManager:
         """Get predictions from all loaded models with robust feature compatibility"""
         predictions = {}
 
+        # Apply early SHIOL+ feature standardization to prevent warnings
+        standardized_features = self._standardize_to_shiol_features(features)
+        
         for model_name, model_data in self.loaded_models.items():
             try:
                 model = model_data['model']
                 metadata = model_data['metadata']
 
-                # Check if model expects different number of features
-                expected_features = metadata.get('expected_features', 15)
-
-                # Robust feature processing
-                processed_features = self._process_features_for_model(features, model_name, expected_features)
+                # For SHIOL+ models, use pre-standardized features
+                if model_name == "shiolplus" or metadata.get('expected_features', 15) == 15:
+                    processed_features = standardized_features
+                else:
+                    # For other models, use original processing
+                    expected_features = metadata.get('expected_features', 15)
+                    processed_features = self._process_features_for_model(features, model_name, expected_features)
+                
                 if processed_features is None:
                     continue
 
@@ -180,17 +186,72 @@ class ModelPoolManager:
 
         return predictions
 
-    def _process_features_for_model(self, features: np.ndarray, model_name: str, expected_features: int) -> Optional[np.ndarray]:
-        """Process and validate features for a specific model with strict SHIOL+ compatibility"""
+    def _standardize_to_shiol_features(self, features: np.ndarray) -> np.ndarray:
+        """Standardize any feature input to exactly 15 SHIOL+ compatible features"""
         try:
-            # Convert to numpy array if not already
+            # Convert to numpy array if needed
             if hasattr(features, 'select_dtypes'):
-                # If it's a DataFrame, select only numeric columns
                 numeric_features = features.select_dtypes(include=[np.number]).values
             elif isinstance(features, np.ndarray):
                 numeric_features = features
             else:
-                # Try to convert to DataFrame first
+                try:
+                    df_features = pd.DataFrame(features)
+                    numeric_features = df_features.select_dtypes(include=[np.number]).values
+                except:
+                    logger.warning("Cannot convert features to numeric format, using zeros")
+                    return np.zeros((1, 15))
+
+            # Ensure 2D array
+            if numeric_features.ndim == 1:
+                numeric_features = numeric_features.reshape(1, -1)
+
+            current_feature_count = numeric_features.shape[1]
+            
+            # Always create exactly 15 features for SHIOL+ compatibility
+            shiol_features = np.zeros((numeric_features.shape[0], 15))
+            
+            if current_feature_count >= 15:
+                # Use first 15 features (standard SHIOL+ order)
+                shiol_features = numeric_features[:, :15].copy()
+                logger.debug(f"Using first 15 features from {current_feature_count} available")
+            else:
+                # Copy available features and fill with reasonable defaults
+                copy_count = min(current_feature_count, 15)
+                shiol_features[:, :copy_count] = numeric_features[:, :copy_count]
+                
+                # Fill remaining with SHIOL+ standard defaults
+                for i in range(copy_count, 15):
+                    if i in [0, 1]:  # even_count, odd_count
+                        shiol_features[:, i] = 2.5
+                    elif i == 2:  # sum
+                        shiol_features[:, i] = 150.0
+                    elif i == 3:  # spread
+                        shiol_features[:, i] = 40.0
+                    elif i in [8, 9, 10]:  # distance features
+                        shiol_features[:, i] = 0.5
+                    elif i == 11:  # time_weight
+                        shiol_features[:, i] = 1.0
+                    else:
+                        shiol_features[:, i] = 0.0
+                
+                logger.debug(f"Padded to 15 features from {current_feature_count} available")
+            
+            return shiol_features
+
+        except Exception as e:
+            logger.error(f"Error standardizing features to SHIOL+ format: {e}")
+            return np.zeros((1, 15))
+
+    def _process_features_for_model(self, features: np.ndarray, model_name: str, expected_features: int) -> Optional[np.ndarray]:
+        """Process and validate features for non-SHIOL+ models"""
+        try:
+            # Convert to numpy array if not already
+            if hasattr(features, 'select_dtypes'):
+                numeric_features = features.select_dtypes(include=[np.number]).values
+            elif isinstance(features, np.ndarray):
+                numeric_features = features
+            else:
                 try:
                     df_features = pd.DataFrame(features)
                     numeric_features = df_features.select_dtypes(include=[np.number]).values
@@ -204,55 +265,19 @@ class ModelPoolManager:
 
             current_feature_count = numeric_features.shape[1]
             
-            # For SHIOL+ models, enforce strict 15-feature compatibility
-            if model_name == "shiolplus" or expected_features == 15:
-                if current_feature_count != 15:
-                    logger.warning(f"SHIOL+ feature mismatch for {model_name}: expected 15, got {current_feature_count}")
-                    
-                    # Create exactly 15 features array
-                    shiol_features = np.zeros((numeric_features.shape[0], 15))
-                    
-                    if current_feature_count > 15:
-                        # Use first 15 features (assuming they are in SHIOL+ order)
-                        shiol_features = numeric_features[:, :15]
-                        logger.info(f"Truncated to 15 SHIOL+ features for {model_name}")
-                    else:
-                        # Copy available features and pad the rest
-                        copy_count = min(current_feature_count, 15)
-                        shiol_features[:, :copy_count] = numeric_features[:, :copy_count]
-                        
-                        # Fill remaining features with reasonable defaults
-                        for i in range(copy_count, 15):
-                            if i in [0, 1]:  # even_count, odd_count
-                                shiol_features[:, i] = 2.5
-                            elif i == 2:  # sum
-                                shiol_features[:, i] = 150.0
-                            elif i == 3:  # spread
-                                shiol_features[:, i] = 40.0
-                            elif i in [8, 9, 10]:  # distance features
-                                shiol_features[:, i] = 0.5
-                            elif i == 11:  # time_weight
-                                shiol_features[:, i] = 1.0
-                            else:
-                                shiol_features[:, i] = 0.0
-                        
-                        logger.info(f"Padded to 15 SHIOL+ features for {model_name}")
-                    
-                    return shiol_features
-            
-            # For other models, handle normally
+            # Handle feature count mismatch for non-SHIOL+ models
             if current_feature_count != expected_features:
-                logger.warning(f"Feature count mismatch for {model_name}: expected {expected_features}, got {current_feature_count}")
+                logger.debug(f"Feature adjustment for {model_name}: expected {expected_features}, got {current_feature_count}")
                 
                 if current_feature_count > expected_features:
                     adjusted_features = numeric_features[:, :expected_features]
-                    logger.info(f"Truncated features for {model_name}: {adjusted_features.shape}")
+                    logger.debug(f"Truncated features for {model_name}: {adjusted_features.shape}")
                     return adjusted_features
                 else:
                     padding_needed = expected_features - current_feature_count
                     padding = np.zeros((numeric_features.shape[0], padding_needed))
                     adjusted_features = np.hstack([numeric_features, padding])
-                    logger.info(f"Padded features for {model_name}: {adjusted_features.shape}")
+                    logger.debug(f"Padded features for {model_name}: {adjusted_features.shape}")
                     return adjusted_features
             
             return numeric_features
