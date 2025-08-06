@@ -13,6 +13,10 @@ from typing import Dict, List, Tuple, Any
 from src.loader import get_data_loader
 from src.intelligent_generator import FeatureEngineer, DeterministicGenerator
 from src.database import save_prediction_log
+
+def get_model_trainer():
+    """Function to get model trainer for external validation"""
+    return ModelTrainer("models/shiolplus.pkl")
 # Assuming EnsemblePredictor and EnsembleMethod are defined elsewhere, e.g., in src.ensemble_predictor
 # Placeholder import for EnsemblePredictor and EnsembleMethod
 try:
