@@ -7,6 +7,7 @@ from src.intelligent_generator import IntelligentGenerator
 from src.adaptive_feedback import AdaptivePlayScorer
 from src.loader import get_data_loader
 from src.database import save_prediction_log
+from src.ensemble_predictor import EnsemblePredictor, EnsembleMethod
 
 def train_and_predict() -> None:
     """
@@ -40,12 +41,51 @@ def train_and_predict() -> None:
     adaptive_scorer = AdaptivePlayScorer(historical_data)
     adaptive_predictions = adaptive_scorer.generate_adaptive_predictions(n_samples=10)
 
+    # 5. Multi-Model Ensemble Prediction
+    logger.info("Generating ensemble predictions from multiple models...")
+    ensemble_predictor = EnsemblePredictor(historical_data)
+    
+    # Try different ensemble methods
+    ensemble_methods = [
+        EnsembleMethod.PERFORMANCE_WEIGHTED,
+        EnsembleMethod.WEIGHTED_AVERAGE,
+        EnsembleMethod.MAJORITY_VOTING
+    ]
+    
+    ensemble_predictions = []
+    for method in ensemble_methods:
+        try:
+            ensemble_result = ensemble_predictor.predict_ensemble(method)
+            if ensemble_result:
+                # Convert to play format
+                wb_probs = ensemble_result['white_ball_probabilities']
+                pb_probs = ensemble_result['powerball_probabilities']
+                
+                # Generate plays from probabilities
+                from src.intelligent_generator import IntelligentGenerator
+                generator = IntelligentGenerator(historical_data)
+                method_predictions = generator.generate_plays_from_probabilities(
+                    wb_probs, pb_probs, n_samples=5
+                )
+                
+                # Add method metadata
+                for pred in method_predictions:
+                    pred['ensemble_method'] = method.value
+                    pred['models_used'] = ensemble_result.get('models_used', [])
+                
+                ensemble_predictions.extend(method_predictions)
+                
+        except Exception as e:
+            logger.error(f"Error with ensemble method {method.value}: {e}")
+            continue
+
     # Save all predictions to the database
     all_predictions = {
         "generative": generative_predictions,
         "rnn": rnn_predictions,
         "traditional": traditional_predictions,
         "adaptive": adaptive_predictions,
+        "ensemble": ensemble_predictions,
     }
 
     for method, predictions in all_predictions.items():
