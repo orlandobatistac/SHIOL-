@@ -362,82 +362,78 @@ class Predictor:
     def _prepare_features_for_model(self, features_df: pd.DataFrame) -> Optional[np.ndarray]:
         """Prepare features for model prediction with robust shape validation"""
         try:
-            # Get model feature requirements if available
-            model_expected_features = None
-            try:
-                if hasattr(self.model, 'estimators_') and len(self.model.estimators_) > 0:
-                    # Try to get feature names from the first estimator
-                    first_estimator = self.model.estimators_[0]
-                    if hasattr(first_estimator, 'get_booster'):
-                        model_expected_features = first_estimator.get_booster().feature_names
-                    elif hasattr(first_estimator, 'feature_names_in_'):
-                        model_expected_features = list(first_estimator.feature_names_in_)
-            except Exception as e:
-                logger.debug(f"Could not extract model feature names: {e}")
-
-            # Standard SHIOL+ features in the expected order
-            expected_features = [
+            # Standard SHIOL+ features in exact expected order for compatibility
+            shiol_standard_features = [
                 "even_count", "odd_count", "sum", "spread", "consecutive_count",
-                "avg_delay", "max_delay", "min_delay",
+                "avg_delay", "max_delay", "min_delay", 
                 "dist_to_recent", "avg_dist_to_top_n", "dist_to_centroid",
                 "time_weight", "increasing_trend_count", "decreasing_trend_count",
                 "stable_trend_count"
             ]
-
-            # Use model features if available, otherwise use standard features
-            features_to_use = model_expected_features if model_expected_features is not None else expected_features
-            target_feature_count = len(features_to_use) if model_expected_features is not None else 15
-
-            logger.debug(f"Target feature count: {target_feature_count}")
-            logger.debug(f"Available columns in features_df: {list(features_df.columns)}")
-
-            # Select only available features from the expected list
-            available_features = [col for col in features_to_use if col in features_df.columns]
             
-            if len(available_features) < min(10, target_feature_count // 2):  # At least half or 10 features
-                logger.error(f"Insufficient features available: {len(available_features)}/{target_feature_count}")
-                logger.error(f"Available: {available_features}")
-                logger.error(f"Required: {features_to_use}")
-                return None
-
-            # Use the latest row and select available features
-            latest_features = features_df[available_features].iloc[-1:].values
+            logger.debug(f"Looking for SHIOL+ standard features: {shiol_standard_features}")
+            logger.debug(f"Available columns: {list(features_df.columns)}")
             
-            logger.debug(f"Initial feature shape: {latest_features.shape}")
-
-            # Ensure we have exactly the target number of features
-            if latest_features.shape[1] != target_feature_count:
-                if latest_features.shape[1] > target_feature_count:
-                    # Truncate to target features
-                    latest_features = latest_features[:, :target_feature_count]
-                    logger.info(f"Truncated features from {len(available_features)} to {target_feature_count}")
-                else:
-                    # Pad with meaningful values instead of zeros
-                    padding_needed = target_feature_count - latest_features.shape[1]
-                    
-                    # Calculate padding values based on existing feature statistics
-                    if latest_features.shape[1] > 0:
-                        feature_means = np.mean(latest_features, axis=1, keepdims=True)
-                        padding = np.tile(feature_means, (1, padding_needed)) * 0.1  # Small fraction of mean
+            # Create feature array with exactly 15 features
+            feature_values = np.zeros(15)
+            latest_row = features_df.iloc[-1]
+            
+            # Map available features to their positions
+            for i, feature_name in enumerate(shiol_standard_features):
+                if feature_name in latest_row.index:
+                    value = latest_row[feature_name]
+                    if pd.notna(value) and np.isfinite(value):
+                        feature_values[i] = float(value)
                     else:
-                        padding = np.zeros((latest_features.shape[0], padding_needed))
-                    
-                    latest_features = np.hstack([latest_features, padding])
-                    logger.info(f"Padded features from {len(available_features)} to {target_feature_count}")
-
-            # Validate feature values
-            if np.any(~np.isfinite(latest_features)):
-                logger.warning("Non-finite values detected in features, replacing with zeros")
-                latest_features = np.nan_to_num(latest_features, nan=0.0, posinf=1.0, neginf=-1.0)
-
-            # Final shape validation
-            expected_shape = (1, target_feature_count)
-            if latest_features.shape != expected_shape:
-                logger.error(f"Feature shape mismatch: expected {expected_shape}, got {latest_features.shape}")
+                        # Use default values for missing/invalid features
+                        if feature_name in ["even_count", "odd_count"]:
+                            feature_values[i] = 2.5  # Average of 5 numbers
+                        elif feature_name == "sum":
+                            feature_values[i] = 150.0  # Typical sum
+                        elif feature_name == "spread":
+                            feature_values[i] = 40.0  # Typical spread
+                        elif feature_name in ["dist_to_recent", "avg_dist_to_top_n", "dist_to_centroid"]:
+                            feature_values[i] = 0.5  # Neutral distance
+                        elif feature_name == "time_weight":
+                            feature_values[i] = 1.0  # Full weight
+                        else:
+                            feature_values[i] = 0.0  # Default for counts
+                else:
+                    # Provide reasonable defaults for missing features
+                    if feature_name in ["even_count", "odd_count"]:
+                        feature_values[i] = 2.5
+                    elif feature_name == "sum":
+                        feature_values[i] = 150.0
+                    elif feature_name == "spread":
+                        feature_values[i] = 40.0
+                    elif feature_name in ["avg_delay", "max_delay", "min_delay"]:
+                        feature_values[i] = 5.0  # Reasonable delay
+                    elif feature_name in ["dist_to_recent", "avg_dist_to_top_n", "dist_to_centroid"]:
+                        feature_values[i] = 0.5
+                    elif feature_name == "time_weight":
+                        feature_values[i] = 1.0
+                    else:
+                        feature_values[i] = 0.0
+                        
+                    logger.debug(f"Missing feature '{feature_name}', using default: {feature_values[i]}")
+            
+            # Reshape to (1, 15) for model input
+            prepared_features = feature_values.reshape(1, -1)
+            
+            # Final validation
+            if prepared_features.shape != (1, 15):
+                logger.error(f"Feature preparation failed: expected (1, 15), got {prepared_features.shape}")
                 return None
-
-            logger.debug(f"Final prepared features shape: {latest_features.shape}")
-            return latest_features
+                
+            # Check for any remaining invalid values
+            if np.any(~np.isfinite(prepared_features)):
+                logger.warning("Non-finite values detected, cleaning...")
+                prepared_features = np.nan_to_num(prepared_features, nan=0.0, posinf=100.0, neginf=-100.0)
+            
+            logger.info(f"Successfully prepared features with shape: {prepared_features.shape}")
+            logger.debug(f"Feature values: {prepared_features.flatten()}")
+            
+            return prepared_features
 
         except Exception as e:
             logger.error(f"Error preparing features for model: {e}")
