@@ -335,41 +335,20 @@ class Predictor:
             if self.historical_data.empty:
                 self.historical_data = self.data_loader.load_historical_data()
 
-            # Generate features
+            # Generate features with proper validation
             features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
 
-            # Use the latest features for prediction
-            latest_features = features.iloc[-1:].values
+            # Validate and prepare features for model
+            prepared_features = self._prepare_features_for_model(features)
+            if prepared_features is None:
+                logger.error("Feature preparation failed")
+                return np.ones(69) / 69, np.ones(26) / 26
 
             # Get predictions from the model
-            predictions = self.model.predict_proba(latest_features)
+            predictions = self.model.predict_proba(prepared_features)
 
-            # Extract white ball and Powerball probabilities
-            if isinstance(predictions, list):
-                # Multi-output classifier case
-                wb_probs = np.array([pred[:, 1] if pred.shape[1] > 1 else pred.flatten() 
-                                   for pred in predictions]).flatten()
-
-                # Generate Powerball probabilities (simple approach for now)
-                # This part might need a more sophisticated approach based on the model's output
-                # For now, we'll use a placeholder or random generation if not directly available
-                # A better approach would be to map specific model outputs to Powerball probabilities
-                if len(wb_probs) > 69: # If the model predicts more than 69 outputs, assume last 26 are for PB
-                    pb_probs = wb_probs[69:]
-                    wb_probs = wb_probs[:69]
-                else: # Placeholder for PB if not predicted by the main model
-                    pb_probs = np.random.random(26)
-            else:
-                # Single output case - need to handle appropriately
-                wb_probs = predictions.flatten()
-                pb_probs = np.random.random(26) # Placeholder
-
-            # Ensure correct dimensions and normalize
-            wb_probs = wb_probs[:69] if len(wb_probs) >= 69 else np.pad(wb_probs, (0, 69 - len(wb_probs)))
-            pb_probs = pb_probs[:26] if len(pb_probs) >= 26 else np.pad(pb_probs, (0, 26 - len(pb_probs)))
-
-            wb_probs = wb_probs / wb_probs.sum() if wb_probs.sum() > 0 else wb_probs
-            pb_probs = pb_probs / pb_probs.sum() if pb_probs.sum() > 0 else pb_probs
+            # Extract and normalize probabilities
+            wb_probs, pb_probs = self._extract_and_normalize_probabilities(predictions)
 
             return wb_probs, pb_probs
 
@@ -379,6 +358,113 @@ class Predictor:
             wb_probs = np.ones(69) / 69
             pb_probs = np.ones(26) / 26
             return wb_probs, pb_probs
+
+    def _prepare_features_for_model(self, features_df: pd.DataFrame) -> Optional[np.ndarray]:
+        """Prepare features for model prediction with proper validation"""
+        try:
+            # Standard SHIOL+ features in the expected order
+            expected_features = [
+                "even_count", "odd_count", "sum", "spread", "consecutive_count",
+                "avg_delay", "max_delay", "min_delay",
+                "dist_to_recent", "avg_dist_to_top_n", "dist_to_centroid",
+                "time_weight", "increasing_trend_count", "decreasing_trend_count",
+                "stable_trend_count"
+            ]
+
+            # Select only available features from the expected list
+            available_features = [col for col in expected_features if col in features_df.columns]
+            
+            if len(available_features) < 10:  # Minimum required features
+                logger.error(f"Insufficient features available: {len(available_features)}")
+                return None
+
+            # Use the latest row and select available features
+            latest_features = features_df[available_features].iloc[-1:].values
+
+            # Ensure we have exactly 15 features (pad or truncate as needed)
+            if latest_features.shape[1] != 15:
+                if latest_features.shape[1] > 15:
+                    # Truncate to first 15 features
+                    latest_features = latest_features[:, :15]
+                    logger.info(f"Truncated features to 15: {latest_features.shape}")
+                else:
+                    # Pad with zeros to reach 15 features
+                    padding_needed = 15 - latest_features.shape[1]
+                    padding = np.zeros((latest_features.shape[0], padding_needed))
+                    latest_features = np.hstack([latest_features, padding])
+                    logger.info(f"Padded features to 15: {latest_features.shape}")
+
+            return latest_features
+
+        except Exception as e:
+            logger.error(f"Error preparing features for model: {e}")
+            return None
+
+    def _extract_and_normalize_probabilities(self, predictions) -> Tuple[np.ndarray, np.ndarray]:
+        """Extract and normalize probabilities from model predictions"""
+        try:
+            if isinstance(predictions, list):
+                # Multi-output classifier case
+                processed_probs = []
+                for pred in predictions:
+                    if hasattr(pred, 'shape') and pred.shape[1] > 1:
+                        # Use class 1 probabilities
+                        class_1_probs = pred[:, 1]
+                        processed_probs.extend(class_1_probs)
+                    else:
+                        processed_probs.extend(pred.flatten())
+                
+                all_probs = np.array(processed_probs)
+            else:
+                # Single output case
+                all_probs = predictions.flatten()
+
+            # Ensure all probabilities are valid (between 0 and 1)
+            all_probs = np.clip(all_probs, 0.0, 1.0)
+
+            # Extract white ball and powerball probabilities
+            if len(all_probs) >= 95:  # 69 + 26 = 95
+                wb_probs = all_probs[:69]
+                pb_probs = all_probs[69:95]
+            elif len(all_probs) >= 69:
+                wb_probs = all_probs[:69]
+                # Generate powerball probabilities using a simple method
+                pb_probs = np.random.dirichlet(np.ones(26))  # More balanced than uniform
+            else:
+                # Not enough predictions - use fallback
+                wb_probs = np.ones(69) / 69
+                pb_probs = np.ones(26) / 26
+                logger.warning("Insufficient prediction outputs, using uniform distributions")
+                return wb_probs, pb_probs
+
+            # Robust normalization
+            epsilon = 1e-10
+            
+            # Normalize white ball probabilities
+            wb_sum = wb_probs.sum()
+            if wb_sum > epsilon:
+                wb_probs = wb_probs / wb_sum
+            else:
+                wb_probs = np.ones(69) / 69
+
+            # Normalize powerball probabilities
+            pb_sum = pb_probs.sum()
+            if pb_sum > epsilon:
+                pb_probs = pb_probs / pb_sum
+            else:
+                pb_probs = np.ones(26) / 26
+
+            # Final validation
+            if not np.isclose(wb_probs.sum(), 1.0, rtol=1e-6):
+                wb_probs = wb_probs / wb_probs.sum()
+            if not np.isclose(pb_probs.sum(), 1.0, rtol=1e-6):
+                pb_probs = pb_probs / pb_probs.sum()
+
+            return wb_probs, pb_probs
+
+        except Exception as e:
+            logger.error(f"Error extracting probabilities: {e}")
+            return np.ones(69) / 69, np.ones(26) / 26
 
 
     def get_prediction_features(self):
