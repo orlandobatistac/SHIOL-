@@ -235,8 +235,12 @@ class Predictor:
         # Initialize components
         self.data_loader = get_data_loader()
         self.model_trainer = ModelTrainer(self.config["paths"]["model_file"])
-        self.feature_engineer = FeatureEngineer()
-        self.deterministic_generator = DeterministicGenerator()
+        
+        # Load historical data for feature engineer and deterministic generator
+        self.historical_data = self.data_loader.load_historical_data()
+        
+        self.feature_engineer = FeatureEngineer(self.historical_data)
+        self.deterministic_generator = DeterministicGenerator(self.historical_data)
 
         # Model state
         self.model = None
@@ -324,11 +328,12 @@ class Predictor:
         try:
             logger.info("Using single model prediction")
 
-            # Load recent historical data
-            historical_data = self.data_loader.load_historical_data()
+            # Use already loaded historical data
+            if self.historical_data.empty:
+                self.historical_data = self.data_loader.load_historical_data()
 
             # Generate features
-            features = self.feature_engineer.generate_features(historical_data)
+            features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
 
             # Use the latest features for prediction
             latest_features = features.iloc[-1:].values
@@ -378,9 +383,11 @@ class Predictor:
         Prepares the feature set for the next draw to be predicted.
         """
         logger.info("Preparing features for the next prediction...")
-        historical_data = self.data_loader.load_historical_data()
+        
+        if self.historical_data.empty:
+            self.historical_data = self.data_loader.load_historical_data()
 
-        if historical_data.empty:
+        if self.historical_data.empty:
             raise ValueError("Historical data is empty. Cannot prepare features for prediction.")
 
         all_features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
@@ -405,14 +412,15 @@ class Predictor:
         # Obtener probabilidades del modelo
         wb_probs, pb_probs = self.predict_probabilities()
 
-        # Obtener datos históricos para el generador determinístico
-        historical_data = self.data_loader.load_historical_data()
+        # Usar datos históricos ya cargados
+        if self.historical_data.empty:
+            self.historical_data = self.data_loader.load_historical_data()
 
-        if historical_data.empty:
+        if self.historical_data.empty:
             raise ValueError("Historical data is empty. Cannot generate deterministic prediction.")
 
-        # Crear generador determinístico
-        deterministic_generator = DeterministicGenerator(historical_data)
+        # Usar generador determinístico ya inicializado
+        deterministic_generator = self.deterministic_generator
 
         # Generar predicción top
         prediction = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
@@ -445,14 +453,15 @@ class Predictor:
         # Obtener probabilidades del modelo
         wb_probs, pb_probs = self.predict_probabilities()
 
-        # Obtener datos históricos para el generador determinístico
-        historical_data = self.data_loader.load_historical_data()
+        # Usar datos históricos ya cargados
+        if self.historical_data.empty:
+            self.historical_data = self.data_loader.load_historical_data()
 
-        if historical_data.empty:
+        if self.historical_data.empty:
             raise ValueError("Historical data is empty. Cannot generate diverse predictions.")
 
-        # Crear generador determinístico
-        deterministic_generator = DeterministicGenerator(historical_data)
+        # Usar generador determinístico ya inicializado
+        deterministic_generator = self.deterministic_generator
 
         # Generar predicciones diversas
         diverse_predictions = deterministic_generator.generate_diverse_predictions(
@@ -491,14 +500,15 @@ class Predictor:
         # Obtener probabilidades del modelo
         wb_probs, pb_probs = self.predict_probabilities()
 
-        # Obtener datos históricos
-        historical_data = self.data_loader.load_historical_data()
+        # Usar datos históricos ya cargados
+        if self.historical_data.empty:
+            self.historical_data = self.data_loader.load_historical_data()
 
-        if historical_data.empty:
+        if self.historical_data.empty:
             raise ValueError("Historical data is empty. Cannot generate syndicate predictions.")
 
-        # Crear generador con más candidatos para mayor diversidad
-        deterministic_generator = DeterministicGenerator(historical_data)
+        # Usar generador determinístico ya inicializado
+        deterministic_generator = self.deterministic_generator
 
         # Generar un pool más grande de candidatos (5x el número solicitado)
         candidate_pool_size = max(5000, num_plays * 5)
