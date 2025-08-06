@@ -6,8 +6,8 @@ SHIOL+ Phase 5 Pipeline Orchestrator
 Main pipeline orchestrator that coordinates all 7 pipeline steps:
 1. Data Update
 2. Adaptive Analysis  
-3. Weight Optimization
-4. Prediction Generation
+3. Prediction Generation
+4. Weight Optimization
 5. Historical Validation
 6. Performance Analysis
 7. Notifications & Reports
@@ -161,13 +161,13 @@ class PipelineOrchestrator:
             logger.info("STEP 2/7: Adaptive Analysis")
             pipeline_results['adaptive_analysis'] = self._execute_step('adaptive_analysis', self.step_adaptive_analysis)
 
-            # Step 3: Weight Optimization
-            logger.info("STEP 3/7: Weight Optimization")
-            pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
-
-            # Step 4: Prediction Generation
-            logger.info("STEP 4/7: Prediction Generation")
+            # Step 3: Prediction Generation
+            logger.info("STEP 3/7: Prediction Generation")
             pipeline_results['prediction_generation'] = self._execute_step('prediction_generation', self.step_prediction_generation)
+
+            # Step 4: Weight Optimization
+            logger.info("STEP 4/7: Weight Optimization")
+            pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
 
             # Step 5: Historical Validation
             logger.info("STEP 5/7: Historical Validation")
@@ -325,7 +325,7 @@ class PipelineOrchestrator:
 
     def step_weight_optimization(self) -> Dict[str, Any]:
         """
-        Step 3: Weight Optimization - Optimize scoring weights based on performance.
+        Step 4: Weight Optimization - Optimize scoring weights based on performance.
 
         Returns:
             Dict with weight optimization results
@@ -389,7 +389,7 @@ class PipelineOrchestrator:
 
     def step_prediction_generation(self) -> Dict[str, Any]:
         """
-        Step 4: Prediction Generation - Generate 100 Smart AI predictions for next drawing.
+        Step 3: Prediction Generation - Generate 100 Smart AI predictions for next drawing.
 
         Returns:
             Dict with prediction generation results
