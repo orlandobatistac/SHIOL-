@@ -32,7 +32,7 @@ class ModelValidator:
             'min_accuracy': 0.05,  # Mínima precisión aceptable (5% para lotería)
             'min_top_n_recall': 0.15,  # Recall mínimo en top-N (15%)
             'min_pb_accuracy': 0.03,  # Precisión mínima para Powerball (3%)
-            'max_prediction_variance': 0.8  # Máxima varianza en predicciones (80%)
+            'max_prediction_variance': 0.6  # Máxima varianza en predicciones (60% - más estricto para estabilidad)
         }
         logger.info(
             "ModelValidator initialized with validation window of {} days".
@@ -297,53 +297,120 @@ class ModelValidator:
 
     def _validate_prediction_stability(self,
                                        historical_data: pd.DataFrame) -> Dict:
-        """Valida la estabilidad de las predicciones del modelo."""
+        """Valida la estabilidad de las predicciones del modelo con variaciones controladas."""
         try:
-            logger.info("Validating prediction stability...")
+            logger.info("Validating prediction stability with controlled variations...")
 
-            # Generar múltiples predicciones con pequeñas variaciones en los datos
+            # Generar features base
             feature_engineer = FeatureEngineer(historical_data)
             base_features = feature_engineer.engineer_features(
                 use_temporal_analysis=True)
 
-            predictions = []
-            for i in range(5):
-                # Pequeña variación en los features
-                varied_features = base_features.copy()
-                if len(varied_features) > 1:
-                    varied_features = varied_features.iloc[:-i] if i > 0 else varied_features
+            if base_features.empty:
+                return {'status': 'no_features'}
 
-                prob_df = self.model_trainer.predict_probabilities(
-                    varied_features.tail(1))
-                if prob_df is not None:
-                    # Extraer top 10 números blancos
-                    wb_cols = [
-                        col for col in prob_df.columns if col.startswith('wb_')
-                    ]
-                    wb_probs = prob_df[wb_cols].iloc[0].sort_values(
-                        ascending=False)
-                    top_10_wb = [
-                        int(col.split('_')[1])
-                        for col in wb_probs.head(10).index
-                    ]
-                    predictions.append(top_10_wb)
+            # Obtener el último conjunto de features
+            latest_features = base_features.iloc[-1:].copy()
+
+            predictions = []
+            prediction_details = []
+            
+            # Generar múltiples predicciones con pequeñas variaciones controladas
+            for i in range(5):
+                try:
+                    # Crear copia para variación
+                    varied_features = latest_features.copy()
+                    
+                    if i > 0:
+                        # Aplicar pequeñas variaciones controladas (±2% del valor original)
+                        noise_factor = 0.02
+                        np.random.seed(42 + i)  # Seed fijo para reproducibilidad
+                        
+                        numeric_columns = varied_features.select_dtypes(include=[np.number]).columns
+                        for col in numeric_columns:
+                            if col in varied_features.columns:
+                                original_value = varied_features[col].iloc[0]
+                                if original_value != 0:
+                                    # Aplicar ruido gaussiano pequeño
+                                    noise = np.random.normal(0, abs(original_value) * noise_factor)
+                                    varied_features[col] = original_value + noise
+                                else:
+                                    # Para valores cero, agregar ruido pequeño absoluto
+                                    varied_features[col] = np.random.normal(0, 0.001)
+
+                    # Generar predicción
+                    prob_df = self.model_trainer.predict_probabilities(varied_features)
+                    
+                    if prob_df is not None:
+                        # Extraer top 15 números blancos para análisis más robusto
+                        wb_cols = [col for col in prob_df.columns if col.startswith('wb_')]
+                        pb_cols = [col for col in prob_df.columns if col.startswith('pb_')]
+                        
+                        if wb_cols and pb_cols:
+                            wb_probs = prob_df[wb_cols].iloc[0].sort_values(ascending=False)
+                            pb_probs = prob_df[pb_cols].iloc[0].sort_values(ascending=False)
+                            
+                            top_15_wb = [int(col.split('_')[1]) for col in wb_probs.head(15).index]
+                            top_5_pb = [int(col.split('_')[1]) for col in pb_probs.head(5).index]
+                            
+                            # Combinar números blancos y powerball para análisis de estabilidad
+                            prediction_set = set(top_15_wb + top_5_pb)
+                            predictions.append(prediction_set)
+                            
+                            prediction_details.append({
+                                'iteration': i,
+                                'wb_numbers': top_15_wb,
+                                'pb_numbers': top_5_pb,
+                                'variation_applied': i > 0
+                            })
+                
+                except Exception as e:
+                    logger.warning(f"Error in stability iteration {i}: {e}")
+                    continue
 
             if len(predictions) < 3:
-                return {'status': 'insufficient_predictions'}
+                return {
+                    'status': 'insufficient_predictions',
+                    'predictions_generated': len(predictions),
+                    'minimum_required': 3
+                }
 
-            # Calcular varianza en las predicciones
-            variance = self._calculate_prediction_variance(predictions)
+            # Calcular estabilidad usando Jaccard similarity
+            stability_scores = []
+            
+            # Comparar cada predicción con la base (primera predicción)
+            base_prediction = predictions[0]
+            
+            for i in range(1, len(predictions)):
+                current_prediction = predictions[i]
+                
+                # Jaccard similarity
+                intersection = len(base_prediction.intersection(current_prediction))
+                union = len(base_prediction.union(current_prediction))
+                
+                similarity = intersection / union if union > 0 else 0
+                stability_scores.append(similarity)
 
+            # Calcular métricas de estabilidad
+            avg_stability = np.mean(stability_scores) if stability_scores else 0
+            min_stability = np.min(stability_scores) if stability_scores else 0
+            variance = 1.0 - avg_stability  # Convertir similarity a variance
+            
+            # El modelo es estable si la similitud promedio es alta
+            is_stable = avg_stability >= (1.0 - self.thresholds['max_prediction_variance'])
+            
             analysis = {
                 'status': 'completed',
                 'predictions_generated': len(predictions),
                 'prediction_variance': variance,
-                'stability_score': 1.0 - variance,
-                'is_stable': variance
-                <= self.thresholds['max_prediction_variance']
+                'stability_score': avg_stability,
+                'min_stability': min_stability,
+                'is_stable': is_stable,
+                'stability_threshold': 1.0 - self.thresholds['max_prediction_variance'],
+                'prediction_details': prediction_details[:3]  # Solo mostrar primeras 3 para logs
             }
 
-            logger.info(f"Prediction stability: variance = {variance:.3f}")
+            logger.info(f"Prediction stability: variance = {variance:.3f}, avg_similarity = {avg_stability:.3f}")
             return analysis
 
         except Exception as e:
@@ -445,25 +512,38 @@ class ModelValidator:
             return 0.0
 
     def _calculate_prediction_variance(self,
-                                       predictions: List[List[int]]) -> float:
-        """Calcula la varianza entre múltiples predicciones."""
+                                       predictions: List[set]) -> float:
+        """Calcula la varianza entre múltiples predicciones usando sets."""
         try:
             if len(predictions) < 2:
                 return 0.0
 
-            # Calcular Jaccard similarity entre todas las parejas
+            # Calcular todas las similitudes de Jaccard por pares
             similarities = []
             for i in range(len(predictions)):
                 for j in range(i + 1, len(predictions)):
-                    set1, set2 = set(predictions[i]), set(predictions[j])
+                    set1, set2 = predictions[i], predictions[j]
+                    
+                    # Jaccard similarity
                     intersection = len(set1.intersection(set2))
                     union = len(set1.union(set2))
-                    similarity = intersection / union if union > 0 else 0
+                    
+                    if union > 0:
+                        similarity = intersection / union
+                    else:
+                        similarity = 1.0 if len(set1) == 0 and len(set2) == 0 else 0.0
+                    
                     similarities.append(similarity)
+
+            if not similarities:
+                return 1.0
 
             # Varianza = 1 - similitud promedio
             avg_similarity = np.mean(similarities)
             variance = 1.0 - avg_similarity
+            
+            # Asegurar que la varianza esté en rango [0, 1]
+            variance = max(0.0, min(1.0, variance))
 
             return variance
 
