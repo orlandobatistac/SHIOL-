@@ -19,28 +19,6 @@ def main():
     parser = argparse.ArgumentParser(description="SHIOL+ v2.0 - AI Lottery Pattern Analysis")
     subparsers = parser.add_subparsers(dest='command', required=True)
 
-    # --- Train Command ---
-    parser_train = subparsers.add_parser('train', help="Train the prediction model on historical data.")
-    parser_train.set_defaults(func=train_model_command)
-
-    # --- Predict Command ---
-    parser_predict = subparsers.add_parser('predict', help="Generate new plays based on the trained model.")
-    # default value set to avoid NoneType error
-    parser_predict.add_argument('--count', type=int, default=5, help="Number of plays to generate.")
-    parser_predict.set_defaults(func=predict_plays_command)
-
-    # --- Predict Deterministic Command ---
-    parser_predict_det = subparsers.add_parser('predict-deterministic',
-                                              help="Generate deterministic prediction using multi-criteria scoring.")
-    parser_predict_det.add_argument('--save-log', action='store_true', default=True,
-                                   help="Save prediction to database log (default: True)")
-    parser_predict_det.set_defaults(func=predict_deterministic_command)
-
-    # --- Compare Methods Command ---
-    parser_compare = subparsers.add_parser('compare-methods',
-                                          help="Compare traditional vs deterministic prediction methods.")
-    parser_compare.set_defaults(func=compare_methods_command)
-
     # --- Validate Command ---
     parser_validate = subparsers.add_parser('validate', help="Validate predictions against actual draw results.")
     parser_validate.set_defaults(func=validate_predictions_command)
