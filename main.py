@@ -396,22 +396,30 @@ class PipelineOrchestrator:
         """
         try:
             # NUEVA FUNCIONALIDAD: Validar modelo antes de generar predicciones
-            from src.model_validator import validate_model_before_prediction, is_model_ready_for_prediction
-            from src.auto_retrainer import execute_automatic_retrain_if_needed
-            
-            logger.info("Validating model quality before prediction generation...")
-            model_validation = validate_model_before_prediction()
-            
-            # Verificar si el modelo está listo para predicciones
-            if not is_model_ready_for_prediction():
-                logger.warning("Model quality below acceptable threshold - attempting automatic retrain...")
+            try:
+                from src.model_validator import validate_model_before_prediction, is_model_ready_for_prediction
+                from src.auto_retrainer import execute_automatic_retrain_if_needed
                 
-                retrain_results = execute_automatic_retrain_if_needed()
+                logger.info("Validating model quality before prediction generation...")
+                model_validation = validate_model_before_prediction()
                 
-                if retrain_results.get('retrain_executed', False):
-                    logger.info("Model successfully retrained - proceeding with predictions")
+                # Verificar si el modelo está listo para predicciones
+                if not is_model_ready_for_prediction():
+                    logger.warning("Model quality below acceptable threshold - attempting automatic retrain...")
+                    
+                    retrain_results = execute_automatic_retrain_if_needed()
+                    
+                    if retrain_results.get('retrain_executed', False):
+                        logger.info("Model successfully retrained - proceeding with predictions")
+                    else:
+                        logger.warning("Model retrain not executed - proceeding with caution")
                 else:
-                    logger.warning("Model retrain not executed - proceeding with caution")
+                    retrain_results = {'retrain_executed': False, 'reason': 'model_quality_acceptable'}
+                    
+            except ImportError as e:
+                logger.warning(f"Model validation not available: {e}")
+                model_validation = {'validation_available': False}
+                retrain_results = {'retrain_executed': False, 'error': 'validation_unavailable'}
             
             # Initialize predictor (it loads data internally)
             predictor = Predictor()

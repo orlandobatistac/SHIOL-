@@ -15,7 +15,7 @@ from typing import Dict, List, Tuple, Optional
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 
 from src.loader import get_data_loader
-from src.predictor import get_model_trainer
+from src.predictor import ModelTrainer
 from src.intelligent_generator import FeatureEngineer
 from src.database import get_all_draws
 
@@ -28,7 +28,7 @@ class ModelValidator:
     
     def __init__(self, validation_window_days: int = 30):
         self.validation_window_days = validation_window_days
-        self.model_trainer = get_model_trainer()
+        self.model_trainer = ModelTrainer("models/shiolplus.pkl")
         self.thresholds = {
             'min_accuracy': 0.15,  # Mínima precisión aceptable
             'min_top_n_recall': 0.25,  # Recall mínimo en top-N

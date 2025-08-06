@@ -592,3 +592,138 @@ def force_model_retrain() -> Dict:
     """
     retrainer = AutoRetrainer()
     return retrainer.execute_automatic_retrain(force=True)
+"""
+SHIOL+ Auto-Retrainer Module
+============================
+
+Sistema automático de reentrenamiento del modelo cuando la calidad baja.
+"""
+
+import os
+from datetime import datetime
+from loguru import logger
+from typing import Dict, Any
+
+from src.predictor import ModelTrainer
+from src.loader import get_data_loader
+from src.intelligent_generator import FeatureEngineer
+
+
+def execute_automatic_retrain_if_needed() -> Dict[str, Any]:
+    """
+    Ejecuta reentrenamiento automático del modelo si es necesario.
+    
+    Returns:
+        Dict con resultados del reentrenamiento
+    """
+    logger.info("Checking if automatic model retraining is needed...")
+    
+    try:
+        # Verificar si existe un modelo actual
+        model_path = "models/shiolplus.pkl"
+        if not os.path.exists(model_path):
+            logger.info("No existing model found, training new model...")
+            return _train_new_model()
+        
+        # Por ahora, no reentrenamos automáticamente
+        # En el futuro se puede implementar lógica más sofisticada
+        logger.info("Automatic retraining not triggered - model exists")
+        
+        return {
+            'retrain_executed': False,
+            'reason': 'model_exists_no_trigger',
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in automatic retraining check: {e}")
+        return {
+            'retrain_executed': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }
+
+
+def _train_new_model() -> Dict[str, Any]:
+    """Entrena un nuevo modelo desde cero."""
+    try:
+        logger.info("Starting new model training...")
+        
+        # Cargar datos
+        data_loader = get_data_loader()
+        historical_data = data_loader.load_historical_data()
+        
+        if historical_data.empty:
+            raise ValueError("No historical data available for training")
+        
+        # Generar features
+        feature_engineer = FeatureEngineer(historical_data)
+        features_df = feature_engineer.engineer_features(use_temporal_analysis=True)
+        
+        # Entrenar modelo
+        model_trainer = ModelTrainer("models/shiolplus.pkl")
+        model = model_trainer.train(features_df)
+        
+        if model is not None:
+            logger.info("New model trained successfully")
+            return {
+                'retrain_executed': True,
+                'reason': 'new_model_trained',
+                'model_path': 'models/shiolplus.pkl',
+                'training_samples': len(features_df),
+                'timestamp': datetime.now().isoformat()
+            }
+        else:
+            logger.error("Model training failed")
+            return {
+                'retrain_executed': False,
+                'error': 'training_failed',
+                'timestamp': datetime.now().isoformat()
+            }
+            
+    except Exception as e:
+        logger.error(f"Error training new model: {e}")
+        return {
+            'retrain_executed': False,
+            'error': str(e),
+            'timestamp': datetime.now().isoformat()
+        }
+
+
+def check_model_health() -> Dict[str, Any]:
+    """
+    Verifica la salud del modelo actual.
+    
+    Returns:
+        Dict con estado de salud del modelo
+    """
+    try:
+        model_path = "models/shiolplus.pkl"
+        
+        health_status = {
+            'model_exists': os.path.exists(model_path),
+            'model_path': model_path,
+            'check_timestamp': datetime.now().isoformat()
+        }
+        
+        if health_status['model_exists']:
+            # Verificar que el modelo se puede cargar
+            model_trainer = ModelTrainer(model_path)
+            model = model_trainer.load_model()
+            
+            health_status['model_loadable'] = model is not None
+            health_status['model_size_mb'] = os.path.getsize(model_path) / (1024 * 1024)
+        else:
+            health_status['model_loadable'] = False
+            health_status['model_size_mb'] = 0
+        
+        return health_status
+        
+    except Exception as e:
+        logger.error(f"Error checking model health: {e}")
+        return {
+            'model_exists': False,
+            'model_loadable': False,
+            'error': str(e),
+            'check_timestamp': datetime.now().isoformat()
+        }
