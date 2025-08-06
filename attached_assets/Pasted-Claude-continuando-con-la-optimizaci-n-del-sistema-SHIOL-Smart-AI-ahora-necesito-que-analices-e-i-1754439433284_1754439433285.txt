@@ -1,0 +1,39 @@
+Claude, continuando con la optimización del sistema SHIOL+ Smart AI, ahora necesito que analices e integres múltiples modelos de IA ya disponibles en el proyecto.
+
+### Contexto:
+El sistema actualmente utiliza solo un modelo (por ejemplo, XGBoost: `shiolplus.pkl`) para generar probabilidades y combinaciones inteligentes. Sin embargo, en el directorio `/models/` existen otros modelos adicionales entrenados (por ejemplo: `shiolplus_rf.pkl`, `shiolplus_lgb.pkl`, `shiolplus_prophet.pkl`, etc.), los cuales no se están utilizando activamente en el flujo de generación.
+
+### Objetivo:
+1. **Analiza el contenido del directorio `/models/`** y determina:
+   - Qué modelos están disponibles actualmente.
+   - Qué tipo de modelo es cada uno (XGBoost, RandomForest, LightGBM, Prophet, etc.).
+   - Si tienen el método o capacidad necesaria para generar probabilidades para Powerball y números blancos.
+
+2. **Con base en ese análisis, propón la mejor estrategia para aprovechar todos los modelos existentes.**
+   Algunas ideas que puedes considerar (pero no limitarte a ellas):
+   - Selección del mejor modelo con base en desempeño histórico reciente.
+   - Votación entre modelos (mayoría simple, ponderada, etc.).
+   - Ensemble ponderado de probabilidades.
+   - Arquitectura modular donde cada modelo genera propuestas que luego compiten vía scoring.
+
+3. **Implementa la estrategia elegida** de forma robusta y bien integrada:
+   - Crea las clases necesarias para manejar un *pool de modelos inteligentes*.
+   - Asegúrate de que cada predicción indique qué modelo(s) se utilizaron (`model_version`, método de combinación, etc.).
+   - Modifica o extiende el `Predictor` actual para trabajar con este nuevo esquema.
+   - La solución debe ser escalable, es decir, si se agregan más modelos al directorio, deben ser automáticamente detectados si son compatibles.
+
+4. **Documenta los cambios**:
+   - Explica cómo se detectan y cargan los modelos.
+   - Describe la lógica de selección o combinación aplicada.
+   - Detalla cómo esto mejora la diversidad, precisión o confiabilidad de las jugadas generadas.
+
+### Restricciones:
+- No se requiere visualización gráfica todavía.
+- Prioriza la precisión de las predicciones y la diversidad entre jugadas.
+- Mantén el sistema determinístico y reproducible.
+- Si algún modelo no es compatible o no cumple con los requisitos técnicos, ignóralo y registra ese hecho en los logs.
+
+### Resultado Esperado:
+Un pipeline más inteligente, capaz de usar múltiples modelos existentes para generar predicciones óptimas de forma automática, sin necesidad de intervención manual en cada ejecución.
+
+Gracias por tu análisis y propuesta personalizada basada en los modelos actuales del proyecto.
