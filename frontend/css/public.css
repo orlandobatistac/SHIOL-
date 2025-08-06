@@ -26,42 +26,47 @@ body {
     line-height: 1.6;
 }
 
-/* PowerBall Number Components - Clean Design */
+/* PowerBall Number Components */
 .powerball-number {
-    width: 3rem;
-    height: 3rem;
+    width: 3.5rem;
+    height: 3.5rem;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
     font-weight: 700;
-    font-size: 1.125rem;
-    transition: all 0.2s ease;
-    border: none;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 1.25rem;
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s ease;
+    border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .powerball-number.white-ball {
-    background: #ffffff;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     color: #1f2937;
+    border-color: #d1d5db;
 }
 
-.powerball-number.power-ball,
-.powerball-number.red-ball {
-    background: #dc2626;
+.powerball-number.power-ball {
+    background: linear-gradient(135deg, var(--powerball-red) 0%, #b91c1c 100%);
     color: white;
+    box-shadow: 0 0 20px rgba(220, 38, 38, 0.4), var(--shadow-md);
 }
 
 .powerball-number:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: var(--shadow-lg);
+}
+
+.powerball-number.power-ball:hover {
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.6), var(--shadow-lg);
 }
 
 /* Mobile responsive numbers */
 @media (max-width: 640px) {
     .powerball-number {
-        width: 2.5rem;
-        height: 2.5rem;
+        width: 2.75rem;
+        height: 2.75rem;
         font-size: 1rem;
     }
 }
