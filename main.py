@@ -395,6 +395,24 @@ class PipelineOrchestrator:
             Dict with prediction generation results
         """
         try:
+            # NUEVA FUNCIONALIDAD: Validar modelo antes de generar predicciones
+            from src.model_validator import validate_model_before_prediction, is_model_ready_for_prediction
+            from src.auto_retrainer import execute_automatic_retrain_if_needed
+            
+            logger.info("Validating model quality before prediction generation...")
+            model_validation = validate_model_before_prediction()
+            
+            # Verificar si el modelo está listo para predicciones
+            if not is_model_ready_for_prediction():
+                logger.warning("Model quality below acceptable threshold - attempting automatic retrain...")
+                
+                retrain_results = execute_automatic_retrain_if_needed()
+                
+                if retrain_results.get('retrain_executed', False):
+                    logger.info("Model successfully retrained - proceeding with predictions")
+                else:
+                    logger.warning("Model retrain not executed - proceeding with caution")
+            
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
 
@@ -436,7 +454,10 @@ class PipelineOrchestrator:
                 'dataset_hash': smart_predictions[0]['dataset_hash'],
                 'candidates_evaluated': smart_predictions[0]['num_candidates_evaluated'],
                 'generation_method': 'smart_ai_diverse_deterministic',
-                'diversity_algorithm': 'intelligent_selection_100_plays'
+                'diversity_algorithm': 'intelligent_selection_100_plays',
+                # NUEVA FUNCIONALIDAD: Incluir resultados de validación
+                'model_validation': model_validation,
+                'retrain_executed': retrain_results.get('retrain_executed', False) if 'retrain_results' in locals() else False
             }
 
             # Log summary of generated plays
