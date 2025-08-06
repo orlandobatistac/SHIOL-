@@ -219,8 +219,8 @@ class PublicInterface {
                         <thead class="bg-gray-50 dark:bg-gray-900 sticky top-0">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Rank</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Numbers</th>
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">PB</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Play (White Balls + Powerball)</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Info</th>
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Score</th>
                             </tr>
                         </thead>
@@ -263,14 +263,18 @@ class PublicInterface {
                                             </div>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <div class="flex space-x-1">
+                                            <div class="flex items-center space-x-2">
                                                 ${(pred.numbers || []).map(num => `
-                                                    <span class="inline-flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded-full text-xs font-semibold">${num}</span>
+                                                    <span class="inline-flex items-center justify-center w-10 h-10 bg-white text-gray-900 rounded-full text-sm font-bold border-2 border-gray-300 shadow-sm">${num}</span>
                                                 `).join('')}
+                                                <span class="text-red-500 text-lg font-bold mx-1">•</span>
+                                                <span class="inline-flex items-center justify-center w-10 h-10 bg-red-600 text-white rounded-full text-sm font-bold shadow-md">${pred.powerball || pred.pb || ''}</span>
                                             </div>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="inline-flex items-center justify-center w-7 h-7 bg-red-600 text-white rounded-full text-xs font-semibold">${pred.powerball || pred.pb || ''}</span>
+                                            <div class="text-center">
+                                                <span class="text-xs text-gray-500 block">PB above</span>
+                                            </div>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <div class="flex flex-col">

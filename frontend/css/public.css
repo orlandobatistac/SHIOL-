@@ -394,6 +394,40 @@ html {
     color: inherit;
 }
 
+/* Powerball Official Format Styles */
+.powerball-official-format .powerball-number {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+
+.powerball-official-format .white-ball {
+    background: white;
+    color: #1f2937;
+    border: 2px solid #d1d5db;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.powerball-official-format .red-ball {
+    background: #dc2626;
+    color: white;
+    border: 2px solid #b91c1c;
+    box-shadow: 0 2px 6px rgba(220, 38, 38, 0.3);
+}
+
+.powerball-official-format .separator {
+    color: #dc2626;
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin: 0 0.5rem;
+}
+
 /* ADAPTIVE Predictions Grid Styles */
 .adaptive-predictions-grid {
     width: 100%;
