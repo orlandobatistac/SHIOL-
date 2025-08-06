@@ -193,95 +193,116 @@ class PublicInterface {
         });
 
         const predictionsHtml = `
-            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                <!-- Header -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 border-b border-gray-200 dark:border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                                <i class="fas fa-brain mr-2 text-blue-600"></i>
-                                Smart AI Predictions
+            <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <!-- Mobile-first Header -->
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 border-b border-gray-200">
+                    <div class="text-center sm:flex sm:items-center sm:justify-between">
+                        <div class="mb-2 sm:mb-0">
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">
+                                <i class="fas fa-brain mr-1 sm:mr-2 text-blue-600"></i>
+                                AI Predictions
                             </h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                ${predictions.length} predictions ordered from highest to lowest AI confidence score
-                            </p>
                         </div>
-                        <div class="text-right">
-                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${predictions.length}</div>
-                            <div class="text-xs text-gray-500 dark:text-gray-400">Total Plays</div>
-                        </div>
+                        <div class="text-lg sm:text-2xl font-bold text-blue-600">${predictions.length}</div>
                     </div>
                 </div>
 
-                <!-- Predictions Table -->
-                <div class="overflow-x-auto max-h-96 overflow-y-auto">
-                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-50 dark:bg-gray-900 sticky top-0">
+                <!-- Mobile Cards / Desktop Table -->
+                <div class="block sm:hidden">
+                    <!-- Mobile Card Layout -->
+                    <div class="max-h-96 overflow-y-auto">
+                        ${predictions.map((pred, index) => {
+                            const isTopFive = index < 5;
+                            const getDisplayScore = (pred) => {
+                                const possibleScores = [
+                                    pred.total_score, pred.score_total, pred.confidence,
+                                    pred.score, pred.ai_score, pred.probability
+                                ];
+                                for (let score of possibleScores) {
+                                    if (typeof score === 'number' && !isNaN(score)) return score;
+                                    if (typeof score === 'string') {
+                                        const numScore = parseFloat(score);
+                                        if (!isNaN(numScore)) return numScore;
+                                    }
+                                }
+                                return 0;
+                            };
+                            const confidenceScore = getDisplayScore(pred);
+                            const displayRank = index + 1;
+
+                            return `
+                                <div class="p-3 border-b border-gray-100 ${isTopFive ? 'bg-blue-50' : ''}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isTopFive ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-700 border border-gray-300'} text-xs font-bold">
+                                            ${displayRank}
+                                        </span>
+                                        <div class="text-right">
+                                            <div class="text-sm font-bold text-gray-900">${(confidenceScore * 100).toFixed(1)}%</div>
+                                            ${isTopFive ? '<div class="text-xs text-blue-600 font-semibold">TOP</div>' : ''}
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center justify-center space-x-1">
+                                        ${(pred.numbers || []).map(num => `
+                                            <span class="inline-flex items-center justify-center w-8 h-8 bg-white text-gray-900 rounded-full text-xs font-bold border border-gray-300">${num}</span>
+                                        `).join('')}
+                                        <span class="text-red-500 text-sm font-bold mx-1">•</span>
+                                        <span class="inline-flex items-center justify-center w-8 h-8 bg-red-600 text-white rounded-full text-xs font-bold">${pred.powerball || pred.pb || ''}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Desktop Table Layout -->
+                <div class="hidden sm:block overflow-x-auto max-h-96 overflow-y-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50 sticky top-0">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Position</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Numbers & Powerball</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">AI Confidence</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Numbers</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        <tbody class="bg-white divide-y divide-gray-200">
                             ${predictions.map((pred, index) => {
                                 const isTopFive = index < 5;
-                                // Get confidence score using the same logic as sorting
                                 const getDisplayScore = (pred) => {
                                     const possibleScores = [
-                                        pred.total_score,
-                                        pred.score_total, 
-                                        pred.confidence,
-                                        pred.score,
-                                        pred.ai_score,
-                                        pred.probability
+                                        pred.total_score, pred.score_total, pred.confidence,
+                                        pred.score, pred.ai_score, pred.probability
                                     ];
-
                                     for (let score of possibleScores) {
-                                        if (typeof score === 'number' && !isNaN(score)) {
-                                            return score;
-                                        }
+                                        if (typeof score === 'number' && !isNaN(score)) return score;
                                         if (typeof score === 'string') {
                                             const numScore = parseFloat(score);
-                                            if (!isNaN(numScore)) {
-                                                return numScore;
-                                            }
+                                            if (!isNaN(numScore)) return numScore;
                                         }
                                     }
                                     return 0;
                                 };
-
                                 const confidenceScore = getDisplayScore(pred);
-                                const displayRank = index + 1; // Always use 1-based ranking after sorting
+                                const displayRank = index + 1;
 
                                 return `
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopFive ? 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20' : ''}">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isTopFive ? 'bg-blue-100 text-blue-800 border-2 border-blue-300' : 'bg-gray-100 text-gray-700 border-2 border-gray-300'} text-sm font-bold">
-                                                    ${displayRank}
-                                                </span>
-                                                ${isTopFive ? '<span class="ml-2 text-xs font-semibold text-blue-600 uppercase tracking-wide">Top Pick</span>' : ''}
-                                            </div>
+                                    <tr class="hover:bg-gray-50 ${isTopFive ? 'bg-blue-50' : ''}">
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full ${isTopFive ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-700 border border-gray-300'} text-sm font-bold">
+                                                ${displayRank}
+                                            </span>
+                                            ${isTopFive ? '<span class="ml-2 text-xs font-semibold text-blue-600">TOP</span>' : ''}
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
+                                        <td class="px-4 py-3">
                                             <div class="flex items-center space-x-2">
                                                 ${(pred.numbers || []).map(num => `
-                                                    <span class="inline-flex items-center justify-center w-10 h-10 bg-white text-gray-900 rounded-full text-sm font-bold border-2 border-gray-300 shadow-sm">${num}</span>
+                                                    <span class="inline-flex items-center justify-center w-9 h-9 bg-white text-gray-900 rounded-full text-sm font-bold border border-gray-300">${num}</span>
                                                 `).join('')}
-                                                <span class="text-red-500 text-lg font-bold mx-2">•</span>
-                                                <span class="inline-flex items-center justify-center w-10 h-10 bg-red-600 text-white rounded-full text-sm font-bold shadow-md">${pred.powerball || pred.pb || ''}</span>
+                                                <span class="text-red-500 text-lg font-bold mx-1">•</span>
+                                                <span class="inline-flex items-center justify-center w-9 h-9 bg-red-600 text-white rounded-full text-sm font-bold">${pred.powerball || pred.pb || ''}</span>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex flex-col">
-                                                <div class="text-lg font-bold text-gray-900 dark:text-white">
-                                                    ${(confidenceScore * 100).toFixed(1)}%
-                                                </div>
-                                                <div class="text-xs text-gray-500 dark:text-gray-400">
-                                                    ${isTopFive ? 'Premium Quality' : 'Standard Quality'}
-                                                </div>
-                                            </div>
+                                        <td class="px-4 py-3">
+                                            <div class="text-lg font-bold text-gray-900">${(confidenceScore * 100).toFixed(1)}%</div>
                                         </td>
                                     </tr>
                                 `;
@@ -290,42 +311,18 @@ class PublicInterface {
                     </table>
                 </div>
 
-                <!-- How to Read This Table -->
-                <div class="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
-                    <h4 class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-3">
-                        <i class="fas fa-lightbulb text-blue-500 mr-2"></i>
-                        How to Read This Table
-                    </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-blue-700 dark:text-blue-300">
-                        <div class="space-y-2">
-                            <div class="flex items-center">
-                                <span class="w-6 h-6 bg-blue-100 text-blue-800 rounded-full text-xs font-bold flex items-center justify-center mr-2">1</span>
-                                <span><strong>Position:</strong> Best predictions first</span>
-                            </div>
-                            <div class="flex items-center">
-                                <i class="fas fa-star text-blue-500 mr-2"></i>
-                                <span><strong>Top Pick:</strong> AI's most confident choices</span>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="flex items-center">
-                                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                                <span><strong>80-100%:</strong> Premium Quality</span>
-                            </div>
-                            <div class="flex items-center">
-                                <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                                <span><strong>60-80%:</strong> High Quality</span>
-                            </div>
-                        </div>
-                        <div class="space-y-2">
-                            <div class="flex items-center">
-                                <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-                                <span><strong>40-60%:</strong> Good Quality</span>
-                            </div>
-                            <div class="flex items-center">
-                                <span class="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
-                                <span><strong>Below 40%:</strong> Standard</span>
-                            </div>
+                <!-- Simplified Guide -->
+                <div class="p-3 sm:p-4 bg-blue-50 border-t border-blue-200">
+                    <div class="text-center">
+                        <h4 class="text-sm font-semibold text-blue-800 mb-2">
+                            <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                            Score Guide
+                        </h4>
+                        <div class="flex flex-wrap justify-center gap-2 text-xs text-blue-700">
+                            <span class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>80-100% Premium</span>
+                            <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>60-80% High</span>
+                            <span class="flex items-center"><span class="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>40-60% Good</span>
+                            <span class="flex items-center"><span class="w-2 h-2 bg-gray-500 rounded-full mr-1"></span>&lt;40% Standard</span>
                         </div>
                     </div>
                 </div>
