@@ -124,6 +124,14 @@ class PublicInterface {
 
             // Display Smart AI predictions
             if (data.smart_predictions && data.smart_predictions.length > 0) {
+                // Debug: Log first prediction structure to see available fields
+                console.log('First prediction structure:', data.smart_predictions[0]);
+                console.log('Available score fields:', Object.keys(data.smart_predictions[0]).filter(key => 
+                    key.toLowerCase().includes('score') || 
+                    key.toLowerCase().includes('confidence') || 
+                    key.toLowerCase().includes('probability')
+                ));
+                
                 this.displaySmartPredictions(data);
             } else {
                 this.showPredictionError();
@@ -145,10 +153,36 @@ class PublicInterface {
         const loading = document.getElementById('predictions-loading');
         if (!container || !loading) return;
 
-        // Sort predictions by confidence score (total_score) in descending order
+        // Sort predictions by confidence score in descending order (best to worst)
         const predictions = (data.smart_predictions || []).sort((a, b) => {
-            const scoreA = a.total_score || a.score_total || a.confidence || 0;
-            const scoreB = b.total_score || b.score_total || b.confidence || 0;
+            // Try multiple possible score field names and ensure we get numeric values
+            const getScore = (pred) => {
+                const possibleScores = [
+                    pred.total_score,
+                    pred.score_total, 
+                    pred.confidence,
+                    pred.score,
+                    pred.ai_score,
+                    pred.probability
+                ];
+                
+                for (let score of possibleScores) {
+                    if (typeof score === 'number' && !isNaN(score)) {
+                        return score;
+                    }
+                    if (typeof score === 'string') {
+                        const numScore = parseFloat(score);
+                        if (!isNaN(numScore)) {
+                            return numScore;
+                        }
+                    }
+                }
+                return 0; // Default fallback
+            };
+            
+            const scoreA = getScore(a);
+            const scoreB = getScore(b);
+            
             return scoreB - scoreA; // Descending order (best to worst)
         });
         
@@ -188,7 +222,32 @@ class PublicInterface {
                             ${predictions.map((pred, index) => {
                                 const isTopTen = index < 10;
                                 const isTopThree = index < 3;
-                                const confidenceScore = pred.total_score || pred.score_total || pred.confidence || 0;
+                                // Get confidence score using the same logic as sorting
+                                const getDisplayScore = (pred) => {
+                                    const possibleScores = [
+                                        pred.total_score,
+                                        pred.score_total, 
+                                        pred.confidence,
+                                        pred.score,
+                                        pred.ai_score,
+                                        pred.probability
+                                    ];
+                                    
+                                    for (let score of possibleScores) {
+                                        if (typeof score === 'number' && !isNaN(score)) {
+                                            return score;
+                                        }
+                                        if (typeof score === 'string') {
+                                            const numScore = parseFloat(score);
+                                            if (!isNaN(numScore)) {
+                                                return numScore;
+                                            }
+                                        }
+                                    }
+                                    return 0;
+                                };
+                                
+                                const confidenceScore = getDisplayScore(pred);
                                 const displayRank = index + 1; // Always use 1-based ranking after sorting
                                 
                                 return `
