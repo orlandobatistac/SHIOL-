@@ -990,7 +990,7 @@ class DeterministicGenerator:
         if isinstance(pb_probs, np.ndarray):
             pb_dict = {i+1: prob for i, prob in enumerate(pb_probs[:26])}
         else:
-            pb_dict = pb_probs
+            pb_dict = pb_dict
 
         # Evaluar cada combinación con el sistema de scoring
         scored_candidates = []
@@ -1228,7 +1228,7 @@ class DeterministicGenerator:
         if isinstance(pb_probs, np.ndarray):
             pb_dict = {i+1: prob for i, prob in enumerate(pb_probs[:26])}
         else:
-            pb_dict = pb_probs
+            pb_dict = pb_dict
 
         # Preparar listas ordenadas por probabilidad para sampling determinístico
         wb_sorted = sorted(wb_dict.items(), key=lambda x: x[1], reverse=True)

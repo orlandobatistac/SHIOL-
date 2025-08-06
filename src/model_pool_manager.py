@@ -38,22 +38,37 @@ class ModelPoolManager:
             logger.warning(f"Models directory {self.models_dir} does not exist")
             return
 
-        for file in os.listdir(self.models_dir):
-            if file.endswith(('.pkl', '.joblib', '.model')):
+        try:
+            model_files = [f for f in os.listdir(self.models_dir) 
+                          if f.endswith(('.pkl', '.joblib', '.model'))]
+            
+            if not model_files:
+                logger.info("No model files found in models directory")
+                return
+
+            for file in model_files:
                 model_path = os.path.join(self.models_dir, file)
                 model_name = os.path.splitext(file)[0]
 
                 try:
+                    # Check if file is accessible and not corrupted
+                    if not os.access(model_path, os.R_OK):
+                        logger.warning(f"Cannot read model file: {model_path}")
+                        continue
+
                     model_info = self._analyze_model_file(model_path)
-                    if model_info['compatible']:
+                    if model_info.get('compatible', False):
                         self.compatible_models.append(model_name)
                         self.model_metadata[model_name] = model_info
-                        logger.info(f"✓ Compatible model found: {model_name} ({model_info['type']})")
+                        logger.info(f"✓ Compatible model found: {model_name} ({model_info.get('type', 'Unknown')})")
                     else:
-                        logger.warning(f"✗ Incompatible model: {model_name} ({model_info['type']})")
+                        logger.debug(f"✗ Incompatible model: {model_name} ({model_info.get('type', 'Unknown')})")
 
                 except Exception as e:
                     logger.error(f"Error analyzing model {model_name}: {e}")
+                    
+        except OSError as e:
+            logger.error(f"Error accessing models directory {self.models_dir}: {e}")
 
     def _analyze_model_file(self, model_path: str) -> Dict[str, Any]:
         """Analyze a model file to determine compatibility and type"""

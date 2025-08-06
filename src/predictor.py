@@ -238,10 +238,10 @@ class Predictor:
         # Initialize components
         self.data_loader = get_data_loader()
         self.model_trainer = ModelTrainer(self.config["paths"]["model_file"])
-        
+
         # Load historical data for feature engineer and deterministic generator
         self.historical_data = self.data_loader.load_historical_data()
-        
+
         self.feature_engineer = FeatureEngineer(self.historical_data)
         self.deterministic_generator = DeterministicGenerator(self.historical_data)
 
@@ -386,7 +386,7 @@ class Predictor:
         Prepares the feature set for the next draw to be predicted.
         """
         logger.info("Preparing features for the next prediction...")
-        
+
         if self.historical_data.empty:
             self.historical_data = self.data_loader.load_historical_data()
 
@@ -714,22 +714,22 @@ class Predictor:
         diversity_scores = []
         # Compare against a subset of other candidates to avoid O(N^2) complexity, and focus on top candidates
         comparison_candidates = all_candidates[:min(len(all_candidates), 100)] # Compare with top 100
-        
+
         for other in comparison_candidates:
             if other == candidate: # Skip self-comparison
                 continue
 
             other_nums = set(other.get('numbers', []) + [other.get('powerball', 1)])
-            
+
             # Jaccard index for set similarity, then convert to diversity (1 - similarity)
             intersection = len(candidate_nums.intersection(other_nums))
             union = len(candidate_nums.union(other_nums))
-            
+
             if union == 0: # Handle cases with empty sets
                 jaccard_similarity = 1.0 if len(candidate_nums) == 0 else 0.0
             else:
                 jaccard_similarity = intersection / union
-            
+
             diversity_score = 1.0 - jaccard_similarity
             diversity_scores.append(diversity_score)
 
@@ -761,7 +761,7 @@ class Predictor:
             # Assuming generate_plays can take probabilities and return a DataFrame or similar structure
             # The exact call might need adjustment based on IntelligentGenerator's signature
             traditional_plays_df = traditional_generator.generate_plays(wb_probs, pb_probs, num_plays=1)
-            
+
             if not traditional_plays_df.empty:
                 # Extract numbers and powerball from the first row
                 # Adjust column names based on IntelligentGenerator output
@@ -787,7 +787,7 @@ class Predictor:
             historical_data = self.data_loader.load_historical_data()
             if historical_data.empty:
                 raise ValueError("Historical data is empty for deterministic comparison.")
-                
+
             deterministic_generator = DeterministicGenerator(historical_data)
             deterministic_prediction = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
 
@@ -843,5 +843,3 @@ class Predictor:
             return False
 
         return self.ensemble_predictor.set_ensemble_method(method)
-
-

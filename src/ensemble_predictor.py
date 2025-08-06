@@ -141,15 +141,37 @@ class EnsemblePredictor:
     def _prepare_features(self) -> Optional[np.ndarray]:
         """Prepare features for model prediction"""
         try:
+            if self.historical_data.empty:
+                logger.error("No historical data available for feature preparation")
+                return None
+                
             # Use the latest draws for feature engineering
-            recent_data = self.historical_data.tail(100)
+            recent_data = self.historical_data.tail(min(100, len(self.historical_data)))
+            
+            if recent_data.empty:
+                logger.error("No recent data available for feature engineering")
+                return None
             
             # Generate features using the existing feature engineering system
             features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
             
+            if features.empty:
+                logger.error("Feature engineering returned empty dataset")
+                return None
+            
             # Select only numeric columns and prepare for single prediction
             numeric_features = features.select_dtypes(include=[np.number])
+            
+            if numeric_features.empty:
+                logger.error("No numeric features available after feature engineering")
+                return None
+                
+            # Get latest features and validate shape
             latest_features = numeric_features.iloc[-1:].values
+            
+            if latest_features.shape[1] == 0:
+                logger.error("Feature matrix has no columns")
+                return None
             
             return latest_features
             
