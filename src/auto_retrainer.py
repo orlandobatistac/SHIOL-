@@ -8,6 +8,7 @@ Sistema automático de reentrenamiento del modelo cuando la calidad baja.
 import configparser
 import os
 import sys
+import shutil
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Tuple, Dict, Any, List, Optional
@@ -86,11 +87,11 @@ class AutoRetrainer:
                     model_trainer = ModelTrainer(model_path)
 
                     if not model_trainer.load_model():
-                        issues.append("Model file not found or corrupted")
+                        reasons.append("Model file not found or corrupted")
                         should_retrain = True
                 except Exception as e:
                     logger.error(f"Error loading model: {e}")
-                    issues.append(f"Model loading error: {str(e)}")
+                    reasons.append(f"Model loading error: {str(e)}")
                     should_retrain = True
 
             # 2. Verificar edad del modelo
@@ -205,7 +206,7 @@ class AutoRetrainer:
 
             # Get recent performance analytics
             # We'll use a simple approach for now, assuming get_performance_analytics provides relevant metrics
-            performance_data = get_performance_analytics(days=7) # Last 7 days
+            performance_data = get_performance_analytics(days_back=7) # Last 7 days
 
             if not performance_data or performance_data.get('total_predictions', 0) == 0:
                 return {

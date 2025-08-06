@@ -134,10 +134,23 @@ class ModelValidator:
             
             # Obtener predicciones del modelo
             recent_features = features_df.iloc[-len(recent_data):]
-            prob_df = self.model_trainer.predict_probabilities(recent_features)
             
-            if prob_df is None:
-                return {'status': 'prediction_failed'}
+            # Check feature compatibility before prediction
+            try:
+                prob_df = self.model_trainer.predict_probabilities(recent_features)
+                
+                if prob_df is None:
+                    return {'status': 'prediction_failed'}
+            except Exception as e:
+                if "Feature shape mismatch" in str(e) or "expected" in str(e):
+                    logger.warning(f"Feature compatibility issue detected: {e}")
+                    return {
+                        'status': 'feature_mismatch',
+                        'error': str(e),
+                        'recommendation': 'model_retrain_required'
+                    }
+                else:
+                    return {'status': 'prediction_failed', 'error': str(e)}
             
             # Calcular métricas de desempeño
             wb_accuracy = self._calculate_white_ball_accuracy(recent_data, prob_df)

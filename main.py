@@ -341,14 +341,28 @@ class PipelineOrchestrator:
             performance_data = get_performance_analytics(30)
 
             # Check if we have enough data for optimization
-            if performance_data.get('total_predictions', 0) < 10:
-                logger.warning("Insufficient data for weight optimization (need at least 10 predictions)")
+            total_predictions = performance_data.get('total_predictions', 0)
+            
+            # If we just generated predictions in step 3, check the database directly
+            if total_predictions < 10:
+                try:
+                    from src.database import get_prediction_history
+                    recent_predictions = get_prediction_history(limit=50)
+                    total_predictions = len(recent_predictions)
+                    logger.info(f"Found {total_predictions} total predictions in database for optimization")
+                except Exception as e:
+                    logger.warning(f"Could not check recent predictions: {e}")
+            
+            if total_predictions < 5:  # Reduced threshold since we just generated predictions
+                logger.warning(f"Still insufficient data for weight optimization (have {total_predictions}, need at least 5)")
                 return {
                     'status': 'skipped',
                     'reason': 'insufficient_data',
-                    'predictions_available': performance_data.get('total_predictions', 0),
-                    'minimum_required': 10
+                    'predictions_available': total_predictions,
+                    'minimum_required': 5
                 }
+            
+            logger.info(f"Proceeding with weight optimization using {total_predictions} predictions")
 
             # Get weight optimizer
             weight_optimizer = self.adaptive_system['weight_optimizer']
@@ -403,23 +417,42 @@ class PipelineOrchestrator:
                 logger.info("Validating model quality before prediction generation...")
                 model_validation = validate_model_before_prediction()
                 
-                # Verificar si el modelo está listo para predicciones
-                if not is_model_ready_for_prediction():
+                # Check for specific issues that require retraining
+                needs_retrain = False
+                retrain_reason = "model_quality_acceptable"
+                
+                # Check recent performance metrics for feature mismatch
+                if isinstance(model_validation.get('validation_metrics'), dict):
+                    recent_perf = model_validation['validation_metrics'].get('recent_performance', {})
+                    if recent_perf.get('status') == 'feature_mismatch':
+                        logger.warning("Feature shape mismatch detected - forcing model retrain...")
+                        needs_retrain = True
+                        retrain_reason = "feature_compatibility_issue"
+                
+                # Check overall model readiness
+                if not needs_retrain and not is_model_ready_for_prediction():
                     logger.warning("Model quality below acceptable threshold - attempting automatic retrain...")
-                    
+                    needs_retrain = True
+                    retrain_reason = "quality_below_threshold"
+                
+                if needs_retrain:
                     retrain_results = execute_automatic_retrain_if_needed()
                     
                     if retrain_results.get('retrain_executed', False):
-                        logger.info("Model successfully retrained - proceeding with predictions")
+                        logger.info(f"Model successfully retrained due to: {retrain_reason}")
                     else:
-                        logger.warning("Model retrain not executed - proceeding with caution")
+                        logger.warning(f"Model retrain not executed despite {retrain_reason} - proceeding with caution")
                 else:
-                    retrain_results = {'retrain_executed': False, 'reason': 'model_quality_acceptable'}
+                    retrain_results = {'retrain_executed': False, 'reason': retrain_reason}
                     
             except ImportError as e:
                 logger.warning(f"Model validation not available: {e}")
                 model_validation = {'validation_available': False}
                 retrain_results = {'retrain_executed': False, 'error': 'validation_unavailable'}
+            except Exception as e:
+                logger.error(f"Error during model validation: {e}")
+                model_validation = {'validation_error': str(e)}
+                retrain_results = {'retrain_executed': False, 'error': f'validation_error: {str(e)}'}
             
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
