@@ -226,8 +226,7 @@ class PublicInterface {
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             ${predictions.map((pred, index) => {
-                                const isTopTen = index < 10;
-                                const isTopThree = index < 3;
+                                const isTopFive = index < 5;
                                 // Get confidence score using the same logic as sorting
                                 const getDisplayScore = (pred) => {
                                     const possibleScores = [
@@ -257,9 +256,9 @@ class PublicInterface {
                                 const displayRank = index + 1; // Always use 1-based ranking after sorting
 
                                 return `
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopThree ? 'bg-green-50 dark:bg-green-900/20' : isTopTen ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopFive ? 'bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 border-l-4 border-green-500' : 'bg-gray-50 dark:bg-gray-800/50'}">
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <div class="inline-flex items-center px-3 py-1 rounded-lg ${isTopThree ? 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg' : isTopTen ? 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-md' : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm'} text-xs font-bold uppercase tracking-wider">
+                                            <div class="inline-flex items-center px-3 py-1 rounded-lg ${isTopFive ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : 'bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm'} text-xs font-bold uppercase tracking-wider">
                                                 #${displayRank}
                                             </div>
                                         </td>
@@ -278,7 +277,7 @@ class PublicInterface {
                                                 <div class="text-sm font-medium text-gray-900 dark:text-white">
                                                     ${(confidenceScore * 100).toFixed(1)}%
                                                 </div>
-                                                ${isTopThree ? '<div class="text-xs text-green-600 font-semibold">TOP 3</div>' : ''}
+                                                ${isTopFive ? '<div class="text-xs text-green-600 font-semibold flex items-center"><i class="fas fa-star mr-1"></i>TOP 5</div>' : '<div class="text-xs text-gray-500">Regular</div>'}
                                             </div>
                                         </td>
                                     </tr>
@@ -292,24 +291,36 @@ class PublicInterface {
                 <div class="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                     <h4 class="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">
                         <i class="fas fa-info-circle text-blue-500 mr-2"></i>
-                        Interpretación del Score:
+                        Score Interpretation:
                     </h4>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-gray-700 dark:text-gray-300">
-                        <div class="flex items-center">
-                            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                            <span><strong>80-100%:</strong> Premium</span>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-700 dark:text-gray-300">
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-green-500 mr-2"></i>
+                                <span><strong>TOP 5:</strong> Highest AI confidence predictions</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                                <span><strong>80-100%:</strong> Premium Quality</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                                <span><strong>60-80%:</strong> High Quality</span>
+                            </div>
                         </div>
-                        <div class="flex items-center">
-                            <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                            <span><strong>60-80%:</strong> Alta calidad</span>
-                        </div>
-                        <div class="flex items-center">
-                            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-                            <span><strong>40-60%:</strong> Calidad Media</span>
-                        </div>
-                        <div class="flex items-center">
-                            <span class="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
-                            <span><strong>0-40%:</strong> Estándar</span>
+                        <div class="space-y-2">
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                                <span><strong>40-60%:</strong> Medium Quality</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
+                                <span><strong>0-40%:</strong> Standard Quality</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-sort-numeric-down text-gray-500 mr-2"></i>
+                                <span>Predictions ranked by AI confidence score</span>
+                            </div>
                         </div>
                     </div>
                 </div>
