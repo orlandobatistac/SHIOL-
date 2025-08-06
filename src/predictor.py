@@ -271,15 +271,15 @@ class Predictor:
             # self.model_metadata = self.model_trainer.load_model_metadata()
 
     def _initialize_ensemble_system(self) -> None:
-        """Initialize the ensemble prediction system"""
+        """Initialize the enhanced ensemble prediction system"""
         try:
             # Load historical data for ensemble
             historical_data = self.data_loader.load_historical_data()
 
-            # Initialize ensemble predictor
-            self.ensemble_predictor = EnsemblePredictor(historical_data)
+            # Initialize enhanced ensemble predictor
+            self.ensemble_predictor = EnsemblePredictor(historical_data, models_dir="models/")
 
-            logger.info("Ensemble prediction system initialized successfully")
+            logger.info("Enhanced ensemble prediction system initialized successfully")
 
         except Exception as e:
             logger.error(f"Failed to initialize ensemble system: {e}")
@@ -839,19 +839,7 @@ class Predictor:
             logger.warning("Ensemble system not available")
             return False
 
-        try:
-            # Convert string to enum
-            ensemble_method = EnsembleMethod(method)
-            self.ensemble_predictor.ensemble_method = ensemble_method
-            logger.info(f"Ensemble method set to: {method}")
-            return True
-
-        except ValueError:
-            logger.error(f"Invalid ensemble method: {method}")
-            return False
-        except Exception as e:
-            logger.error(f"Error setting ensemble method: {e}")
-            return False
+        return self.ensemble_predictor.set_ensemble_method(method)
 
 
 def get_model_trainer():

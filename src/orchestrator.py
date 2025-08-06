@@ -3,7 +3,7 @@ from datetime import datetime
 from loguru import logger
 from src.generative_predictor import GenerativePredictor
 from src.rnn_predictor import RNNPredictor
-from src.intelligent_generator import IntelligentGenerator
+from src.intelligent_generator import IntelligentGenerator, FeatureEngineer
 from src.adaptive_feedback import AdaptivePlayScorer
 from src.loader import get_data_loader
 from src.database import save_prediction_log
@@ -44,14 +44,14 @@ def train_and_predict() -> None:
     # 5. Multi-Model Ensemble Prediction
     logger.info("Generating ensemble predictions from multiple models...")
     ensemble_predictor = EnsemblePredictor(historical_data)
-    
+
     # Try different ensemble methods
     ensemble_methods = [
         EnsembleMethod.PERFORMANCE_WEIGHTED,
         EnsembleMethod.WEIGHTED_AVERAGE,
         EnsembleMethod.MAJORITY_VOTING
     ]
-    
+
     ensemble_predictions = []
     for method in ensemble_methods:
         try:
@@ -60,21 +60,21 @@ def train_and_predict() -> None:
                 # Convert to play format
                 wb_probs = ensemble_result['white_ball_probabilities']
                 pb_probs = ensemble_result['powerball_probabilities']
-                
+
                 # Generate plays from probabilities
                 from src.intelligent_generator import IntelligentGenerator
                 generator = IntelligentGenerator(historical_data)
                 method_predictions = generator.generate_plays_from_probabilities(
                     wb_probs, pb_probs, n_samples=5
                 )
-                
+
                 # Add method metadata
                 for pred in method_predictions:
                     pred['ensemble_method'] = method.value
                     pred['models_used'] = ensemble_result.get('models_used', [])
-                
+
                 ensemble_predictions.extend(method_predictions)
-                
+
         except Exception as e:
             logger.error(f"Error with ensemble method {method.value}: {e}")
             continue
