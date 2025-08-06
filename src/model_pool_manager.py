@@ -146,6 +146,20 @@ class ModelPoolManager:
                 # Check if model expects different number of features
                 expected_features = metadata.get('expected_features', 15)
 
+                # Convert any non-numeric columns to numeric or remove them
+                try:
+                    # Ensure features are numeric and handle any datetime/object columns
+                    if hasattr(features, 'select_dtypes'):
+                        # If it's a DataFrame, select only numeric columns
+                        numeric_features = features.select_dtypes(include=[np.number]).values
+                        features = numeric_features
+                    elif isinstance(features, np.ndarray):
+                        # Ensure all values are numeric
+                        features = pd.DataFrame(features).select_dtypes(include=[np.number]).values
+                except Exception as e:
+                    logger.warning(f"Error processing features for {model_name}: {e}")
+                    continue
+
                 if features.shape[1] != expected_features:
                     logger.warning(f"Feature shape mismatch for {model_name}, expected: {expected_features}, got {features.shape[1]}")
 

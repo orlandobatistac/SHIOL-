@@ -733,7 +733,7 @@ class PlayScorer:
         logger.info("PlayScorer initialized with multi-criteria scoring system")
 
     def calculate_total_score(self, white_balls: List[int], powerball: int,
-                            wb_probs: Dict[int, float], pb_probs: Dict[int, float]) -> Dict:
+                            wb_probs, pb_probs) -> Dict:
         """
         Calcula el score total para una combinación de números.
 
@@ -763,16 +763,27 @@ class PlayScorer:
         return scores
 
     def _calculate_probability_score(self, white_balls: List[int], powerball: int,
-                                   wb_probs: Dict[int, float], pb_probs: Dict[int, float]) -> float:
+                                   wb_probs, pb_probs) -> float:
         """
         Score basado en las probabilidades predichas por el modelo (40%).
         """
         try:
+            # Manejar tanto arrays numpy como diccionarios
+            if isinstance(wb_probs, np.ndarray):
+                wb_dict = {i+1: prob for i, prob in enumerate(wb_probs[:69])}
+            else:
+                wb_dict = wb_probs
+
+            if isinstance(pb_probs, np.ndarray):
+                pb_dict = {i+1: prob for i, prob in enumerate(pb_probs[:26])}
+            else:
+                pb_dict = pb_probs
+
             # Score de números blancos (promedio de probabilidades)
-            wb_score = np.mean([wb_probs.get(num, 0.0) for num in white_balls])
+            wb_score = np.mean([wb_dict.get(num, 0.0) for num in white_balls])
 
             # Score del powerball
-            pb_score = pb_probs.get(powerball, 0.0)
+            pb_score = pb_dict.get(powerball, 0.0)
 
             # Combinar scores (80% white balls, 20% powerball)
             probability_score = 0.8 * wb_score + 0.2 * pb_score
@@ -952,7 +963,7 @@ class DeterministicGenerator:
 
         logger.info("DeterministicGenerator initialized with deterministic scoring system")
 
-    def generate_top_prediction(self, wb_probs: Dict[int, float], pb_probs: Dict[int, float],
+    def generate_top_prediction(self, wb_probs, pb_probs,
                               num_candidates: int = 1000) -> Dict:
         """
         Genera la predicción top basada en scoring determinístico.
@@ -1012,7 +1023,7 @@ class DeterministicGenerator:
         logger.info(f"Top prediction generated with total score: {result['score_total']:.4f}")
         return result
 
-    def generate_diverse_predictions(self, wb_probs: Dict[int, float], pb_probs: Dict[int, float],
+    def generate_diverse_predictions(self, wb_probs, pb_probs,
                                    num_plays: int = 5, num_candidates: int = 2000) -> List[Dict]:
         """
         Genera múltiples predicciones diversas de alta calidad.
@@ -1201,16 +1212,27 @@ class DeterministicGenerator:
 
         return (sum_diversity + spread_diversity + range_diversity) / 3.0
 
-    def _generate_candidate_combinations(self, wb_probs: Dict[int, float], pb_probs: Dict[int, float],
+    def _generate_candidate_combinations(self, wb_probs, pb_probs,
                                        num_candidates: int) -> List[Tuple[List[int], int]]:
         """
         Genera combinaciones candidatas de forma determinística basada en probabilidades.
         """
         candidates = []
 
+        # Manejar tanto arrays numpy como diccionarios para probabilidades
+        if isinstance(wb_probs, np.ndarray):
+            wb_dict = {i+1: prob for i, prob in enumerate(wb_probs[:69])}
+        else:
+            wb_dict = wb_probs
+
+        if isinstance(pb_probs, np.ndarray):
+            pb_dict = {i+1: prob for i, prob in enumerate(pb_probs[:26])}
+        else:
+            pb_dict = pb_probs
+
         # Preparar listas ordenadas por probabilidad para sampling determinístico
-        wb_sorted = sorted(wb_probs.items(), key=lambda x: x[1], reverse=True)
-        pb_sorted = sorted(pb_probs.items(), key=lambda x: x[1], reverse=True)
+        wb_sorted = sorted(wb_dict.items(), key=lambda x: x[1], reverse=True)
+        pb_sorted = sorted(pb_dict.items(), key=lambda x: x[1], reverse=True)
 
         # Usar seed fijo para reproducibilidad
         rng = np.random.RandomState(42)

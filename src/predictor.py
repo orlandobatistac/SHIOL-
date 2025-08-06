@@ -139,7 +139,6 @@ class ModelTrainer:
             learning_rate=float(self.config["model_params"].get("learning_rate", 0.1)),
             random_state=int(self.config["model_params"]["random_state"]),
             objective='binary:logistic',
-            use_label_encoder=False,
             eval_metric='logloss'
         )
         return MultiOutputClassifier(estimator=base_classifier, n_jobs=-1)

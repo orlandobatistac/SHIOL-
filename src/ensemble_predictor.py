@@ -147,8 +147,9 @@ class EnsemblePredictor:
             # Generate features using the existing feature engineering system
             features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
             
-            # Prepare for single prediction (latest state)
-            latest_features = features.iloc[-1:].values
+            # Select only numeric columns and prepare for single prediction
+            numeric_features = features.select_dtypes(include=[np.number])
+            latest_features = numeric_features.iloc[-1:].values
             
             return latest_features
             
