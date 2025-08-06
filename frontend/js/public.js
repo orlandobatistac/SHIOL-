@@ -194,133 +194,67 @@ class PublicInterface {
 
         const predictionsHtml = `
             <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <!-- Mobile-first Header -->
-                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-3 sm:p-4 border-b border-gray-200">
-                    <div class="text-center sm:flex sm:items-center sm:justify-between">
-                        <div class="mb-2 sm:mb-0">
-                            <h3 class="text-lg sm:text-xl font-bold text-gray-900">
-                                <i class="fas fa-brain mr-1 sm:mr-2 text-blue-600"></i>
-                                AI Predictions
-                            </h3>
-                        </div>
-                        <div class="text-lg sm:text-2xl font-bold text-blue-600">${predictions.length}</div>
+                <!-- Header -->
+                <div class="bg-slate-700 text-white p-4 border-b">
+                    <div class="text-center">
+                        <h3 class="text-xl font-bold">
+                            <i class="fas fa-brain mr-2"></i>
+                            AI Predictions
+                        </h3>
+                        <div class="text-sm opacity-75 mt-1">${predictions.length} Smart Predictions</div>
                     </div>
                 </div>
 
-                <!-- Mobile Cards / Desktop Table -->
-                <div class="block sm:hidden">
-                    <!-- Mobile Card Layout -->
-                    <div class="max-h-96 overflow-y-auto">
-                        ${predictions.map((pred, index) => {
-                            const isTopFive = index < 5;
-                            const getDisplayScore = (pred) => {
-                                const possibleScores = [
-                                    pred.total_score, pred.score_total, pred.confidence,
-                                    pred.score, pred.ai_score, pred.probability
-                                ];
-                                for (let score of possibleScores) {
-                                    if (typeof score === 'number' && !isNaN(score)) return score;
-                                    if (typeof score === 'string') {
-                                        const numScore = parseFloat(score);
-                                        if (!isNaN(numScore)) return numScore;
-                                    }
+                <!-- Clean Card Layout -->
+                <div class="max-h-96 overflow-y-auto">
+                    ${predictions.map((pred, index) => {
+                        const getDisplayScore = (pred) => {
+                            const possibleScores = [
+                                pred.total_score, pred.score_total, pred.confidence,
+                                pred.score, pred.ai_score, pred.probability
+                            ];
+                            for (let score of possibleScores) {
+                                if (typeof score === 'number' && !isNaN(score)) return score;
+                                if (typeof score === 'string') {
+                                    const numScore = parseFloat(score);
+                                    if (!isNaN(numScore)) return numScore;
                                 }
-                                return 0;
-                            };
-                            const confidenceScore = getDisplayScore(pred);
-                            const displayRank = index + 1;
+                            }
+                            return 0;
+                        };
+                        const confidenceScore = getDisplayScore(pred);
+                        const displayRank = index + 1;
 
-                            return `
-                                <div class="p-3 border-b border-gray-100 ${isTopFive ? 'bg-blue-50' : ''}">
-                                    <div class="flex items-center justify-between mb-2">
-                                        <span class="inline-flex items-center justify-center w-6 h-6 rounded-full ${isTopFive ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-700 border border-gray-300'} text-xs font-bold">
-                                            ${displayRank}
-                                        </span>
-                                        <div class="text-right">
-                                            <div class="text-sm font-bold text-gray-900">${(confidenceScore * 100).toFixed(1)}%</div>
-                                            ${isTopFive ? '<div class="text-xs text-blue-600 font-semibold">TOP</div>' : ''}
-                                        </div>
-                                    </div>
-                                    <div class="flex items-center justify-center space-x-1">
+                        return `
+                            <div class="bg-slate-600 text-white p-4 border-b border-slate-500 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="text-gray-300 font-medium mr-4">Play ${displayRank}:</span>
+                                    <div class="flex items-center space-x-2">
                                         ${(pred.numbers || []).map(num => `
-                                            <span class="inline-flex items-center justify-center w-8 h-8 bg-white text-gray-900 rounded-full text-xs font-bold border border-gray-300">${num}</span>
+                                            <span class="powerball-number white-ball">${num}</span>
                                         `).join('')}
-                                        <span class="text-red-500 text-sm font-bold mx-1">•</span>
-                                        <span class="inline-flex items-center justify-center w-8 h-8 bg-red-600 text-white rounded-full text-xs font-bold">${pred.powerball || pred.pb || ''}</span>
+                                        <span class="text-red-400 text-lg font-bold mx-2">•</span>
+                                        <span class="powerball-number red-ball">${pred.powerball || pred.pb || ''}</span>
                                     </div>
                                 </div>
-                            `;
-                        }).join('')}
-                    </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-green-400">${(confidenceScore * 100).toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
 
-                <!-- Desktop Table Layout -->
-                <div class="hidden sm:block overflow-x-auto max-h-96 overflow-y-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50 sticky top-0">
-                            <tr>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Numbers</th>
-                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            ${predictions.map((pred, index) => {
-                                const isTopFive = index < 5;
-                                const getDisplayScore = (pred) => {
-                                    const possibleScores = [
-                                        pred.total_score, pred.score_total, pred.confidence,
-                                        pred.score, pred.ai_score, pred.probability
-                                    ];
-                                    for (let score of possibleScores) {
-                                        if (typeof score === 'number' && !isNaN(score)) return score;
-                                        if (typeof score === 'string') {
-                                            const numScore = parseFloat(score);
-                                            if (!isNaN(numScore)) return numScore;
-                                        }
-                                    }
-                                    return 0;
-                                };
-                                const confidenceScore = getDisplayScore(pred);
-                                const displayRank = index + 1;
-
-                                return `
-                                    <tr class="hover:bg-gray-50 ${isTopFive ? 'bg-blue-50' : ''}">
-                                        <td class="px-4 py-3">
-                                            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full ${isTopFive ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-gray-100 text-gray-700 border border-gray-300'} text-sm font-bold">
-                                                ${displayRank}
-                                            </span>
-                                            ${isTopFive ? '<span class="ml-2 text-xs font-semibold text-blue-600">TOP</span>' : ''}
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="flex items-center space-x-2">
-                                                ${(pred.numbers || []).map(num => `
-                                                    <span class="inline-flex items-center justify-center w-9 h-9 bg-white text-gray-900 rounded-full text-sm font-bold border border-gray-300">${num}</span>
-                                                `).join('')}
-                                                <span class="text-red-500 text-lg font-bold mx-1">•</span>
-                                                <span class="inline-flex items-center justify-center w-9 h-9 bg-red-600 text-white rounded-full text-sm font-bold">${pred.powerball || pred.pb || ''}</span>
-                                            </div>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <div class="text-lg font-bold text-gray-900">${(confidenceScore * 100).toFixed(1)}%</div>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Simplified Guide -->
-                <div class="p-3 sm:p-4 bg-blue-50 border-t border-blue-200">
+                <!-- Score Guide -->
+                <div class="p-4 bg-slate-100 border-t">
                     <div class="text-center">
-                        <h4 class="text-sm font-semibold text-blue-800 mb-2">
-                            <i class="fas fa-info-circle text-blue-500 mr-1"></i>
+                        <h4 class="text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-info-circle text-slate-500 mr-1"></i>
                             Score Guide
                         </h4>
-                        <div class="flex flex-wrap justify-center gap-2 text-xs text-blue-700">
-                            <span class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>80-100% Premium</span>
-                            <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>60-80% High</span>
+                        <div class="flex flex-wrap justify-center gap-3 text-xs text-slate-600">
+                            <span class="flex items-center"><span class="w-2 h-2 bg-green-500 rounded-full mr-1"></span>80-100% Premium</span>
+                            <span class="flex items-center"><span class="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>60-80% High</span>
                             <span class="flex items-center"><span class="w-2 h-2 bg-yellow-500 rounded-full mr-1"></span>40-60% Good</span>
                             <span class="flex items-center"><span class="w-2 h-2 bg-gray-500 rounded-full mr-1"></span>&lt;40% Standard</span>
                         </div>
