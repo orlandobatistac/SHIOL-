@@ -151,7 +151,13 @@ class PublicInterface {
     displaySmartPredictions(data) {
         const container = document.getElementById('predictions-container');
         const loading = document.getElementById('predictions-loading');
+        const error = document.getElementById('predictions-error');
+        
         if (!container || !loading) return;
+
+        // Hide loading and error states
+        loading.classList.add('hidden');
+        if (error) error.classList.add('hidden');
 
         // Sort predictions by confidence score in descending order (best to worst)
         const predictions = (data.smart_predictions || []).sort((a, b) => {
@@ -313,6 +319,9 @@ class PublicInterface {
         // Display the predictions
         container.innerHTML = predictionsHtml;
         container.classList.remove('hidden');
+
+        // Ensure loading is hidden
+        loading.classList.add('hidden');
     }
 
     /**
