@@ -145,7 +145,12 @@ class PublicInterface {
         const loading = document.getElementById('predictions-loading');
         if (!container || !loading) return;
 
-        const predictions = data.smart_predictions || [];
+        // Sort predictions by confidence score (total_score) in descending order
+        const predictions = (data.smart_predictions || []).sort((a, b) => {
+            const scoreA = a.total_score || a.score_total || a.confidence || 0;
+            const scoreB = b.total_score || b.score_total || b.confidence || 0;
+            return scoreB - scoreA; // Descending order (best to worst)
+        });
         
         const predictionsHtml = `
             <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -158,7 +163,7 @@ class PublicInterface {
                                 Smart AI Predictions
                             </h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                ${predictions.length} predictions ranked by AI confidence score
+                                ${predictions.length} predictions ordered from highest to lowest AI confidence score
                             </p>
                         </div>
                         <div class="text-right">
@@ -182,26 +187,33 @@ class PublicInterface {
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                             ${predictions.map((pred, index) => {
                                 const isTopTen = index < 10;
+                                const isTopThree = index < 3;
+                                const confidenceScore = pred.total_score || pred.score_total || pred.confidence || 0;
+                                const displayRank = index + 1; // Always use 1-based ranking after sorting
+                                
                                 return `
-                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopTen ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}">
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${isTopThree ? 'bg-green-50 dark:bg-green-900/20' : isTopTen ? 'bg-yellow-50 dark:bg-yellow-900/20' : ''}">
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isTopTen ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' : 'bg-gray-100 text-gray-800'} text-sm font-bold">
-                                                ${pred.rank || (index + 1)}
+                                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full ${isTopThree ? 'bg-green-100 text-green-800 border-2 border-green-400' : isTopTen ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' : 'bg-gray-100 text-gray-800'} text-sm font-bold">
+                                                ${displayRank}
                                             </span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
                                             <div class="flex space-x-1">
-                                                ${pred.numbers.map(num => `
+                                                ${(pred.numbers || []).map(num => `
                                                     <span class="inline-flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded-full text-xs font-semibold">${num}</span>
                                                 `).join('')}
                                             </div>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <span class="inline-flex items-center justify-center w-7 h-7 bg-red-600 text-white rounded-full text-xs font-semibold">${pred.powerball}</span>
+                                            <span class="inline-flex items-center justify-center w-7 h-7 bg-red-600 text-white rounded-full text-xs font-semibold">${pred.powerball || pred.pb || ''}</span>
                                         </td>
                                         <td class="px-4 py-3 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
-                                                ${(pred.total_score * 100).toFixed(1)}%
+                                            <div class="flex flex-col">
+                                                <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                    ${(confidenceScore * 100).toFixed(1)}%
+                                                </div>
+                                                ${isTopThree ? '<div class="text-xs text-green-600 font-semibold">TOP 3</div>' : ''}
                                             </div>
                                         </td>
                                     </tr>
