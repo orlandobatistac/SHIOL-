@@ -1,0 +1,46 @@
+{
+  "pipeline_execution": {
+    "start_time": "2025-08-06T12:03:54.256693",
+    "end_time": "2025-08-06T12:04:18.707106",
+    "total_execution_time": "0:00:24.450417",
+    "status": {
+      "data_update": {
+        "status": "success",
+        "execution_time": "0:00:00.458935",
+        "timestamp": "2025-08-06T12:03:54.715778"
+      },
+      "adaptive_analysis": {
+        "status": "success",
+        "execution_time": "0:00:00.012578",
+        "timestamp": "2025-08-06T12:03:54.728666"
+      },
+      "weight_optimization": {
+        "status": "success",
+        "execution_time": "0:00:00.001621",
+        "timestamp": "2025-08-06T12:03:54.730572"
+      },
+      "prediction_generation": {
+        "status": "failed",
+        "error": "Step prediction_generation failed: 'numpy.ndarray' object has no attribute 'items'",
+        "execution_time": "0:00:23.903780",
+        "timestamp": "2025-08-06T12:04:18.634686"
+      },
+      "historical_validation": {
+        "status": "success",
+        "execution_time": "0:00:00.046961",
+        "timestamp": "2025-08-06T12:04:18.699584"
+      },
+      "performance_analysis": {
+        "status": "success",
+        "execution_time": "0:00:00.006787",
+        "timestamp": "2025-08-06T12:04:18.706668"
+      }
+    }
+  },
+  "system_info": {
+    "config_file": "config/config.ini",
+    "historical_data_records": 2209,
+    "adaptive_system_initialized": true
+  },
+  "generated_at": "2025-08-06T12:04:18.707185"
+}
