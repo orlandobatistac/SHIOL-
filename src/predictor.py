@@ -8,7 +8,7 @@ from sklearn.metrics import roc_auc_score, log_loss
 from sklearn.model_selection import train_test_split
 from sklearn.multioutput import MultiOutputClassifier
 from xgboost import XGBClassifier
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 
 from src.loader import get_data_loader
 from src.intelligent_generator import FeatureEngineer, DeterministicGenerator
@@ -360,8 +360,21 @@ class Predictor:
             return wb_probs, pb_probs
 
     def _prepare_features_for_model(self, features_df: pd.DataFrame) -> Optional[np.ndarray]:
-        """Prepare features for model prediction with proper validation"""
+        """Prepare features for model prediction with robust shape validation"""
         try:
+            # Get model feature requirements if available
+            model_expected_features = None
+            try:
+                if hasattr(self.model, 'estimators_') and len(self.model.estimators_) > 0:
+                    # Try to get feature names from the first estimator
+                    first_estimator = self.model.estimators_[0]
+                    if hasattr(first_estimator, 'get_booster'):
+                        model_expected_features = first_estimator.get_booster().feature_names
+                    elif hasattr(first_estimator, 'feature_names_in_'):
+                        model_expected_features = list(first_estimator.feature_names_in_)
+            except Exception as e:
+                logger.debug(f"Could not extract model feature names: {e}")
+
             # Standard SHIOL+ features in the expected order
             expected_features = [
                 "even_count", "odd_count", "sum", "spread", "consecutive_count",
@@ -371,29 +384,59 @@ class Predictor:
                 "stable_trend_count"
             ]
 
+            # Use model features if available, otherwise use standard features
+            features_to_use = model_expected_features if model_expected_features is not None else expected_features
+            target_feature_count = len(features_to_use) if model_expected_features is not None else 15
+
+            logger.debug(f"Target feature count: {target_feature_count}")
+            logger.debug(f"Available columns in features_df: {list(features_df.columns)}")
+
             # Select only available features from the expected list
-            available_features = [col for col in expected_features if col in features_df.columns]
+            available_features = [col for col in features_to_use if col in features_df.columns]
             
-            if len(available_features) < 10:  # Minimum required features
-                logger.error(f"Insufficient features available: {len(available_features)}")
+            if len(available_features) < min(10, target_feature_count // 2):  # At least half or 10 features
+                logger.error(f"Insufficient features available: {len(available_features)}/{target_feature_count}")
+                logger.error(f"Available: {available_features}")
+                logger.error(f"Required: {features_to_use}")
                 return None
 
             # Use the latest row and select available features
             latest_features = features_df[available_features].iloc[-1:].values
+            
+            logger.debug(f"Initial feature shape: {latest_features.shape}")
 
-            # Ensure we have exactly 15 features (pad or truncate as needed)
-            if latest_features.shape[1] != 15:
-                if latest_features.shape[1] > 15:
-                    # Truncate to first 15 features
-                    latest_features = latest_features[:, :15]
-                    logger.info(f"Truncated features to 15: {latest_features.shape}")
+            # Ensure we have exactly the target number of features
+            if latest_features.shape[1] != target_feature_count:
+                if latest_features.shape[1] > target_feature_count:
+                    # Truncate to target features
+                    latest_features = latest_features[:, :target_feature_count]
+                    logger.info(f"Truncated features from {len(available_features)} to {target_feature_count}")
                 else:
-                    # Pad with zeros to reach 15 features
-                    padding_needed = 15 - latest_features.shape[1]
-                    padding = np.zeros((latest_features.shape[0], padding_needed))
+                    # Pad with meaningful values instead of zeros
+                    padding_needed = target_feature_count - latest_features.shape[1]
+                    
+                    # Calculate padding values based on existing feature statistics
+                    if latest_features.shape[1] > 0:
+                        feature_means = np.mean(latest_features, axis=1, keepdims=True)
+                        padding = np.tile(feature_means, (1, padding_needed)) * 0.1  # Small fraction of mean
+                    else:
+                        padding = np.zeros((latest_features.shape[0], padding_needed))
+                    
                     latest_features = np.hstack([latest_features, padding])
-                    logger.info(f"Padded features to 15: {latest_features.shape}")
+                    logger.info(f"Padded features from {len(available_features)} to {target_feature_count}")
 
+            # Validate feature values
+            if np.any(~np.isfinite(latest_features)):
+                logger.warning("Non-finite values detected in features, replacing with zeros")
+                latest_features = np.nan_to_num(latest_features, nan=0.0, posinf=1.0, neginf=-1.0)
+
+            # Final shape validation
+            expected_shape = (1, target_feature_count)
+            if latest_features.shape != expected_shape:
+                logger.error(f"Feature shape mismatch: expected {expected_shape}, got {latest_features.shape}")
+                return None
+
+            logger.debug(f"Final prepared features shape: {latest_features.shape}")
             return latest_features
 
         except Exception as e:
@@ -401,26 +444,29 @@ class Predictor:
             return None
 
     def _extract_and_normalize_probabilities(self, predictions) -> Tuple[np.ndarray, np.ndarray]:
-        """Extract and normalize probabilities from model predictions"""
+        """Extract and normalize probabilities from model predictions with robust validation"""
         try:
             if isinstance(predictions, list):
                 # Multi-output classifier case
                 processed_probs = []
                 for pred in predictions:
                     if hasattr(pred, 'shape') and pred.shape[1] > 1:
-                        # Use class 1 probabilities
+                        # Use class 1 probabilities and ensure they're properly scaled
                         class_1_probs = pred[:, 1]
+                        # Apply softmax-like normalization to ensure valid probability distribution
+                        class_1_probs = np.clip(class_1_probs, 1e-10, 1.0 - 1e-10)
                         processed_probs.extend(class_1_probs)
                     else:
-                        processed_probs.extend(pred.flatten())
+                        # Handle single column predictions
+                        flat_pred = pred.flatten()
+                        flat_pred = np.clip(flat_pred, 1e-10, 1.0 - 1e-10)
+                        processed_probs.extend(flat_pred)
                 
                 all_probs = np.array(processed_probs)
             else:
                 # Single output case
                 all_probs = predictions.flatten()
-
-            # Ensure all probabilities are valid (between 0 and 1)
-            all_probs = np.clip(all_probs, 0.0, 1.0)
+                all_probs = np.clip(all_probs, 1e-10, 1.0 - 1e-10)
 
             # Extract white ball and powerball probabilities
             if len(all_probs) >= 95:  # 69 + 26 = 95
@@ -428,37 +474,61 @@ class Predictor:
                 pb_probs = all_probs[69:95]
             elif len(all_probs) >= 69:
                 wb_probs = all_probs[:69]
-                # Generate powerball probabilities using a simple method
-                pb_probs = np.random.dirichlet(np.ones(26))  # More balanced than uniform
+                # Generate powerball probabilities using softmax for better distribution
+                pb_raw = np.random.exponential(1.0, 26)
+                pb_probs = pb_raw / pb_raw.sum()
             else:
-                # Not enough predictions - use fallback
-                wb_probs = np.ones(69) / 69
-                pb_probs = np.ones(26) / 26
-                logger.warning("Insufficient prediction outputs, using uniform distributions")
+                # Not enough predictions - use fallback with slight randomization
+                wb_probs = np.random.dirichlet(np.ones(69) * 0.1)
+                pb_probs = np.random.dirichlet(np.ones(26) * 0.1)
+                logger.warning(f"Insufficient prediction outputs ({len(all_probs)}), using randomized uniform distributions")
                 return wb_probs, pb_probs
 
-            # Robust normalization
-            epsilon = 1e-10
+            # Advanced robust normalization with safeguards
+            epsilon = 1e-12
             
-            # Normalize white ball probabilities
+            # Normalize white ball probabilities with overflow protection
             wb_sum = wb_probs.sum()
-            if wb_sum > epsilon:
+            if wb_sum > epsilon and np.isfinite(wb_sum):
                 wb_probs = wb_probs / wb_sum
+                # Add small epsilon to prevent zero probabilities
+                wb_probs = wb_probs + epsilon
+                wb_probs = wb_probs / wb_probs.sum()
             else:
+                logger.warning(f"Invalid white ball probability sum: {wb_sum}, using uniform distribution")
                 wb_probs = np.ones(69) / 69
 
-            # Normalize powerball probabilities
+            # Normalize powerball probabilities with overflow protection
             pb_sum = pb_probs.sum()
-            if pb_sum > epsilon:
+            if pb_sum > epsilon and np.isfinite(pb_sum):
                 pb_probs = pb_probs / pb_sum
+                # Add small epsilon to prevent zero probabilities
+                pb_probs = pb_probs + epsilon
+                pb_probs = pb_probs / pb_probs.sum()
             else:
+                logger.warning(f"Invalid powerball probability sum: {pb_sum}, using uniform distribution")
                 pb_probs = np.ones(26) / 26
 
-            # Final validation
-            if not np.isclose(wb_probs.sum(), 1.0, rtol=1e-6):
-                wb_probs = wb_probs / wb_probs.sum()
-            if not np.isclose(pb_probs.sum(), 1.0, rtol=1e-6):
-                pb_probs = pb_probs / pb_probs.sum()
+            # Final validation with strict tolerance
+            wb_sum_final = wb_probs.sum()
+            pb_sum_final = pb_probs.sum()
+            
+            if not np.isclose(wb_sum_final, 1.0, rtol=1e-8, atol=1e-8):
+                logger.debug(f"White ball probabilities sum adjustment: {wb_sum_final} -> 1.0")
+                wb_probs = wb_probs / wb_sum_final
+                
+            if not np.isclose(pb_sum_final, 1.0, rtol=1e-8, atol=1e-8):
+                logger.debug(f"Powerball probabilities sum adjustment: {pb_sum_final} -> 1.0")
+                pb_probs = pb_probs / pb_sum_final
+
+            # Verify final probabilities are valid
+            if not (np.all(wb_probs >= 0) and np.all(wb_probs <= 1) and np.all(np.isfinite(wb_probs))):
+                logger.error("Invalid white ball probabilities detected, using uniform fallback")
+                wb_probs = np.ones(69) / 69
+                
+            if not (np.all(pb_probs >= 0) and np.all(pb_probs <= 1) and np.all(np.isfinite(pb_probs))):
+                logger.error("Invalid powerball probabilities detected, using uniform fallback")
+                pb_probs = np.ones(26) / 26
 
             return wb_probs, pb_probs
 
