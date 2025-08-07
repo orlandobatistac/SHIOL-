@@ -2360,28 +2360,28 @@ async def reset_models():
         logger.info("Model reset initiated")
 
         # Reset model-related data in database
-        if db_manager:
-            with db_manager.get_connection() as conn:
-                cursor = conn.cursor()
-                
-                # Clear adaptive weights
-                cursor.execute('DELETE FROM adaptive_weights')
-                weights_cleared = cursor.rowcount
-                
-                # Clear model feedback
-                cursor.execute('DELETE FROM model_feedback')
-                feedback_cleared = cursor.rowcount
-                
-                # Clear reliable plays
-                cursor.execute('DELETE FROM reliable_plays')
-                plays_cleared = cursor.rowcount
-                
-                # Clear performance tracking
-                cursor.execute('DELETE FROM performance_tracking')
-                performance_cleared = cursor.rowcount
-                
-                conn.commit()
-                logger.info(f"Database reset: {weights_cleared} weights, {feedback_cleared} feedback, {plays_cleared} plays, {performance_cleared} performance records")
+        conn = db.get_db_connection()
+        cursor = conn.cursor()
+        
+        # Clear adaptive weights
+        cursor.execute('DELETE FROM adaptive_weights')
+        weights_cleared = cursor.rowcount
+        
+        # Clear model feedback
+        cursor.execute('DELETE FROM model_feedback')
+        feedback_cleared = cursor.rowcount
+        
+        # Clear reliable plays
+        cursor.execute('DELETE FROM reliable_plays')
+        plays_cleared = cursor.rowcount
+        
+        # Clear performance tracking
+        cursor.execute('DELETE FROM performance_tracking')
+        performance_cleared = cursor.rowcount
+        
+        conn.commit()
+        conn.close()
+        logger.info(f"Database reset: {weights_cleared} weights, {feedback_cleared} feedback, {plays_cleared} plays, {performance_cleared} performance records")
 
         # Reset global predictor if available
         global predictor
