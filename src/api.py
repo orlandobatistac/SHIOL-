@@ -1224,13 +1224,13 @@ async def get_pipeline_status():
                     for col in ['n1', 'n2', 'n3', 'n4', 'n5']:
                         val = row.get(col, 0)
                         numbers.append(int(val) if val is not None else 0)
-                    
+
                     powerball_val = row.get('powerball', 0)
                     powerball = int(powerball_val) if powerball_val is not None else 0
-                    
+
                     score_val = row.get('score_total', 0.0)
                     score = float(score_val) if score_val is not None else 0.0
-                    
+
                     recent_plays.append({
                         "numbers": numbers,
                         "powerball": powerball,
@@ -2239,6 +2239,13 @@ async def backup_database():
         logger.info(f"Database backup created: {backup_path}")
         return {"message": "Database backup created successfully", "backup_file": backup_path}
 
+    except FileNotFoundError:
+        logger.error(f"Database file not found for backup: {db_path}")
+        raise HTTPException(status_code=404, detail=f"Database file not found at {db_path}")
+    except Exception as e:
+        logger.error(f"Error creating database backup: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating database backup: {str(e)}")
+
 @api_router.get("/pipeline/execution-history")
 async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, description="Number of executions to return")):
     """
@@ -2247,7 +2254,7 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
     """
     try:
         logger.info(f"Received request for pipeline execution history (limit: {limit})")
-        
+
         reports_dir = "reports"
         if not os.path.exists(reports_dir):
             return {
@@ -2255,7 +2262,7 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
                 "count": 0,
                 "message": "No pipeline reports found"
             }
-        
+
         # Get all pipeline report files
         report_files = []
         for filename in os.listdir(reports_dir):
@@ -2268,31 +2275,31 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
                     report_files.append((timestamp, filepath, timestamp_str))
                 except ValueError:
                     continue
-        
+
         # Sort by timestamp descending (newest first)
         report_files.sort(key=lambda x: x[0], reverse=True)
-        
+
         # Limit results
         report_files = report_files[:limit]
-        
+
         executions = []
         for timestamp, filepath, timestamp_str in report_files:
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     report_data = json.load(f)
-                
+
                 pipeline_execution = report_data.get('pipeline_execution', {})
-                
+
                 # Calculate success/failure stats
                 status_info = pipeline_execution.get('status', {})
                 successful_steps = sum(1 for step_status in status_info.values() 
                                      if isinstance(step_status, dict) and step_status.get('status') == 'success')
                 total_steps = len(status_info)
                 failed_steps = total_steps - successful_steps
-                
+
                 # Determine overall status
                 overall_status = 'success' if failed_steps == 0 else 'partial' if successful_steps > 0 else 'failed'
-                
+
                 execution_info = {
                     "execution_id": timestamp_str,
                     "start_time": pipeline_execution.get('start_time'),
@@ -2308,19 +2315,19 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
                     "formatted_time": timestamp.strftime('%d %b %Y, %H:%M:%S'),
                     "steps_detail": status_info
                 }
-                
+
                 executions.append(execution_info)
-                
+
             except Exception as e:
                 logger.warning(f"Error reading pipeline report {filepath}: {e}")
                 continue
-        
+
         return {
             "executions": executions,
             "count": len(executions),
             "timestamp": datetime.now().isoformat()
         }
-        
+
     except Exception as e:
         logger.error(f"Error retrieving pipeline execution history: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
@@ -2501,23 +2508,23 @@ async def reset_models():
         # Reset model-related data in database
         conn = db.get_db_connection()
         cursor = conn.cursor()
-        
+
         # Clear adaptive weights
         cursor.execute('DELETE FROM adaptive_weights')
         weights_cleared = cursor.rowcount
-        
+
         # Clear model feedback
         cursor.execute('DELETE FROM model_feedback')
         feedback_cleared = cursor.rowcount
-        
+
         # Clear reliable plays
         cursor.execute('DELETE FROM reliable_plays')
         plays_cleared = cursor.rowcount
-        
+
         # Clear performance tracking
         cursor.execute('DELETE FROM performance_tracking')
         performance_cleared = cursor.rowcount
-        
+
         conn.commit()
         conn.close()
         logger.info(f"Database reset: {weights_cleared} weights, {feedback_cleared} feedback, {plays_cleared} plays, {performance_cleared} performance records")
@@ -2529,16 +2536,16 @@ async def reset_models():
                 # Reload the predictor to reset internal state
                 from src.predictor import Predictor
                 from src.loader import DataLoader
-                
+
                 loader = DataLoader()
                 historical_data = loader.load_historical_data()
-                
+
                 if not historical_data.empty:
                     predictor = Predictor()
                     logger.info("Predictor reset and reinitialized")
                 else:
                     logger.warning("No historical data available for predictor reset")
-                    
+
             except Exception as pred_error:
                 logger.error(f"Error resetting predictor: {pred_error}")
 
