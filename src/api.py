@@ -27,6 +27,8 @@ from contextlib import asynccontextmanager
 
 # Import new public API and authentication
 from src.public_api import public_router, auth_router
+# Import ConfigurationManager for the hybrid system
+from src.config_manager import ConfigurationManager
 
 def convert_numpy_types(obj):
     """Convert numpy types to native Python types for JSON serialization."""
@@ -642,7 +644,7 @@ async def get_adaptive_weights():
 
     except Exception as e:
         logger.error(f"Error retrieving adaptive weights: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve adaptive weights.")
+        raise HTTPException(status_code=500, detail="Error retrieving adaptive weights.")
 
 @api_router.post("/adaptive/optimize-weights")
 async def optimize_weights(algorithm: str = Query("differential_evolution",
@@ -737,7 +739,7 @@ async def get_performance_analytics(days_back: int = Query(30, ge=1, le=365, des
 
     except Exception as e:
         logger.error(f"Error retrieving performance analytics: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve performance analytics.")
+        raise HTTPException(status_code=500, detail="Error retrieving performance analytics.")
 
 @api_router.post("/adaptive/validate")
 async def run_adaptive_validation(enable_learning: bool = Query(True, description="Enable adaptive learning")):
@@ -831,7 +833,7 @@ async def get_prediction_history_public(
 
     except Exception as e:
         logger.error(f"Error retrieving public prediction history: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve prediction history")
+        raise HTTPException(status_code=500, detail="Error retrieving public prediction history.")
 
 @api_router.get("/prediction-history-grouped")
 async def get_prediction_history_grouped(
@@ -877,7 +879,7 @@ async def get_prediction_history_grouped(
 
     except Exception as e:
         logger.error(f"Error retrieving grouped prediction history: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve grouped prediction history")
+        raise HTTPException(status_code=500, detail="Error retrieving grouped prediction history.")
 
 @api_router.get("/predict/smart")
 async def get_smart_predictions(
@@ -917,8 +919,8 @@ async def get_smart_predictions(
             # Safely convert all values to ensure JSON serialization
             smart_pred = {
                 "rank": convert_numpy_types(i + 1),
-                "numbers": [convert_numpy_types(pred["n1"]), convert_numpy_types(pred["n2"]), 
-                           convert_numpy_types(pred["n3"]), convert_numpy_types(pred["n4"]), 
+                "numbers": [convert_numpy_types(pred["n1"]), convert_numpy_types(pred["n2"]),
+                           convert_numpy_types(pred["n3"]), convert_numpy_types(pred["n4"]),
                            convert_numpy_types(pred["n5"])],
                 "powerball": convert_numpy_types(pred["powerball"]),
                 "total_score": convert_numpy_types(pred["score_total"]),
@@ -994,7 +996,7 @@ async def get_smart_predictions(
         raise
     except Exception as e:
         logger.error(f"Error retrieving Smart AI predictions: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve Smart AI predictions")
+        raise HTTPException(status_code=500, detail="Error retrieving Smart AI predictions.")
 
 @api_router.get("/predict/syndicate")
 async def get_syndicate_predictions(    num_plays: int = Query(100, ge=10, le=500, description="Number of plays for syndicate"),
@@ -1224,7 +1226,7 @@ async def get_pipeline_status():
         raise
     except Exception as e:
         logger.error(f"Error getting pipeline status: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve pipeline status")
+        raise HTTPException(status_code=500, detail="Error getting pipeline status.")
 
 @api_router.post("/pipeline/trigger")
 async def trigger_pipeline_execution(
@@ -1305,7 +1307,7 @@ async def trigger_pipeline_execution(
         raise
     except Exception as e:
         logger.error(f"Error triggering pipeline execution: {e}")
-        raise HTTPException(status_code=500, detail="Failed to trigger pipeline execution")
+        raise HTTPException(status_code=500, detail="Error triggering pipeline execution.")
 
 @api_router.get("/pipeline/logs")
 async def get_pipeline_logs(
@@ -1435,7 +1437,7 @@ async def get_pipeline_logs(
             raise HTTPException(status_code=404, detail=f"Log file not found: {log_file}")
         except Exception as e:
             logger.error(f"Error reading or parsing log file '{log_file}': {e}")
-            raise HTTPException(status_code=500, detail=f"Failed to read or parse log file: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error reading or parsing log file: {str(e)}")
 
     except Exception as e:
         logger.error(f"Unexpected error in get_pipeline_logs: {e}")
@@ -1875,97 +1877,89 @@ async def get_performance_analytics():
 
 @api_router.get("/config/load")
 async def load_configuration():
-    """Load current system configuration"""
+    """Load system configuration using hybrid system"""
     try:
-        config_path = os.path.join(os.path.dirname(__file__), "..", "config", "config.ini")
-        config = configparser.ConfigParser()
-        config.read(config_path)
+        # Initialize ConfigurationManager
+        config_manager = ConfigurationManager()
+        # Load configuration from database (or fallback to file if DB is empty/unavailable)
+        config_data = config_manager.load_configuration()
 
-        # Convert to dictionary format expected by frontend
-        config_dict = {}
-        for section in config.sections():
-            config_dict[section] = {}
-            for key, value in config.items(section):
-                config_dict[section][key] = value
-
-        return {
+        # Convert from database format to frontend format
+        result = {
             "pipeline": {
                 "execution_days": {
-                    "monday": config_dict.get("pipeline", {}).get("execution_days_monday", "true").lower() == "true",
-                    "wednesday": config_dict.get("pipeline", {}).get("execution_days_wednesday", "true").lower() == "true",
-                    "saturday": config_dict.get("pipeline", {}).get("execution_days_saturday", "true").lower() == "true"
+                    "monday": config_data.get("pipeline", {}).get("execution_days_monday", "True").lower() == "true",
+                    "wednesday": config_data.get("pipeline", {}).get("execution_days_wednesday", "True").lower() == "true",
+                    "saturday": config_data.get("pipeline", {}).get("execution_days_saturday", "True").lower() == "true",
                 },
-                "execution_time": config_dict.get("pipeline", {}).get("execution_time", "02:00"),
-                "timezone": config_dict.get("pipeline", {}).get("timezone", "America/New_York"),
-                "auto_execution": config_dict.get("pipeline", {}).get("auto_execution", "true").lower() == "true"
+                "execution_time": config_data.get("pipeline", {}).get("execution_time", "02:00"),
+                "timezone": config_data.get("pipeline", {}).get("timezone", "America/New_York"),
+                "auto_execution": config_data.get("pipeline", {}).get("auto_execution", "True").lower() == "true"
             },
             "predictions": {
-                "count": int(config_dict.get("predictions", {}).get("count", "100")),
-                "method": config_dict.get("predictions", {}).get("method", "smart_ai"),
+                "count": int(config_data.get("predictions", {}).get("count", "100")),
+                "method": config_data.get("predictions", {}).get("method", "smart_ai"),
                 "weights": {
-                    "probability": int(config_dict.get("weights", {}).get("probability", "40")),
-                    "diversity": int(config_dict.get("weights", {}).get("diversity", "25")),
-                    "historical": int(config_dict.get("weights", {}).get("historical", "20")),
-                    "risk": int(config_dict.get("weights", {}).get("risk", "15"))
+                    "probability": int(config_data.get("weights", {}).get("probability", "40")),
+                    "diversity": int(config_data.get("weights", {}).get("diversity", "25")),
+                    "historical": int(config_data.get("weights", {}).get("historical", "20")),
+                    "risk": int(config_data.get("weights", {}).get("risk", "15"))
                 }
             },
-            "notifications": {
-                "email": config_dict.get("notifications", {}).get("email", ""),
-                "session_timeout": int(config_dict.get("notifications", {}).get("session_timeout", "60"))
-            }
+            "config_source": "database" if config_data else "fallback"
         }
+
+        return result
+
     except Exception as e:
         logger.error(f"Error loading configuration: {e}")
         raise HTTPException(status_code=500, detail=f"Error loading configuration: {str(e)}")
 
 @api_router.post("/config/save")
 async def save_configuration(config_data: Dict[str, Any]):
-    """Save system configuration"""
+    """Save system configuration using hybrid system"""
     try:
-        config_path = os.path.join(os.path.dirname(__file__), "..", "config", "config.ini")
-        config = configparser.ConfigParser()
+        # Initialize ConfigurationManager
+        config_manager = ConfigurationManager()
+        # Prepare configuration data for saving
+        db_config = {}
 
-        # Convert from frontend format to config file format
         if "pipeline" in config_data:
-            config.add_section("pipeline")
+            db_config["pipeline"] = {}
             pipeline = config_data["pipeline"]
 
             if "execution_days" in pipeline:
-                config.set("pipeline", "execution_days_monday", str(pipeline["execution_days"].get("monday", True)))
-                config.set("pipeline", "execution_days_wednesday", str(pipeline["execution_days"].get("wednesday", True)))
-                config.set("pipeline", "execution_days_saturday", str(pipeline["execution_days"].get("saturday", True)))
+                db_config["pipeline"]["execution_days_monday"] = str(pipeline["execution_days"].get("monday", True))
+                db_config["pipeline"]["execution_days_wednesday"] = str(pipeline["execution_days"].get("wednesday", True))
+                db_config["pipeline"]["execution_days_saturday"] = str(pipeline["execution_days"].get("saturday", True))
 
-            config.set("pipeline", "execution_time", pipeline.get("execution_time", "02:00"))
-            config.set("pipeline", "timezone", pipeline.get("timezone", "America/New_York"))
-            config.set("pipeline", "auto_execution", str(pipeline.get("auto_execution", True)))
+            db_config["pipeline"]["execution_time"] = pipeline.get("execution_time", "02:00")
+            db_config["pipeline"]["timezone"] = pipeline.get("timezone", "America/New_York")
+            db_config["pipeline"]["auto_execution"] = str(pipeline.get("auto_execution", True))
 
         if "predictions" in config_data:
-            config.add_section("predictions")
+            db_config["predictions"] = {}
             predictions = config_data["predictions"]
 
-            config.set("predictions", "count", str(predictions.get("count", 100)))
-            config.set("predictions", "method", predictions.get("method", "smart_ai"))
+            db_config["predictions"]["count"] = str(predictions.get("count", 100))
+            db_config["predictions"]["method"] = predictions.get("method", "smart_ai")
 
+            # Handle weights
             if "weights" in predictions:
-                config.add_section("weights")
+                db_config["weights"] = {}
                 weights = predictions["weights"]
-                config.set("weights", "probability", str(weights.get("probability", 40)))
-                config.set("weights", "diversity", str(weights.get("diversity", 25)))
-                config.set("weights", "historical", str(weights.get("historical", 20)))
-                config.set("weights", "risk", str(weights.get("risk", 15)))
+                db_config["weights"]["probability"] = str(weights.get("probability", 40))
+                db_config["weights"]["diversity"] = str(weights.get("diversity", 25))
+                db_config["weights"]["historical"] = str(weights.get("historical", 20))
+                db_config["weights"]["risk"] = str(weights.get("risk", 15))
 
-        if "notifications" in config_data:
-            config.add_section("notifications")
-            notifications = config_data["notifications"]
+        # Save to database using hybrid system
+        success = config_manager.save_configuration(db_config)
 
-            config.set("notifications", "email", notifications.get("email", ""))
-            config.set("notifications", "session_timeout", str(notifications.get("session_timeout", 60)))
-
-        with open(config_path, 'w') as configfile:
-            config.write(configfile)
-
-        logger.info("Configuration saved successfully")
-        return {"message": "Configuration saved successfully"}
+        if success:
+            return {"success": True, "message": "Configuration saved successfully to database"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to save configuration to database")
 
     except Exception as e:
         logger.error(f"Error saving configuration: {e}")
@@ -2151,6 +2145,3 @@ if not os.path.exists(FRONTEND_DIR):
     # os.makedirs(FRONTEND_DIR, exist_ok=True)
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
-
-
-

@@ -97,7 +97,7 @@ def get_db_connection() -> sqlite3.Connection:
 def initialize_database():
     """
     Initializes the database by creating all required tables if they don't exist.
-    Includes Phase 4 adaptive feedback system tables.
+    Includes Phase 4 adaptive feedback system tables and hybrid configuration system.
     """
     try:
         with get_db_connection() as conn:
@@ -113,6 +113,17 @@ def initialize_database():
                     n4 INTEGER NOT NULL,
                     n5 INTEGER NOT NULL,
                     pb INTEGER NOT NULL
+                )
+            """)
+
+            # HYBRID CONFIGURATION SYSTEM: Create system_config table
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS system_config (
+                    section TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (section, key)
                 )
             """)
 
@@ -273,6 +284,11 @@ def initialize_database():
                 logger.warning(f"Error creating indexes (may already exist): {idx_error}")
 
             conn.commit()
+            
+            # Initialize hybrid configuration system
+            if not is_config_initialized():
+                logger.info("Initializing hybrid configuration system...")
+                migrate_config_from_file()
             
             # Check if we have any historical data, if not add sample data
             cursor.execute("SELECT COUNT(*) FROM powerball_draws")
@@ -1473,3 +1489,277 @@ def get_grouped_predictions_with_results_comparison(limit_groups: int = 5) -> Li
     except Exception as e:
         logger.error(f"Error retrieving grouped predictions with results comparison: {e}")
         return []
+
+
+# ========================================================================
+# HYBRID CONFIGURATION SYSTEM - SIMPLE & ROBUST
+# ========================================================================
+
+def migrate_config_from_file() -> bool:
+    """
+    Migra la configuración desde config.ini a la base de datos.
+    Solo se ejecuta en la primera inicialización del sistema.
+    
+    Returns:
+        bool: True si la migración fue exitosa
+    """
+    try:
+        # Verificar si ya hay configuración en DB
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM system_config")
+            config_count = cursor.fetchone()[0]
+            
+            if config_count > 0:
+                logger.info("Configuration already exists in database, skipping migration")
+                return True
+
+        # Leer configuración del archivo
+        config = configparser.ConfigParser()
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
+        
+        if not os.path.exists(config_path):
+            logger.warning(f"Config file not found at {config_path}, using default values")
+            return _create_default_config_in_db()
+        
+        config.read(config_path)
+        
+        # Migrar cada sección del archivo a la DB
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            for section_name in config.sections():
+                for key, value in config.items(section_name):
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO system_config (section, key, value)
+                        VALUES (?, ?, ?)
+                    """, (section_name, key, value))
+            
+            # Marcar migración como completada
+            cursor.execute("""
+                INSERT OR REPLACE INTO system_config (section, key, value)
+                VALUES ('system', 'config_migrated', 'true')
+            """)
+            
+            conn.commit()
+            
+        logger.info("Configuration successfully migrated from config.ini to database")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error migrating configuration from file: {e}")
+        return False
+
+
+def _create_default_config_in_db() -> bool:
+    """Crea configuración por defecto en la base de datos"""
+    try:
+        default_config = {
+            'paths': {
+                'db_file': 'data/shiolplus.db',
+                'model_file': 'models/shiolplus.pkl'
+            },
+            'pipeline': {
+                'execution_days_monday': 'True',
+                'execution_days_wednesday': 'True', 
+                'execution_days_saturday': 'True',
+                'execution_time': '02:00',
+                'timezone': 'America/New_York',
+                'auto_execution': 'True'
+            },
+            'predictions': {
+                'count': '50',
+                'method': 'deterministic'
+            },
+            'weights': {
+                'probability': '50',
+                'diversity': '20',
+                'historical': '20',
+                'risk': '10'
+            }
+        }
+        
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            for section_name, section_data in default_config.items():
+                for key, value in section_data.items():
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO system_config (section, key, value)
+                        VALUES (?, ?, ?)
+                    """, (section_name, key, value))
+            
+            # Marcar como configuración por defecto
+            cursor.execute("""
+                INSERT OR REPLACE INTO system_config (section, key, value)
+                VALUES ('system', 'config_migrated', 'default')
+            """)
+            
+            conn.commit()
+            
+        logger.info("Default configuration created in database")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error creating default configuration: {e}")
+        return False
+
+
+def load_config_from_db() -> Dict[str, Any]:
+    """
+    Carga la configuración desde la base de datos.
+    Implementa fallback automático al archivo config.ini si falla.
+    
+    Returns:
+        Dict con la configuración del sistema
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT section, key, value FROM system_config")
+            config_rows = cursor.fetchall()
+            
+            if not config_rows:
+                logger.warning("No configuration found in database, using file fallback")
+                return _load_config_from_file()
+            
+            # Convertir a estructura de diccionario
+            config_dict = {}
+            for section, key, value in config_rows:
+                if section not in config_dict:
+                    config_dict[section] = {}
+                config_dict[section][key] = value
+            
+            logger.info("Configuration loaded successfully from database")
+            return config_dict
+            
+    except Exception as e:
+        logger.error(f"Error loading configuration from database: {e}")
+        logger.info("Falling back to config file")
+        return _load_config_from_file()
+
+
+def _load_config_from_file() -> Dict[str, Any]:
+    """Fallback: carga configuración desde archivo"""
+    try:
+        config = configparser.ConfigParser()
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
+        
+        config.read(config_path)
+        
+        config_dict = {}
+        for section in config.sections():
+            config_dict[section] = dict(config.items(section))
+        
+        logger.info("Configuration loaded from file fallback")
+        return config_dict
+        
+    except Exception as e:
+        logger.error(f"Error loading configuration from file: {e}")
+        return {}
+
+
+def save_config_to_db(config_data: Dict[str, Any]) -> bool:
+    """
+    Guarda la configuración en la base de datos.
+    Esta función es llamada desde el dashboard.
+    
+    Args:
+        config_data: Diccionario con la configuración
+        
+    Returns:
+        bool: True si se guardó exitosamente
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Guardar cada valor en la tabla
+            for section_name, section_data in config_data.items():
+                if isinstance(section_data, dict):
+                    for key, value in section_data.items():
+                        cursor.execute("""
+                            INSERT OR REPLACE INTO system_config (section, key, value, updated_at)
+                            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                        """, (section_name, key, str(value)))
+                else:
+                    # Valor directo (no anidado)
+                    cursor.execute("""
+                        INSERT OR REPLACE INTO system_config (section, key, value, updated_at)
+                        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    """, ('general', section_name, str(section_data)))
+            
+            conn.commit()
+            
+        logger.info("Configuration saved successfully to database")
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error saving configuration to database: {e}")
+        return False
+
+
+def get_config_value(section: str, key: str, default: Any = None) -> Any:
+    """
+    Obtiene un valor específico de configuración con fallback automático.
+    
+    Args:
+        section: Sección de configuración
+        key: Clave específica
+        default: Valor por defecto si no se encuentra
+        
+    Returns:
+        Valor de configuración o default
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT value FROM system_config 
+                WHERE section = ? AND key = ?
+            """, (section, key))
+            
+            result = cursor.fetchone()
+            if result:
+                return result[0]
+            
+        # Fallback a archivo si no está en DB
+        config = configparser.ConfigParser()
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
+        
+        if os.path.exists(config_path):
+            config.read(config_path)
+            if config.has_section(section) and config.has_option(section, key):
+                return config.get(section, key)
+        
+        return default
+        
+    except Exception as e:
+        logger.error(f"Error getting config value {section}.{key}: {e}")
+        return default
+
+
+def is_config_initialized() -> bool:
+    """
+    Verifica si el sistema de configuración híbrido está inicializado.
+    
+    Returns:
+        bool: True si la configuración está inicializada
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT value FROM system_config 
+                WHERE section = 'system' AND key = 'config_migrated'
+            """)
+            
+            result = cursor.fetchone()
+            return result is not None
+            
+    except Exception as e:
+        logger.error(f"Error checking config initialization: {e}")
+        return False
