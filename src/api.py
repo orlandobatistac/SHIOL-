@@ -2325,6 +2325,33 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
         logger.error(f"Error retrieving pipeline execution history: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
 
+@api_router.post("/database/backup")
+async def backup_database():
+    """Create database backup"""
+    try:
+        from shutil import copy2
+        from datetime import datetime
+
+        db_path = db.get_db_path() # Use centralized configuration
+        backup_dir = os.path.join(os.path.dirname(db_path), "backups")
+
+        os.makedirs(backup_dir, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = os.path.join(backup_dir, f"shiolplus_backup_{timestamp}.db")
+
+        copy2(db_path, backup_path)
+
+        logger.info(f"Database backup created: {backup_path}")
+        return {"message": "Database backup created successfully", "backup_file": backup_path}
+
+    except FileNotFoundError:
+        logger.error(f"Database file not found for backup: {db_path}")
+        raise HTTPException(status_code=404, detail=f"Database file not found at {db_path}")
+    except Exception as e:
+        logger.error(f"Error creating database backup: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating database backup: {str(e)}")
+
     except FileNotFoundError:
         logger.error(f"Database file not found for backup: {db_path}")
         raise HTTPException(status_code=404, detail=f"Database file not found at {db_path}")
