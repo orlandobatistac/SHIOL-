@@ -647,14 +647,14 @@
                     document.getElementById('db-size').textContent = stats.size_mb ? `${stats.size_mb}MB` : '-';
                     document.getElementById('db-predictions').textContent = stats.predictions_count || '-';
                     
-                    showNotification('Estadísticas de base de datos actualizadas', 'success');
+                    showNotification('Database statistics updated', 'success');
                 } else {
                     console.error('❌ Database stats request failed:', response.status);
-                    showNotification('Error al cargar estadísticas de base de datos', 'error');
+                    showNotification('Error loading database statistics', 'error');
                 }
             } catch (error) {
                 console.error('❌ Error refreshing database stats:', error);
-                showNotification('Error de conexión con la base de datos', 'error');
+                showNotification('Database connection error', 'error');
             }
         }
 
@@ -672,14 +672,14 @@
                     document.getElementById('best-method').textContent = analytics.best_method || 'smart_ai';
                     document.getElementById('total-predictions').textContent = analytics.total_predictions || 0;
                     
-                    showNotification('Analytics de rendimiento actualizadas', 'success');
+                    showNotification('Performance analytics updated', 'success');
                 } else {
                     console.error('❌ Performance analytics request failed:', response.status);
-                    showNotification('Error al cargar analytics de rendimiento', 'error');
+                    showNotification('Error loading performance analytics', 'error');
                 }
             } catch (error) {
                 console.error('❌ Error loading performance analytics:', error);
-                showNotification('Error de conexión con analytics', 'error');
+                showNotification('Analytics connection error', 'error');
             }
         }
 
@@ -790,11 +790,11 @@
             });
 
             if (selectedCount === 0) {
-                alert('Selecciona al menos una opción');
+                alert('Select at least one option');
                 return;
             }
 
-            if (!confirm('¿Estás seguro? Esta operación es permanente.')) {
+            if (!confirm('Are you sure? This operation is permanent.')) {
                 return;
             }
 
@@ -807,10 +807,10 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    alert('✅ Limpieza completada exitosamente');
+                    alert('✅ Cleanup completed successfully');
                     closeCleanupModal();
                 } else {
-                    throw new Error('Error en la limpieza');
+                    throw new Error('Cleanup error');
                 }
             } catch (error) {
                 alert('❌ Error: ' + error.message);
@@ -993,8 +993,8 @@
         }
 
         function stopPipeline() {
-            if (confirm('¿Estás seguro que quieres detener la ejecución del pipeline?')) {
-                showNotification('Pipeline detenido', 'warning');
+            if (confirm('Are you sure you want to stop the pipeline execution?')) {
+                showNotification('Pipeline stopped', 'warning');
                 document.getElementById('trigger-pipeline-btn').classList.remove('hidden');
                 document.getElementById('stop-pipeline-btn').classList.add('hidden');
                 document.getElementById('pipeline-progress').classList.add('hidden');
@@ -1002,16 +1002,16 @@
         }
 
         async function testAllFunctions() {
-            showNotification('🔄 Iniciando prueba completa de todas las funciones...', 'info');
+            showNotification('🔄 Starting comprehensive test of all functions...', 'info');
 
             const tests = [
-                { name: 'Sistema de Monitoreo', func: updateSystemMonitoring },
-                { name: 'Estadísticas de Base de Datos', func: refreshDatabaseStats },
-                { name: 'Analytics de Performance', func: loadPerformanceAnalytics },
-                { name: 'Cargar Configuración', func: loadConfiguration },
-                { name: 'Guardar Configuración', func: saveConfiguration },
-                { name: 'Test de Pipeline', func: testPipeline },
-                { name: 'Backup de Base de Datos', func: backupDatabase }
+                { name: 'System Monitoring', func: updateSystemMonitoring },
+                { name: 'Database Statistics', func: refreshDatabaseStats },
+                { name: 'Performance Analytics', func: loadPerformanceAnalytics },
+                { name: 'Load Configuration', func: loadConfiguration },
+                { name: 'Save Configuration', func: saveConfiguration },
+                { name: 'Pipeline Test', func: testPipeline },
+                { name: 'Database Backup', func: backupDatabase }
             ];
 
             let passedTests = 0;
@@ -1033,7 +1033,7 @@
             }
 
             const successRate = ((passedTests / totalTests) * 100).toFixed(1);
-            const message = `✅ Prueba completa finalizada: ${passedTests}/${totalTests} funciones trabajando correctamente (${successRate}%)`;
+            const message = `✅ Comprehensive test completed: ${passedTests}/${totalTests} functions working correctly (${successRate}%)`;
 
             if (passedTests === totalTests) {
                 showNotification(message, 'success');
