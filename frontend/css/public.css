@@ -804,6 +804,99 @@ html {
     border-color: var(--powerball-blue);
 }
 
+/* Next Drawing Information Styles */
+.next-drawing-info {
+    background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
+    color: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.drawing-date {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-label {
+    font-size: 0.875rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.date-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fbbf24;
+}
+
+.today-badge {
+    background: #ef4444;
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-left: 0.5rem;
+}
+
+.days-until {
+    font-size: 0.875rem;
+    opacity: 0.8;
+    margin-left: 0.5rem;
+}
+
+/* Improved Date Context Styles */
+.date-context {
+    display: block;
+    color: #6b7280;
+    font-style: italic;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
+.prediction-meta {
+    margin-top: 0.5rem;
+}
+
+.prediction-dates {
+    color: #6b7280;
+    font-size: 0.75rem;
+}
+
+.prediction-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.prediction-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.prediction-row:hover {
+    border-color: var(--powerball-blue);
+    transform: translateX(4px);
+}
+
+.prediction-row.has-prize {
+    border-color: #fbbf24;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(255, 255, 255, 1));
+}
+
 .prediction-comparison-card.has-prize {
     border-color: #fbbf24;
     background: linear-gradient(135deg, rgba(251, 191, 36, 0.05), rgba(255, 255, 255, 1));

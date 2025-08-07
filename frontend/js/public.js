@@ -155,7 +155,7 @@ class PublicInterface {
                     key.toLowerCase().includes('probability')
                 ));
 
-                this.displaySmartPredictions(data);
+                this.displaySmartPredictions(data.smart_predictions, data.next_drawing);
             } else {
                 this.showPredictionError();
             }
@@ -171,7 +171,7 @@ class PublicInterface {
      * Display Smart AI predictions
      * @param {Object} data - Smart AI prediction data
      */
-    displaySmartPredictions(data) {
+    displaySmartPredictions(predictions, nextDrawing) {
         const container = document.getElementById('predictions-container');
         const loading = document.getElementById('predictions-loading');
         const error = document.getElementById('predictions-error');
@@ -183,7 +183,7 @@ class PublicInterface {
         if (error) error.classList.add('hidden');
 
         // Sort predictions by confidence score in descending order (best to worst)
-        const predictions = (data.smart_predictions || []).sort((a, b) => {
+        const sortedPredictions = (predictions || []).sort((a, b) => {
             // Try multiple possible score field names and ensure we get numeric values
             const getScore = (pred) => {
                 const possibleScores = [
@@ -215,6 +215,19 @@ class PublicInterface {
             return scoreB - scoreA; // Descending order (best to worst)
         });
 
+        // Format next drawing information
+        const nextDrawingInfo = nextDrawing ? `
+            <div class="next-drawing-info">
+                <div class="drawing-date">
+                    <span class="date-label">Next Drawing:</span>
+                    <span class="date-value">${nextDrawing.formatted_date}</span>
+                    ${nextDrawing.is_today ? '<span class="today-badge">TODAY</span>' : ''}
+                    ${nextDrawing.days_until > 0 ? `<span class="days-until">in ${nextDrawing.days_until} day${nextDrawing.days_until > 1 ? 's' : ''}</span>` : ''}
+                </div>
+            </div>
+        ` : '';
+
+
         const predictionsHtml = `
             <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <!-- Header -->
@@ -225,12 +238,13 @@ class PublicInterface {
                                 <i class="fas fa-brain mr-2 text-blue-600"></i>
                                 Smart AI Predictions
                             </h3>
+                            ${nextDrawingInfo}
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                ${predictions.length} predictions ordered from highest to lowest AI confidence score
+                                ${sortedPredictions.length} predictions ordered from highest to lowest AI confidence score
                             </p>
                         </div>
                         <div class="text-right">
-                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${predictions.length}</div>
+                            <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${sortedPredictions.length}</div>
                             <div class="text-xs text-gray-500 dark:text-gray-400">Total Plays</div>
                         </div>
                     </div>
@@ -247,7 +261,7 @@ class PublicInterface {
                             </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            ${predictions.map((pred, index) => {
+                            ${sortedPredictions.map((pred, index) => {
                                 const isTopFive = index < 5;
                                 // Get confidence score using the same logic as sorting
                                 const getDisplayScore = (pred) => {
@@ -271,7 +285,7 @@ class PublicInterface {
                                             }
                                         }
                                     }
-                                    return 0;
+                                    return 0; // Default fallback
                                 };
 
                                 const confidenceScore = getDisplayScore(pred);
@@ -768,7 +782,7 @@ class PublicInterface {
                             <div class="text-xs text-gray-500 dark:text-gray-400">Overall Win Rate</div>
                         </div>
                     </div>
-                    
+
                     <!-- Summary Statistics -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
@@ -956,6 +970,9 @@ class PublicInterface {
         predictions.forEach((prediction, index) => {
             const hasWin = prediction.has_prize;
             const cardClass = hasWin ? 'border-green-200 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 bg-white dark:bg-gray-800';
+            // Show both creation date and target date for context
+            const createdDate = prediction.created_at ? new Date(prediction.created_at).toLocaleDateString() : '';
+            const targetDate = prediction.target_draw_date || dateGroup.date;
 
             detailsHTML += `
                 <div class="border ${cardClass} rounded-lg p-4">
@@ -982,6 +999,9 @@ class PublicInterface {
                                 <div class="text-xs text-gray-400">${prediction.matches_main} matches ${prediction.powerball_match ? '+ PB' : ''}</div>
                             `}
                             <div class="text-xs text-gray-400 mt-1">Score: ${(prediction.score * 100).toFixed(1)}%</div>
+                            <div class="text-xs text-gray-400 mt-1">
+                                Generated: ${createdDate} | For: ${targetDate}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1059,13 +1079,8 @@ class PublicInterface {
      * Refresh all data
      */
     async refreshData() {
-        try {
-            await this.loadInitialData();
-            PowerballUtils.showToast('Data refreshed successfully', 'success');
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-            PowerballUtils.showToast('Failed to refresh data', 'error');
-        }
+        await this.loadNextDrawingInfo();
+        await this.loadGroupedPredictionHistory();
     }
 }
 

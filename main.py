@@ -528,9 +528,13 @@ class PipelineOrchestrator:
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
 
-            # Generate 100 Smart AI predictions for the next drawing (includes saving to log)
+            # Generate 100 Smart AI predictions for the next drawing with target date
             logger.info("Generating 100 Smart AI predictions with optimized weights...")
-            smart_predictions = predictor.predict_diverse_plays(num_plays=100, save_to_log=True)
+            smart_predictions = predictor.predict_diverse_plays(
+                num_plays=100, 
+                save_to_log=True,
+                target_draw_date=next_drawing_date
+            )
 
             # Prepare result with all 100 plays
             plays_info = []

@@ -35,6 +35,37 @@ def get_db_path() -> str:
 
     return db_path
 
+def calculate_next_drawing_date() -> str:
+    """
+    Calculate the next Powerball drawing date.
+    Drawings are: Monday (0), Wednesday (2), Saturday (5)
+    
+    Returns:
+        str: Next drawing date in YYYY-MM-DD format
+    """
+    from datetime import datetime, timedelta
+    
+    current_date = datetime.now()
+    current_weekday = current_date.weekday()
+    
+    # Drawing days: Monday=0, Wednesday=2, Saturday=5
+    drawing_days = [0, 2, 5]
+    
+    # If today is a drawing day and it's before 11 PM, the drawing is today
+    if current_weekday in drawing_days and current_date.hour < 23:
+        return current_date.strftime('%Y-%m-%d')
+    
+    # Otherwise, find the next drawing day
+    days_ahead = 0
+    for i in range(1, 8):  # Check next 7 days
+        next_date = current_date + timedelta(days=i)
+        if next_date.weekday() in drawing_days:
+            days_ahead = i
+            break
+    
+    next_drawing_date = current_date + timedelta(days=days_ahead)
+    return next_drawing_date.strftime('%Y-%m-%d')
+
 def get_db_connection() -> sqlite3.Connection:
     """
     Establishes a connection to the SQLite database.
@@ -88,6 +119,7 @@ def initialize_database():
                     model_version TEXT NOT NULL,
                     dataset_hash TEXT NOT NULL,
                     json_details_path TEXT,
+                    target_draw_date DATE,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -282,14 +314,20 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
     """
     try:
         logger.debug(f"Saving prediction log with data: {prediction_data}")
+        
+        # Calculate target drawing date if not provided
+        target_draw_date = prediction_data.get('target_draw_date')
+        if not target_draw_date:
+            target_draw_date = calculate_next_drawing_date()
+            
         # Insertar registro en SQLite
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO predictions_log
                 (timestamp, n1, n2, n3, n4, n5, powerball, score_total,
-                 model_version, dataset_hash, json_details_path)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 model_version, dataset_hash, json_details_path, target_draw_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 prediction_data['timestamp'],
                 int(prediction_data['numbers'][0]),
@@ -301,7 +339,8 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
                 float(prediction_data['score_total']),
                 prediction_data['model_version'],
                 prediction_data['dataset_hash'],
-                prediction_data.get('json_details_path', None)
+                prediction_data.get('json_details_path', None),
+                target_draw_date
             ))
 
             prediction_id = cursor.lastrowid
@@ -799,16 +838,17 @@ def get_predictions_by_dataset_hash(dataset_hash: str) -> pd.DataFrame:
 
 def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
     """
-    Obtiene predicciones agrupadas por fecha de generación para mostrar historial.
+    Obtiene predicciones agrupadas por fecha del sorteo objetivo para mostrar historial.
+    CORREGIDO: Ahora agrupa por target_draw_date (fecha del sorteo) en lugar de created_at.
 
     Args:
         limit_dates: Número máximo de fechas a retornar (default: 25)
 
     Returns:
         Lista de diccionarios con estructura:
-        - date: fecha de generación
+        - date: fecha del sorteo objetivo
         - formatted_date: fecha formateada en español
-        - total_plays: total de predicciones generadas ese día
+        - total_plays: total de predicciones para ese sorteo
         - winning_plays: número de predicciones que ganaron algún premio
         - best_prize: mejor premio obtenido
         - total_prize_amount: suma total de premios
@@ -818,15 +858,15 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
-            # Get unique dates with prediction counts
+            # Get unique target drawing dates with prediction counts
             cursor.execute("""
                 SELECT
-                    DATE(created_at) as prediction_date,
+                    COALESCE(target_draw_date, DATE(created_at)) as target_date,
                     COUNT(*) as total_predictions
                 FROM predictions_log
                 WHERE created_at IS NOT NULL
-                GROUP BY DATE(created_at)
-                ORDER BY prediction_date DESC
+                GROUP BY COALESCE(target_draw_date, DATE(created_at))
+                ORDER BY target_date DESC
                 LIMIT ?
             """, (limit_dates,))
 
@@ -841,18 +881,18 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
             }
 
             for date_row in date_groups:
-                prediction_date = date_row[0]
+                target_date = date_row[0]
                 total_predictions = date_row[1]
 
-                # Get all predictions for this date
+                # Get all predictions for this target drawing date
                 cursor.execute("""
                     SELECT
                         id, timestamp, n1, n2, n3, n4, n5, powerball,
-                        score_total, model_version, dataset_hash
+                        score_total, model_version, dataset_hash, target_draw_date, created_at
                     FROM predictions_log
-                    WHERE DATE(created_at) = ?
+                    WHERE COALESCE(target_draw_date, DATE(created_at)) = ?
                     ORDER BY score_total DESC
-                """, (prediction_date,))
+                """, (target_date,))
 
                 predictions_data = cursor.fetchall()
 
@@ -866,13 +906,15 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                 for pred_row in predictions_data:
                     prediction_numbers = [pred_row[2], pred_row[3], pred_row[4], pred_row[5], pred_row[6]]
                     prediction_pb = pred_row[7]
+                    prediction_target_date = pred_row[9] or target_date
+                    prediction_created_at = pred_row[10]
 
-                    # Try to find matching official result for this prediction date
+                    # Find matching official result for the TARGET drawing date (not creation date)
                     cursor.execute("""
                         SELECT n1, n2, n3, n4, n5, pb
                         FROM powerball_draws
                         WHERE draw_date = ?
-                    """, (prediction_date,))
+                    """, (prediction_target_date,))
 
                     official_result = cursor.fetchone()
 
@@ -912,6 +954,8 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                         "score": float(pred_row[8]),
                         "model_version": pred_row[9],
                         "dataset_hash": pred_row[10],
+                        "target_draw_date": prediction_target_date,
+                        "created_at": prediction_created_at,
                         "matches_main": matches_main,
                         "powerball_match": powerball_match,
                         "prize_amount": prize_amount,
@@ -923,10 +967,10 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
 
                 # Format date in Spanish
                 try:
-                    date_obj = datetime.strptime(prediction_date, '%Y-%m-%d')
+                    date_obj = datetime.strptime(target_date, '%Y-%m-%d')
                     formatted_date = f"{date_obj.day} {spanish_months[date_obj.month]} {date_obj.year}"
                 except:
-                    formatted_date = prediction_date
+                    formatted_date = target_date
 
                 # Format total prize display
                 if best_prize_amount >= 100000000:
@@ -944,7 +988,7 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                 win_rate = (winning_predictions / total_predictions * 100) if total_predictions > 0 else 0.0
 
                 grouped_result = {
-                    "date": prediction_date,
+                    "date": target_date,
                     "formatted_date": formatted_date,
                     "total_plays": total_predictions,
                     "winning_plays": winning_predictions,
@@ -953,7 +997,9 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                     "best_prize_amount": best_prize_amount,
                     "total_prize_amount": total_prize,
                     "total_prize_display": total_prize_display,
-                    "predictions": predictions
+                    "predictions": predictions,
+                    "is_target_draw_date": True,
+                    "context": f"Predictions generated for drawing on {formatted_date}"
                 }
 
                 grouped_results.append(grouped_result)

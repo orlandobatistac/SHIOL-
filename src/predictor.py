@@ -370,14 +370,14 @@ class Predictor:
                 "time_weight", "increasing_trend_count", "decreasing_trend_count",
                 "stable_trend_count"
             ]
-            
+
             logger.debug(f"Looking for SHIOL+ standard features: {shiol_standard_features}")
             logger.debug(f"Available columns: {list(features_df.columns)}")
-            
+
             # Create feature array with exactly 15 features
             feature_values = np.zeros(15)
             latest_row = features_df.iloc[-1]
-            
+
             # Map available features to their positions
             for i, feature_name in enumerate(shiol_standard_features):
                 if feature_name in latest_row.index:
@@ -414,25 +414,25 @@ class Predictor:
                         feature_values[i] = 1.0
                     else:
                         feature_values[i] = 0.0
-                        
+
                     logger.debug(f"Missing feature '{feature_name}', using default: {feature_values[i]}")
-            
+
             # Reshape to (1, 15) for model input
             prepared_features = feature_values.reshape(1, -1)
-            
+
             # Final validation
             if prepared_features.shape != (1, 15):
                 logger.error(f"Feature preparation failed: expected (1, 15), got {prepared_features.shape}")
                 return None
-                
+
             # Check for any remaining invalid values
             if np.any(~np.isfinite(prepared_features)):
                 logger.warning("Non-finite values detected, cleaning...")
                 prepared_features = np.nan_to_num(prepared_features, nan=0.0, posinf=100.0, neginf=-100.0)
-            
+
             logger.info(f"Successfully prepared features with shape: {prepared_features.shape}")
             logger.debug(f"Feature values: {prepared_features.flatten()}")
-            
+
             return prepared_features
 
         except Exception as e:
@@ -457,7 +457,7 @@ class Predictor:
                         flat_pred = pred.flatten()
                         flat_pred = np.clip(flat_pred, 1e-10, 1.0 - 1e-10)
                         processed_probs.extend(flat_pred)
-                
+
                 all_probs = np.array(processed_probs)
             else:
                 # Single output case
@@ -482,7 +482,7 @@ class Predictor:
 
             # Advanced robust normalization with safeguards
             epsilon = 1e-12
-            
+
             # Normalize white ball probabilities with overflow protection
             wb_sum = wb_probs.sum()
             if wb_sum > epsilon and np.isfinite(wb_sum):
@@ -508,11 +508,11 @@ class Predictor:
             # Final validation with strict tolerance
             wb_sum_final = wb_probs.sum()
             pb_sum_final = pb_probs.sum()
-            
+
             if not np.isclose(wb_sum_final, 1.0, rtol=1e-8, atol=1e-8):
                 logger.debug(f"White ball probabilities sum adjustment: {wb_sum_final} -> 1.0")
                 wb_probs = wb_probs / wb_sum_final
-                
+
             if not np.isclose(pb_sum_final, 1.0, rtol=1e-8, atol=1e-8):
                 logger.debug(f"Powerball probabilities sum adjustment: {pb_sum_final} -> 1.0")
                 pb_probs = pb_probs / pb_sum_final
@@ -521,7 +521,7 @@ class Predictor:
             if not (np.all(wb_probs >= 0) and np.all(wb_probs <= 1) and np.all(np.isfinite(wb_probs))):
                 logger.error("Invalid white ball probabilities detected, using uniform fallback")
                 wb_probs = np.ones(69) / 69
-                
+
             if not (np.all(pb_probs >= 0) and np.all(pb_probs <= 1) and np.all(np.isfinite(pb_probs))):
                 logger.error("Invalid powerball probabilities detected, using uniform fallback")
                 pb_probs = np.ones(26) / 26
@@ -592,13 +592,14 @@ class Predictor:
         logger.info("Deterministic prediction generated successfully")
         return prediction
 
-    def predict_diverse_plays(self, num_plays: int = 5, save_to_log: bool = True) -> List[Dict]:
+    def predict_diverse_plays(self, num_plays: int = 5, save_to_log: bool = False, target_draw_date: str = None) -> List[Dict[str, Any]]:
         """
         Genera múltiples predicciones diversas de alta calidad para el próximo sorteo.
 
         Args:
             num_plays: Número de plays diversos a generar (default: 5)
             save_to_log: Si True, guarda las predicciones en el log de base de datos
+            target_draw_date: La fecha del sorteo objetivo para la predicción.
 
         Returns:
             Lista de Dict con las predicciones diversas y sus detalles
@@ -626,13 +627,23 @@ class Predictor:
         # Guardar en log si se solicita
         if save_to_log:
             saved_count = 0
-            for i, prediction in enumerate(diverse_predictions):
-                prediction_id = save_prediction_log(prediction)
+            for prediction in diverse_predictions:
+                # Save each prediction to database with target draw date
+                prediction_data = {
+                    'timestamp': prediction['timestamp'],
+                    'numbers': prediction['numbers'],
+                    'powerball': prediction['powerball'],
+                    'score_total': prediction['score_total'],
+                    'model_version': prediction['model_version'],
+                    'dataset_hash': prediction['dataset_hash'],
+                    'target_draw_date': target_draw_date
+                }
+                prediction_id = save_prediction_log(prediction_data)
                 if prediction_id:
                     prediction['log_id'] = prediction_id
                     saved_count += 1
                 else:
-                    logger.warning(f"Failed to save prediction {i+1} to log")
+                    logger.warning("Failed to save prediction to log")
 
             logger.info(f"Saved {saved_count}/{len(diverse_predictions)} diverse predictions to log")
 
