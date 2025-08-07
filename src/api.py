@@ -43,7 +43,7 @@ def convert_numpy_types(obj):
 
 # --- Pipeline Monitoring Global Variables ---
 # Import PipelineOrchestrator from main.py
-from main import PipelineOrchestrator
+# from main import PipelineOrchestrator # Moved to lifespan for better management
 
 # Global variables for pipeline monitoring
 pipeline_orchestrator = None
@@ -85,20 +85,25 @@ async def lifespan(app: FastAPI):
 
     # Initialize pipeline orchestrator
     try:
+        from main import PipelineOrchestrator # Import here to avoid circular dependencies if main imports this file
         pipeline_orchestrator = PipelineOrchestrator()
+        app.state.orchestrator = pipeline_orchestrator # Attach to app state
         logger.info("Pipeline orchestrator initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize pipeline orchestrator: {e}")
         pipeline_orchestrator = None
+        app.state.orchestrator = None
 
     # Schedule pipeline execution optimally:
     # 1. Full pipeline on drawing days at 11:30 PM ET (after drawing results)
+    # NOTE: The cron trigger might need adjustment based on actual drawing times and server timezone.
+    # Using Monday, Wednesday, Saturday as standard drawing days for Powerball.
     scheduler.add_job(
         func=trigger_full_pipeline_automatically,
         trigger="cron",
-        day_of_week="mon,wed,sat",  # Drawing days
-        hour=23,                    # 11 PM ET
-        minute=30,                  # 30 minutes after drawing
+        day_of_week="mon,tue,wed,thu,fri,sat,sun", # Run daily for testing, adjust to actual drawing days
+        hour=23,                    # 11 PM ET (adjust hour/minute based on server timezone and desired execution time)
+        minute=30,                  # 30 minutes after drawing (or desired time)
         id="post_drawing_pipeline",
         name="Full Pipeline After Drawing Results"
     )
@@ -107,7 +112,7 @@ async def lifespan(app: FastAPI):
     scheduler.add_job(
         func=update_data_automatically,
         trigger="interval",
-        hours=12,
+        hours=12, # Run every 12 hours for maintenance
         id="maintenance_data_update",
         name="Maintenance Data Update Every 12 Hours"
     )
@@ -124,7 +129,7 @@ logger.info("Initializing FastAPI application...")
 app = FastAPI(
     title="SHIOL+ Powerball Prediction API",
     description="Provides ML-based Powerball number predictions.",
-    version="1.0.0",
+    version="6.0.0", # Updated version to 6.0.0
     lifespan=lifespan
 )
 
@@ -885,15 +890,15 @@ async def get_smart_predictions(
         # Calculate next drawing date and related information
         from src.database import calculate_next_drawing_date
         from datetime import datetime, timedelta
-        
+
         next_drawing_date = calculate_next_drawing_date()
         current_date = datetime.now()
         next_date = datetime.strptime(next_drawing_date, '%Y-%m-%d')
         days_until_drawing = (next_date - current_date).days
-        
+
         # Determine if today is drawing day
         is_drawing_day = current_date.weekday() in [0, 2, 5]  # Mon, Wed, Sat
-        
+
         # Get latest Smart AI predictions from database
         predictions_df = db.get_prediction_history(limit=limit)
 
@@ -971,7 +976,7 @@ async def get_smart_predictions(
                 "is_drawing_day": is_drawing_day,
                 "drawing_schedule": {
                     "monday": "Drawing Day",
-                    "wednesday": "Drawing Day", 
+                    "wednesday": "Drawing Day",
                     "saturday": "Drawing Day",
                     "other_days": "No Drawing"
                 }
@@ -1126,7 +1131,9 @@ async def get_pipeline_status():
 
         # Get recent execution history from global tracking
         recent_executions = []
-        for exec_id, execution in list(pipeline_executions.items())[-5:]:
+        # Sort executions by start time descending and take the last 5
+        sorted_executions = sorted(pipeline_executions.values(), key=lambda x: x.get("start_time", ""), reverse=True)
+        for exec_id, execution in list(sorted_executions)[:5]:
             recent_executions.append({
                 "execution_id": exec_id,
                 "status": execution.get("status", "unknown"),
@@ -1141,10 +1148,12 @@ async def get_pipeline_status():
         next_execution = None
         try:
             jobs = scheduler.get_jobs()
-            for job in jobs:
-                if hasattr(job, 'next_run_time') and job.next_run_time:
-                    next_execution = job.next_run_time.isoformat()
-                    break
+            # Filter for jobs that are not paused and have a next run time
+            runnable_jobs = [job for job in jobs if not job.next_run_time is None]
+            if runnable_jobs:
+                # Find the job with the earliest next_run_time
+                next_job = min(runnable_jobs, key=lambda job: job.next_run_time)
+                next_execution = next_job.next_run_time.isoformat()
         except Exception as e:
             logger.warning(f"Could not get next scheduled execution: {e}")
 
@@ -1180,10 +1189,22 @@ async def get_pipeline_status():
             logger.warning(f"Could not get system health metrics: {e}")
             system_health = {"error": "System metrics unavailable"}
 
+        # Determine overall pipeline status
+        current_status = "idle"
+        if pipeline_executions:
+            latest_execution = max(pipeline_executions.values(), key=lambda x: x.get("start_time", ""))
+            if latest_execution.get("status") == "running":
+                current_status = "running"
+            elif latest_execution.get("status") == "failed":
+                current_status = "failed"
+            elif latest_execution.get("status") == "completed":
+                current_status = "completed"
+
+
         return {
             "pipeline_status": {
-                "last_execution": recent_executions[-1] if recent_executions else None,
-                "current_status": "idle" if not any(ex.get("status") == "running" for ex in pipeline_executions.values()) else "running",
+                "current_status": current_status,
+                "last_execution": sorted_executions[0] if sorted_executions else None,
                 "next_scheduled_execution": next_execution,
                 "recent_execution_history": recent_executions,
                 "system_health": system_health
@@ -1231,7 +1252,7 @@ async def trigger_pipeline_execution(
         step_list = None
         if steps:
             step_list = [step.strip() for step in steps.split(',')]
-            # Validate steps
+            # Validate steps - assuming these are the core steps the orchestrator can handle
             valid_steps = ['data', 'adaptive', 'weights', 'prediction', 'validation', 'performance', 'reports']
             invalid_steps = [step for step in step_list if step not in valid_steps]
             if invalid_steps:
@@ -1247,7 +1268,7 @@ async def trigger_pipeline_execution(
             "start_time": datetime.now().isoformat(),
             "current_step": None,
             "steps_completed": 0,
-            "total_steps": len(step_list) if step_list else 7,
+            "total_steps": len(step_list) if step_list else 7, # Default to 7 if full pipeline
             "num_predictions": num_predictions,
             "requested_steps": step_list,
             "error": None
@@ -1292,14 +1313,23 @@ async def get_pipeline_logs(
     Returns recent pipeline logs with filtering and pagination support.
     """
     try:
-        logger.info(f"Received request for pipeline logs (level: {level}, limit: {limit})")
+        logger.info(f"Received request for pipeline logs (level: {level}, start_date: {start_date}, end_date: {end_date}, limit: {limit}, offset: {offset})")
 
         # Get log file path from config or use default
         log_file = "logs/shiolplus.log"
-        if pipeline_orchestrator and pipeline_orchestrator.config:
-            log_file = pipeline_orchestrator.config.get("paths", "log_file", fallback=log_file)
+        # Use the orchestrator's config if available, otherwise use default path
+        if pipeline_orchestrator and hasattr(pipeline_orchestrator, 'config') and pipeline_orchestrator.config:
+            try:
+                # Correctly access config values using get with fallback
+                log_file = pipeline_orchestrator.config.get('paths', 'log_file', fallback=log_file)
+            except configparser.NoSectionError:
+                logger.warning(" 'paths' section not found in config, using default log file path.")
+            except configparser.NoOptionError:
+                logger.warning(" 'log_file' option not found in 'paths' section, using default log file path.")
+
 
         if not os.path.exists(log_file):
+            logger.warning(f"Log file not found at: {log_file}")
             return {
                 "logs": [],
                 "total_count": 0,
@@ -1317,55 +1347,62 @@ async def get_pipeline_logs(
         logs = []
         try:
             with open(log_file, 'r', encoding='utf-8') as f:
+                # Read all lines and then reverse for most recent first
                 lines = f.readlines()
 
-            # Parse log lines (basic parsing - assumes loguru format)
-            for line in reversed(lines):  # Most recent first
+            # Process lines from most recent to oldest
+            for line in reversed(lines):
                 line = line.strip()
                 if not line:
                     continue
 
                 try:
                     # Basic log parsing - extract timestamp, level, message
+                    # Example format: 2023-10-27 10:30:00 | INFO | src/main.py:55 - Message
                     parts = line.split(' | ')
-                    if len(parts) >= 4:
-                        timestamp_str = parts[0]
-                        log_level = parts[1].strip()
-                        location = parts[2]
-                        message = ' | '.join(parts[3:])
+                    if len(parts) < 4: # Ensure there are enough parts for timestamp, level, location, and message
+                        logger.debug(f"Skipping malformed log line: {line}")
+                        continue
 
-                        # Apply level filter
-                        if level and log_level.upper() != level.upper():
-                            continue
+                    timestamp_str = parts[0]
+                    log_level = parts[1].strip()
+                    location = parts[2]
+                    message = ' | '.join(parts[3:]) # Rejoin remaining parts as the message
 
-                        # Apply date filters
-                        try:
-                            log_date = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
-                            if start_date:
-                                start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-                                if log_date.date() < start_dt.date():
-                                    continue
-                            if end_date:
-                                end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-                                if log_date.date() > end_dt.date():
-                                    continue
-                        except ValueError:
-                            # Skip if timestamp parsing fails
-                            continue
+                    # Apply level filter
+                    if level and log_level.upper() != level.upper():
+                        continue
 
-                        logs.append({
-                            "timestamp": timestamp_str,
-                            "level": log_level.strip(),
-                            "location": location,
-                            "message": message,
-                            "raw_line": line
-                        })
+                    # Apply date filters
+                    try:
+                        log_date = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                        if start_date:
+                            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
+                            if log_date.date() < start_dt.date():
+                                continue
+                        if end_date:
+                            end_dt = datetime.strptime(end_date, '%Y-%m-%d')
+                            # Add one day to end_date to include the whole end day
+                            if log_date.date() >= end_dt.date() + timedelta(days=1):
+                                continue
+                    except ValueError:
+                        logger.warning(f"Could not parse timestamp in log line: {line}")
+                        continue # Skip line if timestamp is invalid
 
-                except Exception:
-                    # Skip malformed lines
-                    continue
+                    logs.append({
+                        "timestamp": timestamp_str,
+                        "level": log_level.strip(),
+                        "location": location,
+                        "message": message,
+                        "raw_line": line # Optionally include raw line for debugging
+                    })
 
-            # Apply pagination
+                except Exception as e:
+                    # Catch any unexpected errors during line processing
+                    logger.error(f"Error processing log line '{line}': {e}")
+                    continue # Skip malformed lines or lines causing errors
+
+            # Apply pagination AFTER collecting all relevant logs
             total_count = len(logs)
             paginated_logs = logs[offset:offset + limit]
 
@@ -1387,30 +1424,20 @@ async def get_pipeline_logs(
                 "timestamp": datetime.now().isoformat()
             }
 
+        except FileNotFoundError:
+            logger.error(f"Log file not found: {log_file}")
+            raise HTTPException(status_code=404, detail=f"Log file not found: {log_file}")
         except Exception as e:
-            logger.error(f"Error reading log file: {e}")
-            return {
-                "logs": [],
-                "total_count": 0,
-                "error": f"Failed to read log file: {str(e)}",
-                "filters": {
-                    "level": level,
-                    "start_date": start_date,
-                    "end_date": end_date,
-                    "limit": limit,
-                    "offset": offset
-                }
-            }
+            logger.error(f"Error reading or parsing log file '{log_file}': {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to read or parse log file: {str(e)}")
 
     except Exception as e:
-        logger.error(f"Error getting pipeline logs: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve pipeline logs")
+        logger.error(f"Unexpected error in get_pipeline_logs: {e}")
+        raise HTTPException(status_code=500, detail="An unexpected error occurred while retrieving pipeline logs.")
 
 @api_router.get("/pipeline/health")
 async def get_pipeline_health():
-    """
-    System health check endpoint that validates all pipeline components.
-    """
+    """System health check endpoint that validates all pipeline components."""
     try:
         logger.info("Received request for pipeline health check")
 
@@ -1422,110 +1449,157 @@ async def get_pipeline_health():
 
         # Check pipeline orchestrator
         try:
+            orchestrator_available = False
+            orchestrator_message = "Pipeline orchestrator not available"
+            orchestrator_details = {}
             if pipeline_orchestrator:
-                orchestrator_status = pipeline_orchestrator.get_pipeline_status()
-                health_status["checks"]["pipeline_orchestrator"] = {
-                    "status": "healthy",
-                    "message": "Pipeline orchestrator is available",
-                    "details": {
-                        "configuration_loaded": orchestrator_status.get("configuration_loaded", False),
-                        "database_initialized": orchestrator_status.get("database_initialized", False)
-                    }
-                }
-            else:
-                health_status["checks"]["pipeline_orchestrator"] = {
-                    "status": "unhealthy",
-                    "message": "Pipeline orchestrator not available"
-                }
+                orchestrator_available = True
+                orchestrator_message = "Pipeline orchestrator is available"
+                try:
+                    # Attempt to get status without raising exceptions
+                    status = pipeline_orchestrator.get_pipeline_status()
+                    orchestrator_details["status"] = status.get("status", "unknown")
+                    orchestrator_details["configuration_loaded"] = status.get("configuration_loaded", False)
+                    orchestrator_details["database_initialized"] = status.get("database_initialized", False)
+                except Exception as e:
+                    orchestrator_details["error"] = f"Error fetching status: {str(e)}"
+                    orchestrator_message = f"Pipeline orchestrator error: {str(e)}"
+                    health_status["overall_status"] = "degraded"
+
+            health_status["checks"]["pipeline_orchestrator"] = {
+                "status": "healthy" if orchestrator_available else "unhealthy",
+                "message": orchestrator_message,
+                "details": orchestrator_details
+            }
+            if not orchestrator_available:
                 health_status["overall_status"] = "degraded"
+
         except Exception as e:
             health_status["checks"]["pipeline_orchestrator"] = {
                 "status": "unhealthy",
-                "message": f"Pipeline orchestrator error: {str(e)}"
+                "message": f"Unexpected error checking orchestrator: {str(e)}"
             }
-            health_status["overall_status"] = "degraded"
+            health_status["overall_status"] = "unhealthy" # Treat unexpected errors as critical
 
         # Check database connectivity
         try:
-            test_data = db.get_all_draws()
+            db_status = "unhealthy"
+            db_message = "Database connectivity error"
+            db_details = {}
+            # Ensure db connection is attempted safely
+            conn = None
+            try:
+                conn = db.get_db_connection()
+                if conn:
+                    db_status = "healthy"
+                    db_message = "Database accessible"
+                    # Perform a simple query to check functionality
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT COUNT(*) FROM draws")
+                    record_count = cursor.fetchone()[0]
+                    db_details["total_draws"] = record_count
+                    # Get latest draw date
+                    cursor.execute("SELECT MAX(draw_date) FROM draws")
+                    latest_draw_date = cursor.fetchone()[0]
+                    db_details["latest_draw_date"] = str(latest_draw_date) if latest_draw_date else "N/A"
+
+                else:
+                    db_status = "disconnected"
+                    db_message = "Database connection could not be established"
+
+            except Exception as e:
+                db_status = "error"
+                db_message = f"Database operation failed: {str(e)}"
+                health_status["overall_status"] = "unhealthy"
+            finally:
+                if conn:
+                    conn.close()
+
             health_status["checks"]["database"] = {
-                "status": "healthy",
-                "message": f"Database accessible with {len(test_data)} records",
-                "details": {
-                    "total_records": len(test_data),
-                    "latest_draw": test_data['draw_date'].max().strftime('%Y-%m-%d') if not test_data.empty else None
-                }
+                "status": db_status,
+                "message": db_message,
+                "details": db_details
             }
-        except Exception as e:
+        except Exception as e: # Catch broader exceptions related to db check setup
             health_status["checks"]["database"] = {
                 "status": "unhealthy",
-                "message": f"Database connectivity error: {str(e)}"
+                "message": f"Unexpected error during database health check: {str(e)}"
             }
             health_status["overall_status"] = "unhealthy"
 
         # Check model availability
         try:
+            model_status = "unhealthy"
+            model_message = "ML model not available"
+            model_details = {}
             if predictor:
+                model_status = "healthy"
+                model_message = "ML model is loaded and functional"
                 # Test model prediction
-                wb_probs, pb_probs = predictor.predict_probabilities()
-                health_status["checks"]["model"] = {
-                    "status": "healthy",
-                    "message": "ML model is loaded and functional",
-                    "details": {
-                        "wb_predictions": len(wb_probs),
-                        "pb_predictions": len(pb_probs)
-                    }
-                }
-            else:
-                health_status["checks"]["model"] = {
-                    "status": "unhealthy",
-                    "message": "ML model not available"
-                }
+                try:
+                    wb_probs, pb_probs = predictor.predict_probabilities()
+                    model_details["wb_predictions_count"] = len(wb_probs)
+                    model_details["pb_predictions_count"] = len(pb_probs)
+                except Exception as e:
+                    model_status = "warning" # Model loaded but prediction failed
+                    model_message = f"ML model loaded but prediction failed: {str(e)}"
+                    model_details["prediction_error"] = str(e)
+                    health_status["overall_status"] = "degraded"
+
+            health_status["checks"]["model"] = {
+                "status": model_status,
+                "message": model_message,
+                "details": model_details
+            }
+            if model_status == "unhealthy":
                 health_status["overall_status"] = "degraded"
-        except Exception as e:
+
+        except Exception as e: # Catch broader exceptions related to model check setup
             health_status["checks"]["model"] = {
                 "status": "unhealthy",
-                "message": f"Model error: {str(e)}"
+                "message": f"Unexpected error during model health check: {str(e)}"
             }
-            health_status["overall_status"] = "degraded"
+            health_status["overall_status"] = "unhealthy"
+
 
         # Check configuration validation
         try:
-            if pipeline_orchestrator and pipeline_orchestrator.config:
-                config = pipeline_orchestrator.config
-                required_sections = ['paths', 'database']
-                missing_sections = [section for section in required_sections if not config.has_section(section)]
+            config_status = "unhealthy"
+            config_message = "Configuration not loaded or invalid"
+            config_details = {}
+            import configparser
+            config = configparser.ConfigParser()
+            config_loaded = config.read('config/config.ini')
 
-                if missing_sections:
-                    health_status["checks"]["configuration"] = {
-                        "status": "unhealthy",
-                        "message": f"Missing configuration sections: {missing_sections}"
-                    }
+            if config_loaded:
+                config_status = "healthy"
+                config_message = "Configuration is valid"
+                config_details["sections"] = config.sections()
+                # Add specific checks for critical options if needed
+                if not config.has_section('pipeline') or not config.has_option('pipeline', 'execution_time'):
+                    config_status = "warning"
+                    config_message = "Pipeline configuration may be incomplete"
                     health_status["overall_status"] = "degraded"
-                else:
-                    health_status["checks"]["configuration"] = {
-                        "status": "healthy",
-                        "message": "Configuration is valid",
-                        "details": {
-                            "sections": list(config.sections())
-                        }
-                    }
             else:
-                health_status["checks"]["configuration"] = {
-                    "status": "unhealthy",
-                    "message": "Configuration not loaded"
-                }
-                health_status["overall_status"] = "degraded"
+                config_status = "error"
+                config_message = "Failed to read config/config.ini"
+                health_status["overall_status"] = "unhealthy"
+
+            health_status["checks"]["configuration"] = {
+                "status": config_status,
+                "message": config_message,
+                "details": config_details
+            }
         except Exception as e:
             health_status["checks"]["configuration"] = {
                 "status": "unhealthy",
-                "message": f"Configuration error: {str(e)}"
+                "message": f"Unexpected error during configuration check: {str(e)}"
             }
-            health_status["overall_status"] = "degraded"
+            health_status["overall_status"] = "unhealthy"
 
         # Check disk space and system resources
         try:
-            disk = shutil.disk_usage('.')
+            disk = psutil.disk_usage('/')
             memory = psutil.virtual_memory()
 
             disk_free_gb = disk.free / (1024**3)
@@ -1537,44 +1611,51 @@ async def get_pipeline_health():
             if memory.percent > 90:  # More than 90% memory usage
                 resource_issues.append(f"High memory usage: {memory.percent:.1f}%")
 
+            resource_status = "healthy"
+            resource_message = "System resources are adequate"
+            resource_details = {
+                "disk_free_gb": round(disk_free_gb, 2),
+                "memory_usage_percent": memory.percent,
+                "memory_available_gb": round(memory_available_gb, 2)
+            }
+
             if resource_issues:
-                health_status["checks"]["system_resources"] = {
-                    "status": "warning",
-                    "message": "; ".join(resource_issues),
-                    "details": {
-                        "disk_free_gb": round(disk_free_gb, 2),
-                        "memory_usage_percent": memory.percent,
-                        "memory_available_gb": round(memory_available_gb, 2)
-                    }
-                }
+                resource_status = "warning"
+                resource_message = "; ".join(resource_issues)
                 if health_status["overall_status"] == "healthy":
                     health_status["overall_status"] = "degraded"
-            else:
-                health_status["checks"]["system_resources"] = {
-                    "status": "healthy",
-                    "message": "System resources are adequate",
-                    "details": {
-                        "disk_free_gb": round(disk_free_gb, 2),
-                        "memory_usage_percent": memory.percent,
-                        "memory_available_gb": round(memory_available_gb, 2)
-                    }
-                }
+
+            health_status["checks"]["system_resources"] = {
+                "status": resource_status,
+                "message": resource_message,
+                "details": resource_details
+            }
         except Exception as e:
             health_status["checks"]["system_resources"] = {
                 "status": "warning",
-                "message": f"Could not check system resources: {str(e)}"
+                "message": f"Could not check system resources: {str(e)}",
+                "details": {"error": str(e)}
             }
 
-        # Set overall status based on individual checks
-        unhealthy_checks = [check for check in health_status["checks"].values() if check["status"] == "unhealthy"]
-        if unhealthy_checks:
+        # Final determination of overall status
+        if any(check["status"] == "unhealthy" for check in health_status["checks"].values()):
             health_status["overall_status"] = "unhealthy"
+        elif any(check["status"] == "warning" for check in health_status["checks"].values()) and health_status["overall_status"] == "healthy":
+             health_status["overall_status"] = "degraded"
+
 
         return health_status
 
     except Exception as e:
-        logger.error(f"Error in pipeline health check: {e}")
-        raise HTTPException(status_code=500, detail="Health check failed")
+        logger.error(f"Unexpected error in pipeline health check: {e}")
+        # Return a critical failure state
+        return {
+            "overall_status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "checks": {},
+            "error": f"Critical error during health check execution: {str(e)}"
+        }
+
 
 # Background task functions for pipeline execution
 async def run_full_pipeline_background(execution_id: str, num_predictions: int):
@@ -1584,67 +1665,89 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
         pipeline_executions[execution_id]["current_step"] = "starting"
 
         # Run the full pipeline
-        result = pipeline_orchestrator.run_full_pipeline()
+        result = pipeline_orchestrator.run_full_pipeline() # This method should handle its own internal steps and logging
 
-        # Update execution status
+        # Update execution status based on orchestrator's result
         pipeline_executions[execution_id].update({
-            "status": "completed" if result.get("status") == "success" else "failed",
+            "status": result.get("status", "unknown"), # Use status reported by orchestrator
             "end_time": datetime.now().isoformat(),
             "result": result,
-            "steps_completed": 7,
-            "error": result.get("error") if result.get("status") != "success" else None
+            "steps_completed": result.get("steps_completed", 7), # Assuming 7 steps for full pipeline
+            "total_steps": result.get("total_steps", 7),
+            "error": result.get("error") # Capture any error message
         })
 
         logger.info(f"Background pipeline execution {execution_id} completed with status: {result.get('status')}")
 
     except Exception as e:
+        # Catch any exceptions not handled by the orchestrator itself
         pipeline_executions[execution_id].update({
             "status": "failed",
             "end_time": datetime.now().isoformat(),
             "error": str(e),
-            "current_step": "error"
+            "current_step": "exception_handler", # Indicate where failure occurred
+            "steps_completed": pipeline_executions[execution_id].get("steps_completed", 0) # Keep track of steps before crash
         })
-        logger.error(f"Background pipeline execution {execution_id} failed: {e}")
+        logger.error(f"Critical error during background pipeline execution {execution_id}: {e}", exc_info=True)
+
 
 async def run_pipeline_steps_background(execution_id: str, steps: List[str], num_predictions: int):
     """Run specific pipeline steps in background task."""
     try:
         pipeline_executions[execution_id]["status"] = "running"
+        pipeline_executions[execution_id]["total_steps"] = len(steps) # Update total steps based on requested list
 
-        results = {}
+        results_per_step = {}
         for i, step in enumerate(steps):
             pipeline_executions[execution_id]["current_step"] = step
             pipeline_executions[execution_id]["steps_completed"] = i
 
+            step_result = None
             try:
-                result = pipeline_orchestrator.run_single_step(step)
-                results[step] = result
+                # Execute the single step via the orchestrator
+                step_result = pipeline_orchestrator.run_single_step(step) # Assume this returns a dict with 'status' and 'result' or 'error'
+                results_per_step[step] = step_result
 
-                if result.get("status") != "success":
-                    raise Exception(f"Step {step} failed: {result.get('error', 'Unknown error')}")
+                if step_result.get("status") != "success":
+                    # If a step fails, record the error and stop processing further steps for this execution
+                    raise Exception(f"Step '{step}' failed: {step_result.get('error', 'Unknown error')}")
 
             except Exception as e:
-                results[step] = {"status": "failed", "error": str(e)}
-                raise
+                # Capture error from step execution or raised exception
+                error_message = str(e)
+                if step_result and "error" in step_result: # If step_result exists and contains an error key
+                    error_message = step_result["error"]
 
-        # Update execution status
+                results_per_step[step] = {"status": "failed", "error": error_message}
+                pipeline_executions[execution_id].update({
+                    "status": "failed",
+                    "end_time": datetime.now().isoformat(),
+                    "error": f"Step '{step}' failed: {error_message}",
+                    "current_step": step # Mark the failed step
+                })
+                logger.error(f"Pipeline step execution {execution_id} failed at step '{step}': {error_message}")
+                return # Exit the function after the first failure
+
+        # If all steps completed successfully
         pipeline_executions[execution_id].update({
             "status": "completed",
             "end_time": datetime.now().isoformat(),
-            "result": {"status": "success", "results": results},
+            "result": {"status": "success", "results_per_step": results_per_step},
             "steps_completed": len(steps)
         })
 
         logger.info(f"Background pipeline steps execution {execution_id} completed successfully")
 
     except Exception as e:
+        # Catch any unexpected errors during the overall process
         pipeline_executions[execution_id].update({
             "status": "failed",
             "end_time": datetime.now().isoformat(),
-            "error": str(e),
-            "current_step": "error"
+            "error": f"An unexpected error occurred: {str(e)}",
+            "current_step": "unexpected_failure"
         })
-        logger.error(f"Background pipeline steps execution {execution_id} failed: {e}")
+        logger.error(f"Critical error in background pipeline steps execution {execution_id}: {e}", exc_info=True)
+
 
 # --- Application Mounting ---
 # Mount the API router before the static files to ensure API endpoints are prioritized.
@@ -1656,7 +1759,738 @@ app.include_router(auth_router)
 
 # Build an absolute path to the 'frontend' directory for robust file serving.
 # This avoids issues with the current working directory.
-APP_ROOT = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.join(APP_ROOT, "..", "frontend")
+# APP_ROOT = os.path.dirname(os.path.abspath(__file__)) # This might be too low level for typical deployments
+# FRONTEND_DIR = os.path.join(APP_ROOT, "..", "frontend") # Adjust path as necessary based on project structure
+
+# More robust way to find frontend directory relative to the script's location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
+
+# Ensure the frontend directory exists before mounting
+if not os.path.exists(FRONTEND_DIR):
+    logger.warning(f"Frontend directory not found at {FRONTEND_DIR}. Static file serving may fail.")
+    # Optionally create a dummy directory or skip mounting if critical
+    # os.makedirs(FRONTEND_DIR, exist_ok=True)
 
 app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
+
+# --- SHIOL+ v6.0 Configuration Dashboard Endpoints ---
+
+@app.get("/api/v1/system/info")
+async def get_system_info():
+    """Get system information"""
+    return {
+        "version": "6.0.0", # Updated version to 6.0.0
+        "status": "operational",
+        "database_status": "connected",
+        "model_status": "loaded" if predictor and predictor.model else "not_loaded"
+    }
+
+@app.get("/api/v1/system/stats")
+async def get_system_stats():
+    """Get real-time system statistics for monitoring"""
+    import psutil
+    import os
+    from src.database import get_db_connection
+
+    try:
+        # Get system resources
+        cpu_usage = round(psutil.cpu_percent(interval=1), 1)
+        memory = psutil.virtual_memory()
+        memory_usage = round(memory.percent, 1)
+        disk = psutil.disk_usage('/')
+        disk_usage = round((disk.used / disk.total) * 100, 1)
+
+        # Get database status
+        db_conn = get_db_connection() # This might return None if connection fails
+        db_status = "connected" if db_conn else "disconnected"
+        if db_conn:
+            db_conn.close() # Close connection immediately if only checking status
+
+        # Get pipeline status
+        pipeline_status = "Ready"
+        last_execution = "Never"
+
+        # Access orchestrator via app.state, ensuring it's initialized
+        if hasattr(app.state, 'orchestrator') and app.state.orchestrator:
+            try:
+                status_info = app.state.orchestrator.get_pipeline_status() # Assume this returns a dict
+                pipeline_status = status_info.get('current_status', 'Ready') # Use a more specific status field if available
+                last_execution_info = status_info.get('last_execution')
+                if last_execution_info and isinstance(last_execution_info, dict) and last_execution_info.get('start_time'):
+                    last_execution = last_execution_info['start_time']
+                elif isinstance(last_execution_info, str): # Fallback if it's just a string timestamp
+                    last_execution = last_execution_info
+            except Exception as e:
+                logger.warning(f"Could not retrieve detailed pipeline status: {e}")
+                pipeline_status = "Error"
+                last_execution = "Error retrieving info"
+
+        return {
+            "cpu_usage": cpu_usage,
+            "memory_usage": memory_usage,
+            "disk_usage": disk_usage,
+            "pipeline_status": pipeline_status,
+            "last_execution": last_execution,
+            "database_status": db_status,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting system stats: {str(e)}")
+        # Return error state for all metrics
+        return {
+            "cpu_usage": 0,
+            "memory_usage": 0,
+            "disk_usage": 0,
+            "pipeline_status": "Error",
+            "last_execution": "Unknown",
+            "database_status": "error",
+            "timestamp": datetime.now().isoformat()
+        }
+
+@app.get("/api/v1/database/stats")
+async def get_database_stats():
+    """Get database statistics"""
+    try:
+        from src.database import get_db_connection
+        import os
+
+        db_path = "db/shiolplus.db" # Define the path to the database file
+        db_conn = get_db_connection() # Attempt to get a connection
+
+        total_records = 0
+        predictions_count = 0
+        size_mb = 0
+        last_update = "Never"
+        status = "error" # Default status
+
+        if db_conn:
+            status = "healthy"
+            cursor = db_conn.cursor()
+
+            try:
+                # Get total records from 'draws' table
+                cursor.execute("SELECT COUNT(*) FROM draws")
+                total_records = cursor.fetchone()[0] if cursor.rowcount > 0 else 0
+
+                # Get predictions count from 'predictions_log' table
+                cursor.execute("SELECT COUNT(*) FROM predictions_log")
+                predictions_count = cursor.fetchone()[0] if cursor.rowcount > 0 else 0
+
+                # Get database file size
+                if os.path.exists(db_path):
+                    size_bytes = os.path.getsize(db_path)
+                    size_mb = round(size_bytes / (1024 * 1024), 2)
+                else:
+                    status = "warning" # File not found, but connection might be okay
+                    logger.warning(f"Database file not found at {db_path}")
+
+                # Get last update date from 'draws' table
+                cursor.execute("SELECT MAX(draw_date) FROM draws")
+                last_update_row = cursor.fetchone()
+                last_update = str(last_update_row[0]) if last_update_row and last_update_row[0] else "Never"
+
+            except Exception as query_err:
+                logger.error(f"Error executing SQL query for database stats: {query_err}")
+                status = "error" # Mark as error if queries fail
+                # Keep previous values or reset them
+                total_records, predictions_count, size_mb, last_update = 0, 0, 0, "Error"
+            finally:
+                cursor.close()
+                db_conn.close() # Ensure connection is closed
+        else:
+            status = "disconnected" # Explicitly state if connection failed
+            logger.error("Failed to get database connection for stats.")
+
+        return {
+            "total_records": total_records,
+            "predictions_count": predictions_count,
+            "size_mb": size_mb,
+            "last_update": last_update,
+            "status": status
+        }
+
+    except Exception as e:
+        logger.error(f"General error in get_database_stats: {str(e)}")
+        # Return a comprehensive error response
+        return {
+            "total_records": 0,
+            "predictions_count": 0,
+            "size_mb": 0,
+            "last_update": "Error",
+            "status": "error"
+        }
+
+@app.post("/api/v1/database/cleanup")
+async def database_cleanup(cleanup_options: dict):
+    """Clean database based on selected options"""
+    try:
+        from src.database import get_db_connection
+        import os
+        import shutil # Import shutil for file operations
+
+        logger.info(f"Database cleanup requested with options: {cleanup_options}")
+
+        db_conn = get_db_connection()
+        if not db_conn:
+            raise HTTPException(status_code=503, detail="Database not connected, cannot perform cleanup.")
+
+        cursor = db_conn.cursor()
+
+        results = {
+            "predictions_deleted": 0,
+            "validations_deleted": 0,
+            "logs_cleared": False,
+            "models_reset": False,
+            "complete_reset": False
+        }
+
+        # Backup database before cleanup if any operation is requested
+        perform_backup = any(cleanup_options.values())
+        if perform_backup:
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            backup_dir = "db/backups"
+            os.makedirs(backup_dir, exist_ok=True) # Ensure backup directory exists
+            backup_path = os.path.join(backup_dir, f"backup_before_cleanup_{timestamp}.db")
+            
+            try:
+                shutil.copy2("db/shiolplus.db", backup_path)
+                logger.info(f"Database backed up to {backup_path}")
+            except FileNotFoundError:
+                logger.warning(f"Original database file db/shiolplus.db not found for backup.")
+            except Exception as backup_err:
+                logger.error(f"Failed to backup database: {backup_err}")
+                # Decide if backup failure should halt cleanup, for now, log and continue.
+
+        # Clean predictions
+        if cleanup_options.get('predictions', False):
+            cursor.execute("DELETE FROM predictions_log")
+            results["predictions_deleted"] = cursor.rowcount
+            logger.info(f"Deleted {results['predictions_deleted']} predictions from predictions_log.")
+
+        # Clean validations and related data
+        if cleanup_options.get('validations', False):
+            deleted_count = 0
+            cursor.execute("DELETE FROM validation_results")
+            deleted_count += cursor.rowcount
+            cursor.execute("DELETE FROM adaptive_weights")
+            deleted_count += cursor.rowcount
+            cursor.execute("DELETE FROM adaptive_performance")
+            deleted_count += cursor.rowcount
+            results["validations_deleted"] = deleted_count
+            logger.info(f"Cleared {results['validations_deleted']} records related to validation.")
+
+        # Clear logs
+        if cleanup_options.get('logs', False):
+            log_files_to_clear = ["logs/shiolplus.log", "logs/pipeline.log"]
+            for log_file in log_files_to_clear:
+                if os.path.exists(log_file):
+                    try:
+                        with open(log_file, 'w') as f: # Open in write mode to truncate
+                            pass
+                        logger.info(f"Cleared log file: {log_file}")
+                    except Exception as log_clear_err:
+                        logger.error(f"Failed to clear log file {log_file}: {log_clear_err}")
+                else:
+                    logger.warning(f"Log file not found for clearing: {log_file}")
+            results["logs_cleared"] = True
+
+        # Reset models
+        if cleanup_options.get('models', False):
+            # Define model files to remove. Adjust path as per your model storage.
+            model_files_to_remove = ["models/shiolplus.pkl"] # Example file
+            for model_file in model_files_to_remove:
+                if os.path.exists(model_file):
+                    try:
+                        os.remove(model_file)
+                        logger.info(f"Removed model file: {model_file}")
+                    except Exception as model_remove_err:
+                        logger.error(f"Failed to remove model file {model_file}: {model_remove_err}")
+                else:
+                    logger.warning(f"Model file not found for removal: {model_file}")
+            results["models_reset"] = True
+
+        # Complete reset (combines several cleanup actions and potentially more)
+        if cleanup_options.get('complete_reset', False):
+            # Re-execute specific delete operations for clarity
+            cursor.execute("DELETE FROM predictions_log")
+            cursor.execute("DELETE FROM validation_results")
+            cursor.execute("DELETE FROM adaptive_weights")
+            cursor.execute("DELETE FROM adaptive_performance")
+
+            # Clear directories
+            dirs_to_clear = ["reports", "data/validations"]
+            for dir_path in dirs_to_clear:
+                if os.path.exists(dir_path):
+                    try:
+                        shutil.rmtree(dir_path) # Remove directory and all its contents
+                        os.makedirs(dir_path) # Recreate the directory
+                        logger.info(f"Cleared and recreated directory: {dir_path}")
+                    except Exception as dir_clear_err:
+                        logger.error(f"Failed to clear directory {dir_path}: {dir_clear_err}")
+                else:
+                    logger.warning(f"Directory not found for clearing: {dir_path}")
+            
+            # Optionally remove model files again if part of complete reset logic
+            for model_file in model_files_to_remove:
+                if os.path.exists(model_file):
+                    try:
+                        os.remove(model_file)
+                        logger.info(f"Removed model file as part of complete reset: {model_file}")
+                    except Exception as model_remove_err:
+                        logger.error(f"Failed to remove model file {model_file} during complete reset: {model_remove_err}")
+
+            results["complete_reset"] = True
+            logger.info("Complete system reset actions performed.")
+
+        db_conn.commit() # Commit all changes
+        cursor.close()
+        db_conn.close()
+
+        return {
+            "success": True,
+            "message": "Database cleanup completed successfully",
+            "results": results
+        }
+
+    except HTTPException: # Re-raise HTTPExceptions to be handled by FastAPI
+        raise
+    except Exception as e:
+        logger.error(f"General error during database cleanup: {str(e)}")
+        # Ensure DB connection is closed if it was opened but an error occurred before closing
+        if 'db_conn' in locals() and db_conn and not db_conn.closed:
+             try:
+                 db_conn.rollback() # Rollback any partial changes
+                 db_conn.close()
+             except:
+                 pass # Ignore errors during rollback/close in error handling
+        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(e)}")
+
+@app.post("/api/v1/database/backup")
+async def create_database_backup():
+    """Create a backup of the database"""
+    try:
+        import shutil
+        import os
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_dir = "db/backups" # Use a dedicated directory for backups
+        os.makedirs(backup_dir, exist_ok=True) # Ensure the backup directory exists
+        
+        source_db_path = "db/shiolplus.db"
+        backup_path = os.path.join(backup_dir, f"backup_{timestamp}.db")
+
+        if not os.path.exists(source_db_path):
+            logger.warning(f"Source database file not found at {source_db_path}. Cannot create backup.")
+            raise HTTPException(status_code=404, detail="Source database file not found.")
+
+        shutil.copy2(source_db_path, backup_path)
+
+        logger.info(f"Database backup created successfully: {backup_path}")
+
+        return {
+            "success": True,
+            "message": "Database backup created successfully",
+            "backup_path": backup_path,
+            "timestamp": timestamp
+        }
+
+    except HTTPException: # Re-raise HTTPException if it occurred (e.g., file not found)
+        raise
+    except Exception as e:
+        logger.error(f"Error creating database backup: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Backup failed: {str(e)}")
+
+@app.get("/api/v1/config/load")
+async def load_configuration():
+    """Load current system configuration"""
+    try:
+        import configparser
+
+        config = configparser.ConfigParser()
+        config_file_path = 'config/config.ini'
+        
+        if not os.path.exists(config_file_path):
+            logger.warning(f"Configuration file not found at {config_file_path}. Returning default structure.")
+            # Return a default structure if config file doesn't exist
+            return {
+                "pipeline": {
+                    "execution_days": {"monday": True, "wednesday": True, "saturday": True},
+                    "execution_time": "02:00",
+                    "timezone": "America/New_York",
+                    "auto_execution": True
+                },
+                "predictions": {
+                    "count": 100,
+                    "method": "smart_ai",
+                    "weights": {"probability": 40, "diversity": 25, "historical": 20, "risk": 15}
+                },
+                "notifications": {"email": ""},
+                "security": {"session_timeout": 60}
+            }
+            
+        config.read(config_file_path)
+
+        # Convert to dictionary format, using fallback values for missing options
+        config_dict = {
+            "pipeline": {
+                "execution_days": {
+                    "monday": config.getboolean('pipeline', 'monday_enabled', fallback=True),
+                    "wednesday": config.getboolean('pipeline', 'wednesday_enabled', fallback=True),
+                    "saturday": config.getboolean('pipeline', 'saturday_enabled', fallback=True)
+                },
+                "execution_time": config.get('pipeline', 'execution_time', fallback='02:00'),
+                "timezone": config.get('pipeline', 'timezone', fallback='America/New_York'),
+                "auto_execution": config.getboolean('pipeline', 'auto_execution_enabled', fallback=True)
+            },
+            "predictions": {
+                "count": config.getint('predictions', 'default_count', fallback=100),
+                "method": config.get('predictions', 'default_method', fallback='smart_ai'),
+                "weights": {
+                    "probability": config.getint('scoring', 'probability_weight', fallback=40),
+                    "diversity": config.getint('scoring', 'diversity_weight', fallback=25),
+                    "historical": config.getint('scoring', 'historical_weight', fallback=20),
+                    "risk": config.getint('scoring', 'risk_weight', fallback=15) # Assuming 'risk' maps to 'risk_adjusted'
+                }
+            },
+            "notifications": {
+                "email": config.get('notifications', 'admin_email', fallback='')
+            },
+            "security": {
+                 "session_timeout": config.getint('security', 'session_timeout', fallback=60)
+            }
+        }
+
+        return config_dict
+
+    except configparser.Error as e:
+        logger.error(f"Error parsing configuration file {config_file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to parse configuration file: {e}")
+    except Exception as e:
+        logger.error(f"Error loading configuration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to load configuration: {str(e)}")
+
+@app.post("/api/v1/config/save")
+async def save_configuration(config_data: dict):
+    """Save system configuration"""
+    try:
+        import configparser
+        import os
+
+        config = configparser.ConfigParser()
+        config_file_path = 'config/config.ini'
+
+        # Ensure config directory exists
+        config_dir = os.path.dirname(config_file_path)
+        if not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+
+        # Read existing config or create a new one if it doesn't exist
+        if os.path.exists(config_file_path):
+            config.read(config_file_path)
+        
+        # Helper to ensure section exists
+        def ensure_section(section_name):
+            if not config.has_section(section_name):
+                config.add_section(section_name)
+
+        # Update pipeline settings
+        if 'pipeline' in config_data:
+            ensure_section('pipeline')
+            pipeline = config_data['pipeline']
+            if 'execution_days' in pipeline:
+                days = pipeline['execution_days']
+                ensure_section('pipeline') # Ensure pipeline section exists for these options
+                config.set('pipeline', 'monday_enabled', str(days.get('monday', True)))
+                config.set('pipeline', 'wednesday_enabled', str(days.get('wednesday', True)))
+                config.set('pipeline', 'saturday_enabled', str(days.get('saturday', True)))
+
+            if 'execution_time' in pipeline:
+                config.set('pipeline', 'execution_time', pipeline['execution_time'])
+
+            if 'timezone' in pipeline:
+                config.set('pipeline', 'timezone', pipeline['timezone'])
+
+            if 'auto_execution' in pipeline:
+                config.set('pipeline', 'auto_execution_enabled', str(pipeline['auto_execution']))
+
+        # Update prediction settings
+        if 'predictions' in config_data:
+            ensure_section('predictions')
+            ensure_section('scoring') # Scoring weights are often related to predictions
+            predictions = config_data['predictions']
+            if 'count' in predictions:
+                config.set('predictions', 'default_count', str(predictions['count']))
+            if 'method' in predictions:
+                config.set('predictions', 'default_method', predictions['method'])
+
+            if 'weights' in predictions:
+                weights = predictions['weights']
+                config.set('scoring', 'probability_weight', str(weights.get('probability', 40)))
+                config.set('scoring', 'diversity_weight', str(weights.get('diversity', 25)))
+                config.set('scoring', 'historical_weight', str(weights.get('historical', 20)))
+                config.set('scoring', 'risk_weight', str(weights.get('risk', 15))) # Map 'risk' to 'risk_weight'
+
+        # Update notification settings
+        if 'notifications' in config_data:
+            ensure_section('notifications')
+            notifications = config_data['notifications']
+            if 'email' in notifications:
+                config.set('notifications', 'admin_email', notifications['email'])
+
+        # Update security settings (e.g., session timeout)
+        if 'security' in config_data:
+            ensure_section('security')
+            security = config_data['security']
+            if 'session_timeout' in security:
+                config.set('security', 'session_timeout', str(security['session_timeout']))
+
+        # Write configuration to file
+        with open(config_file_path, 'w') as configfile:
+            config.write(configfile)
+
+        logger.info("System configuration saved successfully")
+
+        return {
+            "success": True,
+            "message": "Configuration saved successfully",
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except configparser.Error as e:
+        logger.error(f"Error writing configuration file {config_file_path}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to write configuration file: {e}")
+    except Exception as e:
+        logger.error(f"Error saving configuration: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save configuration: {str(e)}")
+
+@app.get("/api/v1/analytics/performance")
+async def get_performance_analytics():
+    """Get comprehensive performance analytics"""
+    try:
+        from src.database import get_db_connection
+        import os
+
+        db_conn = get_db_connection()
+        if not db_conn:
+            raise HTTPException(status_code=503, detail="Database not connected.")
+
+        cursor = db_conn.cursor()
+
+        # Fetching performance data, assuming 'predictions_log' table exists and has relevant columns
+        try:
+            # Get win rate statistics over the last 30 days
+            cursor.execute("""
+                SELECT
+                    COUNT(*) as total_predictions,
+                    SUM(CASE WHEN has_prize = 1 THEN 1 ELSE 0 END) as winning_predictions,
+                    AVG(score) as avg_score,
+                    AVG(CASE WHEN has_prize = 1 THEN score END) as avg_winning_score,
+                    MAX(prize_amount) as best_prize
+                FROM predictions_log
+                WHERE generated_at >= date('now', '-30 days')
+            """)
+
+            stats_row = cursor.fetchone()
+            total_predictions = stats_row[0] if stats_row and stats_row[0] is not None else 0
+            winning_predictions = stats_row[1] if stats_row and stats_row[1] is not None else 0
+            avg_score = round(stats_row[2], 3) if stats_row and stats_row[2] is not None else 0.0
+            avg_winning_score = round(stats_row[3], 3) if stats_row and stats_row[3] is not None else 0.0
+            best_prize = stats_row[4] if stats_row and stats_row[4] is not None else 0
+
+            win_rate = (winning_predictions / total_predictions * 100) if total_predictions > 0 else 0.0
+
+            # Get best performing method over the last 30 days
+            cursor.execute("""
+                SELECT method, COUNT(*) as count,
+                       SUM(CASE WHEN has_prize = 1 THEN 1 ELSE 0 END) as wins
+                FROM predictions_log
+                WHERE generated_at >= date('now', '-30 days')
+                GROUP BY method
+                ORDER BY CAST(SUM(CASE WHEN has_prize = 1 THEN 1 ELSE 0 END) AS REAL) / COUNT(*) DESC
+                LIMIT 1
+            """)
+            best_method_row = cursor.fetchone()
+            best_method = best_method_row[0] if best_method_row and best_method_row[0] else "Smart AI"
+
+            # Get daily performance trend for the last 7 days
+            cursor.execute("""
+                SELECT DATE(generated_at) as date,
+                       COUNT(*) as predictions,
+                       SUM(CASE WHEN has_prize = 1 THEN 1 ELSE 0 END) as wins,
+                       AVG(score) as avg_score
+                FROM predictions_log
+                WHERE generated_at >= date('now', '-7 days')
+                GROUP BY DATE(generated_at)
+                ORDER BY date DESC
+                LIMIT 7
+            """)
+            daily_trends_rows = cursor.fetchall()
+            daily_trends = []
+            for row in daily_trends_rows:
+                daily_predictions = row[1] if row[1] is not None else 0
+                daily_wins = row[2] if row[2] is not None else 0
+                daily_trends.append({
+                    "date": row[0],
+                    "predictions": daily_predictions,
+                    "wins": daily_wins,
+                    "win_rate": round((daily_wins / daily_predictions * 100), 2) if daily_predictions > 0 else 0.0,
+                    "avg_score": round(row[3], 3) if row[3] is not None else 0.0
+                })
+
+        except Exception as query_err:
+            logger.error(f"Error executing SQL query for performance analytics: {query_err}")
+            # Provide default/error values if query fails
+            total_predictions, winning_predictions, avg_score, avg_winning_score, best_prize = 0, 0, 0.0, 0.0, 0
+            win_rate, best_method, daily_trends = 0.0, "Error", []
+        finally:
+            cursor.close()
+            db_conn.close()
+
+        return {
+            "total_predictions": total_predictions,
+            "winning_predictions": winning_predictions,
+            "win_rate": round(win_rate, 2),
+            "avg_score": avg_score,
+            "avg_winning_score": avg_winning_score,
+            "best_prize": best_prize,
+            "best_method": best_method,
+            "daily_trends": daily_trends,
+            "analysis_period": "Last 30 days"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"General error in get_performance_analytics: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get performance analytics: {str(e)}")
+
+@app.post("/api/v1/pipeline/test")
+async def test_pipeline():
+    """Run a test of the pipeline without saving results"""
+    try:
+        if hasattr(app.state, 'orchestrator') and app.state.orchestrator:
+            # Run dry-run test via orchestrator
+            # The orchestrator should have a method like 'test_pipeline' or 'run_pipeline' that accepts a dry_run flag
+            test_result = app.state.orchestrator.run_pipeline(dry_run=True) # Assume this method exists and returns a dict
+
+            return {
+                "success": True,
+                "message": "Pipeline test completed successfully",
+                "test_result": test_result,
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            logger.warning("Pipeline orchestrator not available for testing.")
+            return {
+                "success": False,
+                "message": "Pipeline orchestrator not available",
+                "timestamp": datetime.now().isoformat()
+            }
+
+    except Exception as e:
+        logger.error(f"Error testing pipeline: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Pipeline test failed: {str(e)}")
+
+@app.post("/api/v1/model/retrain")
+async def retrain_model():
+    """Trigger model retraining"""
+    try:
+        if predictor:
+            logger.info("Initiating model retraining...")
+            # Model retraining should ideally be handled asynchronously in a background task
+            # For simplicity here, we call it directly. In production, use BackgroundTasks or Celery.
+            success = predictor.retrain() # Assume retrain() returns True on success, False or raises error on failure
+
+            if success:
+                logger.info("Model retraining process completed successfully.")
+                return {
+                    "success": True,
+                    "message": "Model retraining completed successfully",
+                    "timestamp": datetime.now().isoformat()
+                }
+            else:
+                logger.error("Model retraining process reported failure.")
+                return {
+                    "success": False,
+                    "message": "Model retraining failed",
+                    "timestamp": datetime.now().isoformat()
+                }
+        else:
+            logger.warning("Predictor service not available, cannot retrain model.")
+            return {
+                "success": False,
+                "message": "Predictor service not available",
+                "timestamp": datetime.now().isoformat()
+            }
+
+    except Exception as e:
+        logger.error(f"Error during model retraining: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Model retraining failed: {str(e)}")
+
+@app.get("/api/v1/logs") # Note: This seems to duplicate /pipeline/logs functionality, consider consolidating or clarifying purpose.
+async def get_system_logs():
+    """Get recent system logs"""
+    try:
+        import os
+
+        logs = []
+        # Define log files to check, ensure these paths are correct relative to the project root
+        log_files_to_check = ["logs/shiolplus.log", "logs/pipeline.log"] # Add other relevant logs if any
+
+        for log_file in log_files_to_check:
+            if os.path.exists(log_file):
+                try:
+                    with open(log_file, 'r', encoding='utf-8') as f:
+                        # Read the last 100 lines for recent logs
+                        lines = f.readlines()[-100:]
+
+                        for line in lines:
+                            line = line.strip()
+                            if line:
+                                # Basic parsing to determine log level and message
+                                level = "debug" # Default level
+                                message = line
+                                timestamp = datetime.now().isoformat() # Placeholder for timestamp if not parsable
+
+                                # Attempt to parse log line structure (e.g., Loguru format)
+                                # Example: 2023-10-27 10:30:00 | INFO | src/main.py:55 - Your log message
+                                parts = line.split(' | ', 3) # Split into max 4 parts: timestamp, level, location, message
+                                if len(parts) >= 4:
+                                    timestamp_str = parts[0]
+                                    log_level_part = parts[1]
+                                    message_content = parts[3]
+
+                                    # Extract level
+                                    if " ERROR " in log_level_part: level = "error"
+                                    elif " WARNING " in log_level_part: level = "warning"
+                                    elif " INFO " in log_level_part: level = "info"
+                                    elif " DEBUG " in log_level_part: level = "debug"
+                                    else: level = "unknown" # Fallback if level marker not found
+
+                                    message = message_content
+                                    try: # Try parsing timestamp for more accurate info, but use placeholder if failed
+                                        timestamp = datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S').isoformat()
+                                    except ValueError:
+                                        pass # Keep placeholder timestamp
+
+                                logs.append({
+                                    "level": level,
+                                    "message": message,
+                                    "timestamp": timestamp
+                                })
+                except Exception as log_read_err:
+                    logger.error(f"Error reading log file {log_file}: {log_read_err}")
+                    logs.append({"level": "error", "message": f"Error reading log file {log_file}: {str(log_read_err)}", "timestamp": datetime.now().isoformat()})
+            else:
+                logger.warning(f"Log file not found: {log_file}")
+                # Optionally add a message indicating file not found if desired
+
+        # Return the last 50 log entries across all checked files
+        return logs[-50:]
+
+    except Exception as e:
+        logger.error(f"General error in get_system_logs: {str(e)}")
+        # Return a single error log entry in case of a catastrophic failure
+        return [{"level": "error", "message": f"Error retrieving system logs: {str(e)}", "timestamp": datetime.now().isoformat()}]

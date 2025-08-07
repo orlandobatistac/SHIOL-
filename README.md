@@ -1,301 +1,440 @@
-# SHIOL+ v5.0: AI-Powered Lottery Analysis System with Automated Pipeline
 
-An intelligent system designed to analyze historical data and predict lottery combinations using Machine Learning techniques with a fully automated pipeline orchestrator.
+# SHIOL+ v6.0: Advanced AI-Powered Lottery Analysis System with Configuration Dashboard
+
+An intelligent, enterprise-grade system designed to analyze historical lottery data and predict combinations using advanced Machine Learning techniques with a comprehensive configuration dashboard and automated pipeline orchestrator.
 
 ## Project Summary
 
-**SHIOL+ (Heuristic and Inferential Optimized Lottery System)** is a comprehensive software tool that analyzes historical Powerball lottery draw data to identify statistical patterns. The system's main objective is to use an artificial intelligence model to predict the probability of each number appearing in future draws, thereby generating optimized plays through an automated pipeline system.
+**SHIOL+ (System for Hybrid Intelligence Optimization and Learning)** is a comprehensive software platform that analyzes historical Powerball lottery draw data to identify statistical patterns and generate optimized predictions. The system combines artificial intelligence models with adaptive learning mechanisms, providing a complete pipeline for data processing, prediction generation, validation, and performance analysis.
 
-The system is now powered by an **SQLite database**, ensuring data integrity and performance. It features a complete **Phase 5 automated pipeline** that handles data updates, adaptive analysis, weight optimization, prediction generation, historical validation, performance analysis, and reporting - all orchestrated through a single command.
+Version 6.0 introduces a revolutionary **Configuration Dashboard** that transforms SHIOL+ into a fully configurable, enterprise-ready system with real-time monitoring, advanced database management, and comprehensive system controls.
 
 > **Important**: This tool was created for educational, research, and entertainment purposes. The lottery is a game of chance, and SHIOL+ **does not guarantee prizes or winnings**. Always play responsibly.
 
+## 🚀 What's New in v6.0
+
+### **Advanced Configuration Dashboard**
+- **Real-time System Monitoring**: CPU, memory, disk usage with live graphs
+- **Pipeline Configuration**: Schedule execution, configure prediction methods, adjust scoring weights
+- **Database Management**: Complete database control with cleanup, backup, and statistics
+- **Model Management**: AI model retraining, backup, and performance tracking
+- **Configuration Profiles**: Pre-built profiles (Conservative, Aggressive, Balanced, Custom)
+- **Notification System**: Email and browser notifications for system events
+- **Advanced Analytics**: Performance trends, win rate analysis, and method comparison
+
+### **Enterprise Features**
+- **Import/Export Settings**: Save and share configuration templates
+- **Session Management**: Configurable timeouts and security controls
+- **System Health Monitoring**: Comprehensive health checks and alerts
+- **Audit Logging**: Complete system activity tracking
+- **Backup & Recovery**: Automated backup systems with one-click restore
+
 ## Key Features
 
-SHIOL+ v5.0 introduces a complete automated pipeline system with enhanced prediction capabilities, web dashboard, and comprehensive monitoring:
+### 🎯 Phase 6 Configuration Management System
 
-### 🚀 Phase 5 Automated Pipeline System
+*   **Unified Dashboard**: Single interface for all system configuration and monitoring
+*   **Profile-Based Configuration**: Quick setup with predefined configuration profiles
+*   **Real-time Monitoring**: Live system health, resource usage, and pipeline status
+*   **Advanced Database Controls**: Complete database management with cleanup and backup tools
+*   **Model Management Suite**: AI model training, validation, and performance optimization
+*   **Notification System**: Multi-channel alerts for system events and winning predictions
+*   **Configuration Import/Export**: Share and backup system configurations
 
-*   **Simple Execution**: Run the entire system with a single command: `python main.py`
-*   **7-Step Pipeline**: Automated execution of data update, adaptive analysis, weight optimization, prediction generation, historical validation, performance analysis, and reporting
-*   **Weekly Scheduling**: Automatic pipeline execution every week with configurable timing
-*   **Manual Triggering**: On-demand pipeline execution via web dashboard or API
-*   **Real-time Monitoring**: Live pipeline status tracking and execution logs
-*   **Error Recovery**: Automatic retry logic with exponential backoff
-*   **Health Monitoring**: System health checks and resource monitoring
+### 🤖 Enhanced AI Pipeline System
 
-### 🌐 Web Dashboard & API
+*   **Smart Scheduling**: Configurable execution days and times with timezone support
+*   **Multiple Prediction Methods**: Smart AI, Deterministic, Ensemble, and Adaptive Hybrid
+*   **Dynamic Weight Adjustment**: Real-time scoring weight optimization based on performance
+*   **Batch Processing**: Configure prediction quantities from 10 to 1000 per execution
+*   **Adaptive Learning**: Continuous improvement based on historical performance
+*   **Performance Analytics**: Comprehensive metrics and trend analysis
 
-*   **Interactive Web Interface**: Modern web dashboard for system monitoring and control
-*   **RESTful API**: Comprehensive API endpoints for all system functions
-*   **Real-time Status**: Live pipeline status, execution history, and system health
-*   **Manual Controls**: Trigger pipeline execution, view logs, and monitor performance
-*   **Generated Plays Visualization**: View recent predictions with scoring details
+### 🌐 Advanced Web Interface
 
-### 🧠 Enhanced Prediction System
+*   **Public Interface**: Clean, modern interface for viewing predictions and statistics
+*   **Admin Dashboard**: Comprehensive configuration and monitoring interface
+*   **Real-time Updates**: Live data refresh and status monitoring
+*   **Mobile Responsive**: Optimized for desktop, tablet, and mobile devices
+*   **RESTful API**: Complete API suite for integration and automation
 
-*   **Deterministic Predictions**: Consistent, reproducible results using multi-criteria scoring
-*   **Adaptive Learning**: System learns from historical performance to optimize weights
-*   **Multi-Criteria Scoring**: Probability (40%), Diversity (25%), Historical (20%), Risk-Adjusted (15%)
-*   **Performance Validation**: Automatic validation against historical draws
-*   **Adaptive Feedback**: Continuous improvement based on validation results
+### 📊 Comprehensive Analytics & Monitoring
 
-### 📊 Monitoring & Analytics
-
-*   **Performance Analytics**: Detailed metrics on prediction accuracy and win rates
-*   **Execution History**: Complete log of pipeline runs and results
-*   **System Health**: CPU, memory, and disk usage monitoring
-*   **Validation Reports**: Automated comparison against actual lottery results
-*   **Comprehensive Logging**: Detailed logs with filtering and search capabilities
+*   **Performance Dashboards**: Win rates, accuracy metrics, and trend analysis
+*   **System Health Monitoring**: Resource usage, database health, and service status
+*   **Historical Analysis**: Long-term performance tracking and pattern identification
+*   **Comparative Analytics**: Method performance comparison and optimization recommendations
+*   **Real-time Logging**: Advanced logging with filtering, search, and export capabilities
 
 ## Quick Start
 
-### Simple Execution (Recommended)
+### Simple Setup & Execution
 
-The easiest way to run SHIOL+ v5.0 is with the automated pipeline:
+The easiest way to get started with SHIOL+ v6.0:
 
 ```bash
 # Install dependencies
 pip install -r requirements.txt
+pip install bcrypt==4.1.2 psutil==5.9.8
+
+# Initialize the system
+python src/database.py
 
 # Run the complete pipeline
 python main.py
-```
 
-This single command will:
-1. Update the database with latest lottery data
-2. Run adaptive analysis on recent performance
-3. Optimize prediction weights based on historical results
-4. Generate new predictions using the deterministic system
-5. Validate predictions against historical data
-6. Analyze system performance metrics
-7. Generate comprehensive reports
-
-### Web Dashboard Access
-
-After running the pipeline, start the web dashboard:
-
-```bash
 # Start the web server
-uvicorn src.api:app --reload
+python main.py --server --host 0.0.0.0 --port 3000
 ```
 
-Then open your browser to `http://127.0.0.1:8000` to access:
-- Real-time pipeline status monitoring
-- Manual pipeline triggering
-- Generated plays visualization
-- System health metrics
-- Execution logs and history
+### Access the System
 
-## Project Structure
+After starting the server, access the different interfaces:
 
-The project is organized into the following directories:
+*   **Public Interface**: `http://localhost:3000/` - View predictions and statistics
+*   **Admin Login**: `http://localhost:3000/login.html` - Administrator login
+*   **Configuration Dashboard**: `http://localhost:3000/dashboard.html` - Complete system control
 
--   `main.py`: **Phase 5 Pipeline Orchestrator** - Single entry point for complete system execution
--   `src/`: Contains all the application's Python source code
-    -   `api.py`: FastAPI application serving the web interface and API endpoints
-    -   `scheduler.py`: Weekly scheduling system with APScheduler integration
-    -   `adaptive_feedback.py`: Adaptive learning and weight optimization system
-    -   `pipeline_logger.py`: Comprehensive logging system for pipeline execution
-    -   `predictor.py`: ML model training and prediction logic
-    -   `intelligent_generator.py`: Deterministic prediction generation with scoring
-    -   `database.py`: SQLite database management and analytics
-    -   `loader.py`: Data loading and database update orchestration
-    -   `evaluator.py`: Historical validation and performance analysis
-    -   `basic_validator.py`: Basic prediction validation system
-    -   `notifications.py`: Notification system for pipeline events
--   `frontend/`: Web dashboard static files
-    -   `index.html`: Main dashboard interface
-    -   `css/styles.css`: Dashboard styling
-    -   `js/app.js`: Interactive dashboard functionality
--   `data/`: Data storage directories
-    -   `predictions/`: JSON files with detailed prediction information
-    -   `validations/`: CSV files with validation results
--   `reports/`: Pipeline execution reports and analytics
--   `models/`: Trained AI model artifacts (`shiolplus.pkl`)
--   `logs/`: Application execution logs with rotation
--   `config/`: Configuration files (`config.ini`)
+**Default Admin Credentials**: `admin` / `shiol2024!` (Change immediately in production)
+
+## Configuration Dashboard Features
+
+### 🎯 Pipeline Configuration
+- **Execution Scheduling**: Set days and times for automatic pipeline execution
+- **Timezone Management**: Configure system timezone for accurate scheduling
+- **Prediction Settings**: Adjust quantity, methods, and scoring weights
+- **Auto-execution Control**: Enable/disable automated pipeline runs
+
+### 🗄️ Database Management
+- **Real-time Statistics**: View record counts, database size, and health metrics
+- **Cleanup Tools**: Selective data cleanup with safety confirmations
+- **Backup System**: Create and manage database backups
+- **Performance Monitoring**: Track database performance and optimization
+
+### 🤖 Model Management
+- **Training Controls**: Retrain models with latest data
+- **Performance Tracking**: Monitor model accuracy and effectiveness
+- **Backup & Recovery**: Backup and restore model states
+- **Version Management**: Track model versions and improvements
+
+### 📊 System Monitoring
+- **Resource Usage**: Real-time CPU, memory, and disk monitoring
+- **Pipeline Status**: Track execution progress and history
+- **Health Checks**: Comprehensive system health monitoring
+- **Performance Metrics**: Detailed analytics and trend analysis
+
+### ⚙️ Advanced Configuration
+- **Configuration Profiles**: Quick setup with predefined profiles
+  - **Conservative**: Lower risk, higher accuracy focus
+  - **Aggressive**: Higher volume, diverse prediction strategies  
+  - **Balanced**: Optimal balance of all factors
+  - **Custom**: Full manual configuration control
+- **Import/Export**: Save and share configuration templates
+- **Notification Settings**: Configure email and browser alerts
+- **Security Controls**: Session management and access controls
+
+## System Architecture
+
+### Core Components
+
+*   **Main Pipeline (`main.py`)**: Complete pipeline orchestrator with web server integration
+*   **Configuration Dashboard (`frontend/dashboard.html`)**: Advanced web-based configuration interface
+*   **API Layer (`src/api.py`)**: RESTful API with v6.0 configuration endpoints
+*   **Database Engine (`src/database.py`)**: Enhanced SQLite database with analytics
+*   **AI Engine (`src/predictor.py`)**: Machine learning models with adaptive learning
+*   **Intelligent Generator (`src/intelligent_generator.py`)**: Advanced prediction algorithms
+*   **Adaptive Feedback (`src/adaptive_feedback.py`)**: Performance-based learning system
+
+### New v6.0 Components
+
+*   **System Monitor**: Real-time resource and performance monitoring
+*   **Configuration Manager**: Centralized configuration management system
+*   **Database Manager**: Advanced database operations and maintenance
+*   **Model Manager**: AI model lifecycle management
+*   **Notification Engine**: Multi-channel notification system
+*   **Analytics Engine**: Advanced performance analytics and reporting
 
 ## API Endpoints
 
-SHIOL+ v5.0 provides comprehensive API endpoints for all system functions:
+### Core Prediction Endpoints
+- `GET /api/v1/predict/smart` - Smart AI predictions
+- `GET /api/v1/predict-deterministic` - Deterministic predictions
+- `GET /api/v1/prediction-history` - Historical predictions
+- `GET /api/v1/prediction-history-grouped` - Grouped prediction analytics
 
-### Pipeline Control
-- `GET /api/v1/pipeline/status` - Get current pipeline status and health
-- `POST /api/v1/pipeline/trigger` - Manually trigger pipeline execution
-- `GET /api/v1/pipeline/logs` - Retrieve pipeline logs with filtering
+### v6.0 Configuration Endpoints
+- `GET /api/v1/system/stats` - Real-time system statistics
+- `GET /api/v1/database/stats` - Database health and statistics
+- `POST /api/v1/database/cleanup` - Database maintenance operations
+- `POST /api/v1/database/backup` - Create database backups
+- `GET /api/v1/config/load` - Load system configuration
+- `POST /api/v1/config/save` - Save system configuration
+- `GET /api/v1/analytics/performance` - Performance analytics
+- `POST /api/v1/pipeline/test` - Test pipeline execution
+- `POST /api/v1/model/retrain` - Trigger model retraining
+- `GET /api/v1/logs` - System logs and debugging
+
+### Pipeline Control Endpoints
+- `GET /api/v1/pipeline/status` - Pipeline execution status
+- `POST /api/v1/pipeline/trigger` - Manual pipeline execution
 - `GET /api/v1/pipeline/health` - System health check
 
-### Predictions
-- `GET /api/v1/predict` - Generate single prediction (traditional or deterministic)
-- `GET /api/v1/predict-deterministic` - Generate deterministic prediction with scoring
-- `GET /api/v1/predict-detailed` - Get prediction with detailed component analysis
-- `GET /api/v1/compare-methods` - Compare traditional vs deterministic methods
-- `GET /api/v1/prediction-history` - View recent prediction history
+## Configuration Management
 
-### Adaptive System
-- `GET /api/v1/adaptive/analysis` - Get adaptive performance analysis
-- `GET /api/v1/adaptive/weights` - View current adaptive weights
-- `POST /api/v1/adaptive/optimize-weights` - Trigger weight optimization
-- `GET /api/v1/adaptive/performance` - Get detailed performance analytics
-- `POST /api/v1/adaptive/validate` - Run adaptive validation with learning
+### Configuration Profiles
+
+SHIOL+ v6.0 includes predefined configuration profiles for different use cases:
+
+#### Conservative Profile
+- **Predictions**: 50 per execution
+- **Method**: Deterministic scoring
+- **Focus**: Higher accuracy, lower risk
+- **Weights**: Probability (50%), Historical (30%), Diversity (10%), Risk (10%)
+
+#### Aggressive Profile  
+- **Predictions**: 500 per execution
+- **Method**: Ensemble method
+- **Focus**: Maximum coverage, diverse strategies
+- **Weights**: Diversity (35%), Probability (30%), Historical (20%), Risk (15%)
+
+#### Balanced Profile
+- **Predictions**: 100 per execution  
+- **Method**: Smart AI Pipeline
+- **Focus**: Optimal balance of all factors
+- **Weights**: Probability (40%), Diversity (25%), Historical (20%), Risk (15%)
+
+### Configuration File Structure
+
+The system uses an enhanced `config/config.ini` file:
+
+```ini
+[pipeline]
+execution_days = 0,2,5  # Monday, Wednesday, Saturday
+execution_time = 02:00
+timezone = America/New_York
+auto_execution_enabled = true
+
+[predictions]
+default_count = 100
+default_method = smart_ai
+
+[scoring]
+probability_weight = 40
+diversity_weight = 25
+historical_weight = 20
+risk_weight = 15
+
+[notifications]
+admin_email = admin@shiolplus.com
+email_results = true
+email_errors = true
+browser_notifications = true
+
+[security]
+session_timeout = 60
+require_2fa = false
+```
+
+## Database Management
+
+### Enhanced Database Features
+- **Automated Cleanup**: Selective data cleanup with confirmation dialogs
+- **Backup System**: Automated and manual backup creation
+- **Health Monitoring**: Real-time database health and performance metrics
+- **Migration Support**: Automatic schema updates and data migration
+- **Analytics Integration**: Built-in analytics for performance tracking
+
+### Database Tables
+- `draws` - Historical lottery data
+- `predictions_log` - All generated predictions with metadata
+- `validation_results` - Prediction validation results
+- `adaptive_weights` - Dynamic scoring weights
+- `adaptive_performance` - Performance tracking data
+- `system_logs` - System events and audit trail
+- `user_sessions` - Authentication and session management
+
+## Performance Analytics
+
+### Key Metrics
+- **Win Rate**: Percentage of predictions with prizes
+- **Average Score**: Mean prediction quality score
+- **Method Performance**: Comparative analysis of prediction methods
+- **Trend Analysis**: Performance trends over time
+- **ROI Analysis**: Return on investment calculations
+
+### Monitoring Dashboards
+- **Real-time Monitoring**: Live system resource usage
+- **Pipeline Analytics**: Execution history and performance
+- **Database Analytics**: Storage optimization and query performance
+- **Model Analytics**: AI model accuracy and improvement tracking
+
+## Security & Access Control
+
+### Authentication System
+- **Secure Login**: Encrypted password authentication
+- **Session Management**: Configurable session timeouts
+- **Role-based Access**: Different access levels for different users
+- **Audit Logging**: Complete activity tracking and logging
+
+### Security Features  
+- **Password Encryption**: Bcrypt-based password hashing
+- **Session Security**: Secure session token management
+- **Access Control**: Protected endpoints and functionality
+- **Data Protection**: Encrypted sensitive data storage
+
+## System Requirements
+
+### Minimum Requirements
+- Python 3.10+
+- 4GB RAM (recommended: 8GB+)
+- 2GB free disk space
+- Modern web browser for dashboard access
+
+### Recommended Setup
+- Python 3.11+
+- 8GB+ RAM for optimal performance  
+- SSD storage for database operations
+- High-speed internet for data updates
+
+## Installation & Setup
+
+### Quick Installation
+
+```bash
+# Clone the repository
+git clone <REPOSITORY_URL>
+cd SHIOL-PLUS-V6
+
+# Install dependencies
+pip install -r requirements.txt
+pip install bcrypt==4.1.2 psutil==5.9.8
+
+# Initialize database
+python src/database.py
+
+# Configure system (edit config/config.ini)
+# Run initial pipeline
+python main.py
+
+# Start web server
+python main.py --server --host 0.0.0.0 --port 3000
+```
+
+### Production Deployment
+
+For production deployment on Replit:
+
+1. **Environment Setup**: Configure environment variables and secrets
+2. **Database Configuration**: Set up persistent database storage  
+3. **Security Configuration**: Change default credentials and enable security features
+4. **Monitoring Setup**: Configure notification endpoints and monitoring
+5. **Backup Configuration**: Set up automated backup schedules
 
 ## Usage Examples
 
-### Command Line Options
+### Command Line Interface
 
 ```bash
-# Run full pipeline (default)
+# Full pipeline execution
 python main.py
 
-# Run specific pipeline step
+# Specific pipeline steps
 python main.py --step data          # Data update only
-python main.py --step prediction    # Prediction generation only
-python main.py --step validation    # Historical validation only
+python main.py --step prediction    # Prediction generation only  
+python main.py --step validation    # Validation only
 
-# Check pipeline status
+# Start web server
+python main.py --server --host 0.0.0.0 --port 3000
+
+# Check system status
 python main.py --status
 
 # Get help
 python main.py --help
 ```
 
-### Available Pipeline Steps
-- `data` - Update database from lottery data source
-- `adaptive` - Run adaptive analysis on recent performance
-- `weights` - Optimize prediction weights based on performance
-- `prediction` - Generate new predictions using deterministic system
-- `validation` - Validate predictions against historical data
-- `performance` - Analyze system performance metrics
-- `reports` - Generate comprehensive execution reports
+### Dashboard Operations
 
-### Web Dashboard Features
+1. **Access Dashboard**: `http://localhost:3000/dashboard.html`
+2. **Configure Pipeline**: Set execution schedule and parameters
+3. **Manage Database**: Monitor health and perform maintenance
+4. **Monitor System**: View real-time resource usage and performance
+5. **Export Configuration**: Save current settings for backup or sharing
 
-1. **Pipeline Status Monitor**: Real-time view of pipeline execution status
-2. **Manual Trigger**: Start pipeline execution on-demand
-3. **Generated Plays**: View recent predictions with detailed scoring
-4. **System Health**: Monitor CPU, memory, and disk usage
-5. **Execution History**: Browse past pipeline runs and results
-6. **Log Viewer**: Search and filter system logs
+### API Integration
 
-## Scheduling & Automation
+```python
+import requests
 
-SHIOL+ v5.0 includes automatic weekly scheduling:
+# Get system status
+response = requests.get('http://localhost:3000/api/v1/system/stats')
+stats = response.json()
 
-- **Default Schedule**: Every Monday at 2:00 AM (configurable)
-- **Timezone Support**: Configurable timezone (default: America/New_York)
-- **Retry Logic**: Automatic retries with exponential backoff on failure
-- **Manual Override**: Force execution even when scheduled runs are active
+# Trigger pipeline
+response = requests.post('http://localhost:3000/api/v1/pipeline/trigger')
 
-Configure scheduling in `config/config.ini`:
-
-```ini
-[pipeline]
-weekly_execution_day = 0        # 0=Monday, 6=Sunday
-execution_time = 02:00          # HH:MM format
-timezone = America/New_York     # Timezone string
-auto_execution_enabled = true   # Enable/disable automatic execution
+# Get predictions
+response = requests.get('http://localhost:3000/api/v1/predict/smart?limit=10')
+predictions = response.json()
 ```
 
-## Prediction Validation
-
-The system includes comprehensive validation against historical lottery results:
-
-### Basic Validation
-- Compares all stored predictions against actual lottery draws
-- Calculates match rates for white balls and Powerball
-- Determines prize categories according to official Powerball rules
-- Generates detailed CSV reports with validation results
-
-### Adaptive Validation
-- Learns from validation results to improve future predictions
-- Adjusts scoring weights based on historical performance
-- Provides feedback to the adaptive learning system
-- Tracks performance trends over time
-
-### Validation Reports
-Results are automatically saved to:
-```
-data/validations/validation_results_TIMESTAMP.csv
-```
-
-## Configuration
-
-The `config/config.ini` file allows comprehensive system customization:
-
--   **`[paths]`**: Database, model, and log file locations
--   **`[model_params]`**: ML model hyperparameters
--   **`[pipeline]`**: Pipeline scheduling and execution settings
--   **`[temporal_analysis]`**: Temporal feature engineering parameters
--   **`[database]`**: Database connection and optimization settings
-
-## System Requirements
-
--   Python 3.10+
--   Dependencies listed in `requirements.txt`
--   Minimum 2GB RAM for optimal performance
--   1GB free disk space for data and logs
-
-## Installation
-
-1. **Clone the repository**:
-   ```bash
-   git clone <REPOSITORY_URL>
-   cd SHIOL-PLUS-V5
-   ```
-
-2. **Create virtual environment** (recommended):
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: .\venv\Scripts\activate
-   ```
-
-3. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the system**:
-   ```bash
-   python main.py
-   ```
-
-## Monitoring & Troubleshooting
-
-### Log Files
-- Main log: `logs/shiolplus.log`
-- Automatic rotation (10MB files, 30-day retention)
-- Configurable log levels (DEBUG, INFO, WARNING, ERROR)
-
-### Health Checks
-The system provides comprehensive health monitoring:
-- Database connectivity
-- Model availability
-- Configuration validation
-- System resources (CPU, memory, disk)
-- Pipeline orchestrator status
+## Troubleshooting
 
 ### Common Issues
-1. **Database locked**: Ensure no other instances are running
-2. **Model not found**: Run data update and training first
-3. **Permission errors**: Check file system permissions
-4. **Memory issues**: Increase available RAM or reduce batch sizes
 
-## Performance Metrics
+1. **Database Connection Issues**: Check database file permissions and path
+2. **Model Loading Errors**: Ensure model files exist and are not corrupted
+3. **Memory Issues**: Increase available RAM or reduce batch sizes
+4. **Permission Errors**: Check file system permissions for data directories
+5. **Web Interface Issues**: Clear browser cache and check console for errors
 
-The system tracks comprehensive performance metrics:
+### Debug Commands
 
-- **Prediction Accuracy**: Percentage of predictions with at least one match
-- **Win Rate**: Percentage of predictions that win prizes
-- **Score Distribution**: Analysis of prediction scoring patterns
-- **Execution Time**: Pipeline step and total execution timing
-- **Resource Usage**: CPU, memory, and disk utilization
+```bash
+# Check system health
+python main.py --status
 
-## Credits and Authorship
+# Validate configuration
+python -c "import configparser; c=configparser.ConfigParser(); c.read('config/config.ini'); print('Config OK')"
 
--   **Creator**: Orlando Batista
--   **Version**: 5.0 (Phase 5 - Automated Pipeline System)
--   **Last Updated**: 2025
+# Test database connection
+python -c "from src.database import get_db_connection; print('DB OK' if get_db_connection() else 'DB Error')"
+
+# Check logs
+tail -f logs/shiolplus.log
+```
+
+## Contributing
+
+We welcome contributions to SHIOL+ v6.0! Please follow our contribution guidelines:
+
+### Development Setup
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
+
+### Code Standards
+- Follow PEP 8 for Python code
+- Use meaningful variable and function names
+- Add comprehensive docstrings
+- Include unit tests for new features
+- Update documentation for changes
+
+## Version History
+
+- **v6.0 (Phase 6)**: Advanced Configuration Dashboard with enterprise features
+- **v5.0 (Phase 5)**: Automated pipeline system with web dashboard
+- **v4.0 (Phase 4)**: Adaptive feedback system with weight optimization
+- **v3.0 (Phase 3)**: Advanced analytics and performance tracking
+- **v2.0 (Phase 2)**: Deterministic prediction system with validation
+- **v1.0**: Basic ML prediction system with SQLite database
+
+## Credits
+
+- **Creator**: Orlando Batista
+- **Version**: 6.0 (Phase 6 - Advanced Configuration Dashboard)
+- **Last Updated**: 2025
 
 ## License
 
@@ -303,10 +442,6 @@ Private use – All rights reserved.
 
 ---
 
-## Version History
+**SHIOL+ v6.0** - Transforming lottery analysis with enterprise-grade AI and comprehensive system management.
 
-- **v5.0 (Phase 5)**: Automated pipeline system with web dashboard and comprehensive monitoring
-- **v4.0 (Phase 4)**: Adaptive feedback system with weight optimization
-- **v3.0 (Phase 3)**: Advanced analytics and performance tracking
-- **v2.0 (Phase 2)**: Deterministic prediction system with validation
-- **v1.0**: Basic ML prediction system with SQLite database
+For support, documentation, and updates, visit the project repository or contact the development team.

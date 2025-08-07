@@ -1,305 +1,1142 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SHIOL+ Dashboard - Admin Panel</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <meta name="description" content="SHIOL+ Admin Dashboard - Advanced ML-powered lottery prediction system management">
-    <!-- Removed auto-refresh disable and authentication check to restore original functionality -->
+    <title>SHIOL+ v6.0 - Configuration Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/auth.css">
+    <style>
+        .config-section {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #333;
+        }
+        .config-section h3 {
+            color: #00d4ff;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        .config-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            color: #ccc;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        .form-control {
+            width: 100%;
+            padding: 8px 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+        }
+        .form-control:focus {
+            outline: none;
+            border-color: #00d4ff;
+            box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.2);
+        }
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 212, 255, 0.3);
+        }
+        .btn-danger {
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+        }
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 68, 68, 0.3);
+        }
+        .btn-success {
+            background: linear-gradient(45deg, #44ff44, #00cc00);
+            color: white;
+        }
+        .btn-warning {
+            background: linear-gradient(45deg, #ffaa00, #cc8800);
+            color: white;
+        }
+        .status-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #00d4ff;
+            margin-bottom: 10px;
+        }
+        .status-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00d4ff;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 12px;
+            width: 80%;
+            max-width: 500px;
+            color: #fff;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #fff;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #00d4ff, #0099cc);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .profile-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .profile-btn {
+            padding: 8px 16px;
+            background: #2a2a2a;
+            border: 2px solid #444;
+            border-radius: 6px;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .profile-btn.active {
+            border-color: #00d4ff;
+            color: #00d4ff;
+            background: rgba(0, 212, 255, 0.1);
+        }
+        .system-monitor {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .monitor-card {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .monitor-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .monitor-label {
+            color: #999;
+            font-size: 0.9em;
+        }
+        .notification-settings {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background-color: #333;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .toggle-switch.active {
+            background-color: #00d4ff;
+        }
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(26px);
+        }
+        .log-viewer {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #ccc;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            white-space: nowrap;
+        }
+        .log-info { color: #00d4ff; }
+        .log-warning { color: #ffaa00; }
+        .log-error { color: #ff4444; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .stat-card {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00d4ff;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            color: #999;
+            font-size: 0.9em;
+        }
+        .config-profile {
+            display: none;
+        }
+        .config-profile.active {
+            display: block;
+        }
+    </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-800 flex flex-col min-h-screen font-sans" data-page="dashboard">
+<body>
+    <div class="container">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>SHIOL+ v6.0 Configuration Dashboard</h1>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Public Interface</a>
+                <a href="/dashboard.html" class="nav-link active">Dashboard</a>
+                <button class="btn btn-danger" onclick="logout()">Logout</button>
+            </div>
+        </nav>
 
-    <!-- Dashboard Header -->
-    <header class="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 mb-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-16">
-                <div class="flex items-center">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
-                        <span class="text-red-600">SHIOL+</span>
-                        <span class="text-sm font-normal text-gray-600 dark:text-gray-400 ml-2">Admin Dashboard</span>
-                    </h1>
+        <main class="main-content">
+            <!-- Configuration Profiles -->
+            <div class="config-section">
+                <h3>🎯 Configuration Profiles</h3>
+                <div class="profile-selector">
+                    <div class="profile-btn active" data-profile="custom">Custom</div>
+                    <div class="profile-btn" data-profile="conservative">Conservative</div>
+                    <div class="profile-btn" data-profile="aggressive">Aggressive</div>
+                    <div class="profile-btn" data-profile="balanced">Balanced</div>
                 </div>
-                <div class="flex items-center space-x-4">
-                    <span id="user-info" class="text-sm text-gray-600 dark:text-gray-400">
-                        <i class="fas fa-user mr-1"></i>
-                        <span id="username-display">Loading...</span>
-                    </span>
-                    <a href="/" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-sm font-medium">
-                        <i class="fas fa-external-link-alt mr-1"></i>
-                        Public Site
-                    </a>
-                    <button id="logout-btn" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                        <i class="fas fa-sign-out-alt mr-1"></i>
-                        Logout
-                    </button>
+                <p style="color: #999; font-size: 0.9em;">Select a predefined configuration profile or create your custom settings below.</p>
+            </div>
+
+            <!-- Pipeline Configuration -->
+            <div class="config-grid">
+                <div class="config-section">
+                    <h3>🚀 Pipeline Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label>Execution Days</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day-monday" checked>
+                                <label for="day-monday">Monday</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day-wednesday" checked>
+                                <label for="day-wednesday">Wednesday</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day-saturday" checked>
+                                <label for="day-saturday">Saturday</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="execution-time">Execution Time</label>
+                        <input type="time" id="execution-time" class="form-control" value="02:00">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timezone">Timezone</label>
+                        <select id="timezone" class="form-control">
+                            <option value="America/New_York">Eastern Time (US & Canada)</option>
+                            <option value="America/Chicago">Central Time (US & Canada)</option>
+                            <option value="America/Denver">Mountain Time (US & Canada)</option>
+                            <option value="America/Los_Angeles">Pacific Time (US & Canada)</option>
+                            <option value="UTC">UTC</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="notification-settings">
+                            <label>Auto Execution Enabled</label>
+                            <div class="toggle-switch active" id="auto-execution-toggle">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>🎲 Prediction Settings</h3>
+                    
+                    <div class="form-group">
+                        <label for="prediction-count">Number of Predictions</label>
+                        <input type="range" id="prediction-count" class="form-control" min="10" max="1000" value="100" oninput="updatePredictionCount(this.value)">
+                        <div style="text-align: center; color: #00d4ff; font-weight: bold; margin-top: 5px;">
+                            <span id="prediction-count-display">100</span> predictions
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prediction-method">Prediction Method</label>
+                        <select id="prediction-method" class="form-control">
+                            <option value="smart_ai">Smart AI Pipeline (Default)</option>
+                            <option value="deterministic">Deterministic Scoring</option>
+                            <option value="ensemble">Ensemble Method</option>
+                            <option value="hybrid">Adaptive Hybrid</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Scoring Weights</label>
+                        <div style="margin-top: 10px;">
+                            <label for="weight-probability">Probability (40%)</label>
+                            <input type="range" id="weight-probability" class="form-control" min="0" max="100" value="40">
+                            
+                            <label for="weight-diversity">Diversity (25%)</label>
+                            <input type="range" id="weight-diversity" class="form-control" min="0" max="100" value="25">
+                            
+                            <label for="weight-historical">Historical (20%)</label>
+                            <input type="range" id="weight-historical" class="form-control" min="0" max="100" value="20">
+                            
+                            <label for="weight-risk">Risk-Adjusted (15%)</label>
+                            <input type="range" id="weight-risk" class="form-control" min="0" max="100" value="15">
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
 
-    <!-- Main Dashboard Content -->
-    <main class="flex-1 flex items-center justify-center px-4">
-
-    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-4xl w-full">
-
-        <header class="mb-6 text-center">
-            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">SHIOL+ Number Generator</h1>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">Advanced ML-powered lottery prediction system</p>
-        </header>
-
-        <main>
-            <!-- Pipeline Dashboard Section -->
-            <div class="mb-8 p-6 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-900 rounded-xl border border-indigo-200 dark:border-indigo-700">
-                <div class="flex items-center justify-between mb-6">
-                    <h2 class="text-2xl font-bold text-indigo-800 dark:text-indigo-200">
-                        <i class="fas fa-cogs mr-2"></i>
-                        Pipeline Dashboard
-                    </h2>
-                    <div class="flex items-center space-x-3">
-                        <div id="auto-refresh-toggle" class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600 dark:text-gray-400">Auto-refresh</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="auto-refresh-checkbox" class="sr-only peer" checked>
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                            </label>
+            <!-- Database & System Management -->
+            <div class="config-grid">
+                <div class="config-section">
+                    <h3>🗄️ Database Management</h3>
+                    
+                    <div class="stats-grid" style="margin-bottom: 20px;">
+                        <div class="stat-card">
+                            <div class="stat-number" id="db-records">-</div>
+                            <div class="stat-label">Total Records</div>
                         </div>
-                        <button id="refresh-pipeline-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                            <i class="fas fa-sync-alt mr-1"></i>
-                            Refresh
+                        <div class="stat-card">
+                            <div class="stat-number" id="db-size">-</div>
+                            <div class="stat-label">Database Size</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="db-predictions">-</div>
+                            <div class="stat-label">Predictions Stored</div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="refreshDatabaseStats()">
+                            🔄 Refresh Stats
+                        </button>
+                        <button class="btn btn-warning" onclick="backupDatabase()">
+                            💾 Create Backup
                         </button>
                     </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-danger" onclick="showCleanupModal()">
+                            🧹 Clean Database
+                        </button>
+                        <small style="color: #999; display: block; margin-top: 5px;">
+                            Warning: This will permanently delete selected data
+                        </small>
+                    </div>
                 </div>
 
-                <!-- Pipeline Status Cards -->
-                <div class="grid md:grid-cols-3 gap-4 mb-6">
-                    <!-- Current Status Card -->
-                    <div class="pipeline-status-card bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Current Status</h3>
-                            <div id="pipeline-status-indicator" class="w-3 h-3 rounded-full bg-gray-400 animate-pulse"></div>
+                <div class="config-section">
+                    <h3>🤖 Model Management</h3>
+                    
+                    <div class="status-card" style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: bold;">Current Model</div>
+                                <div id="model-version">SHIOL+ v1.0.0</div>
+                                <div style="color: #999; font-size: 0.9em;" id="model-accuracy">Accuracy: 87.3%</div>
+                            </div>
+                            <div class="status-value" id="model-status">Ready</div>
                         </div>
-                        <div id="pipeline-status-text" class="text-lg font-bold text-gray-800 dark:text-white">Loading...</div>
-                        <div id="pipeline-status-description" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Checking pipeline status...</div>
                     </div>
 
-                    <!-- Next Execution Card -->
-                    <div class="pipeline-status-card bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Next Execution</h3>
-                            <i class="fas fa-clock text-blue-500"></i>
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="retrainModel()">
+                            🔄 Retrain Models
+                        </button>
+                        <button class="btn btn-warning" onclick="backupModels()">
+                            💾 Backup Models
+                        </button>
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-danger" onclick="resetModels()">
+                            🔄 Reset AI Models
+                        </button>
+                        <small style="color: #999; display: block; margin-top: 5px;">
+                            Forces complete model retraining from scratch
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Monitoring -->
+            <div class="config-section">
+                <h3>📊 System Monitoring</h3>
+                <div class="system-monitor">
+                    <div class="monitor-card">
+                        <div class="monitor-label">CPU Usage</div>
+                        <div class="monitor-value" style="color: #44ff44;" id="cpu-usage">--%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="cpu-progress"></div>
                         </div>
-                        <div id="next-execution-time" class="text-lg font-bold text-gray-800 dark:text-white">--:--</div>
-                        <div id="next-execution-countdown" class="text-xs text-gray-500 dark:text-gray-400 mt-1">--</div>
                     </div>
-
-                    <!-- System Health Card -->
-                    <div class="pipeline-status-card bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">System Health</h3>
-                            <div id="system-health-indicator" class="w-3 h-3 rounded-full bg-gray-400"></div>
+                    <div class="monitor-card">
+                        <div class="monitor-label">Memory Usage</div>
+                        <div class="monitor-value" style="color: #ffaa00;" id="memory-usage">--%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="memory-progress"></div>
                         </div>
-                        <div id="system-health-text" class="text-lg font-bold text-gray-800 dark:text-white">Checking...</div>
-                        <div id="system-health-details" class="text-xs text-gray-500 dark:text-gray-400 mt-1">Evaluating system status...</div>
                     </div>
-                </div>
-
-                <!-- Pipeline Actions -->
-                <div class="flex flex-col sm:flex-row gap-3 mb-6">
-                    <button id="trigger-pipeline-btn" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        <i class="fas fa-play mr-2"></i>
-                        Trigger Pipeline
-                    </button>
-                    <button id="view-logs-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition">
-                        <i class="fas fa-file-alt mr-2"></i>
-                        View Logs
-                    </button>
-                </div>
-
-                <!-- Execution History Table -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Recent Executions</h3>
+                    <div class="monitor-card">
+                        <div class="monitor-label">Disk Usage</div>
+                        <div class="monitor-value" style="color: #00d4ff;" id="disk-usage">--%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="disk-progress"></div>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full">
-                            <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Timestamp</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Duration</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plays Generated</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="execution-history-tbody" class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                <tr>
-                                    <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i>
-                                        Loading execution history...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Last Generated Plays Showcase -->
-                <div id="last-generated-plays" class="mt-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 hidden">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
-                            <i class="fas fa-star mr-2 text-yellow-500"></i>
-                            Last Generated Plays
-                        </h3>
-                        <span id="last-plays-timestamp" class="text-sm text-gray-500 dark:text-gray-400"></span>
-                    </div>
-                    <div id="last-plays-container" class="space-y-3">
-                        <!-- Generated plays will be displayed here -->
+                    <div class="monitor-card">
+                        <div class="monitor-label">Pipeline Status</div>
+                        <div class="monitor-value" style="color: #44ff44;" id="pipeline-status">Ready</div>
+                        <div style="font-size: 0.8em; color: #999;" id="last-execution">Last: Never</div>
                     </div>
                 </div>
             </div>
 
-
-            <!-- Results Area -->
-            <div id="result-area" class="my-8 min-h-[120px] flex flex-col items-center justify-center">
-                <!-- Generated numbers will be injected here -->
-            </div>
-
-            <!-- Score Details (Hidden by default) -->
-            <div id="score-details" class="hidden">
-                <!-- Detailed scoring information will be injected here -->
-            </div>
-
-            <!-- Traceability Information (Hidden by default) -->
-            <div id="traceability-info" class="hidden">
-                <!-- Traceability information will be injected here -->
-            </div>
-
-            <!-- Syndicate Predictions Section -->
-            <div class="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 rounded-xl border border-green-200 dark:border-green-700">
-                <div class="flex items-center justify-between mb-6">
+            <!-- Notification Settings -->
+            <div class="config-section">
+                <h3>🔔 Notification Settings</h3>
+                <div class="config-grid">
                     <div>
-                        <h2 class="text-2xl font-bold text-green-800 dark:text-green-200">
-                            <i class="fas fa-brain mr-2"></i>
-                            Smart AI - Best Predictions
-                        </h2>
-                        <p class="text-sm text-green-700 dark:text-green-300 mt-1">
-                            AI-optimized predictions combining all methods, ranked by advanced scoring
-                        </p>
-                    </div>
-                    <div class="flex items-center space-x-3">
-                        <input type="number" id="syndicate-plays" value="100" min="10" max="500" class="w-20 px-3 py-2 border border-green-300 dark:border-green-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
-                        <button id="generate-syndicate-btn" class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition">
-                            <i class="fas fa-brain mr-2"></i>
-                            Generate AI Predictions
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Syndicate Results -->
-                <div id="syndicate-results" class="hidden">
-                    <!-- Results will be populated by displaySmartAIResults function -->
-                </div>
-
-                <!-- Loading State -->
-                <div id="syndicate-loading" class="hidden text-center py-12">
-                    <i class="fas fa-spinner fa-spin text-green-500 text-3xl mb-4"></i>
-                    <p class="text-gray-600 dark:text-gray-400">Generating AI predictions...</p>
-                    <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">This may take a few moments for large sets</p>
-                </div>
-            </div>
-
-            <!-- Method Information Panel -->
-            <div class="mt-8 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
-                <h3 class="text-lg font-semibold mb-3 text-blue-800 dark:text-blue-200">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    About the Methods
-                </h3>
-
-                <div class="grid md:grid-cols-3 gap-4 text-sm">
-                    <div class="method-info">
-                        <h4 class="font-semibold text-green-700 dark:text-green-300 mb-2">Traditional Method</h4>
-                        <ul class="text-green-600 dark:text-green-400 space-y-1 text-xs">
-                            <li>• Fast random sampling</li>
-                            <li>• Based on ML probabilities</li>
-                            <li>• Different results each time</li>
-                            <li>• Supports multiple plays</li>
-                        </ul>
-                    </div>
-
-                    <div class="method-info">
-                        <h4 class="font-semibold text-blue-700 dark:text-blue-300 mb-2">Deterministic Method</h4>
-                        <ul class="text-blue-600 dark:text-blue-400 space-y-1 text-xs">
-                            <li>• Multi-criteria scoring system</li>
-                            <li>• Reproducible results</li>
-                            <li>• Detailed analysis & traceability</li>
-                            <li>• Considers probability, diversity, history & risk</li>
-                        </ul>
-                    </div>
-
-                    <div class="method-info">
-                        <h4 class="font-semibold text-purple-700 dark:text-purple-300 mb-2">Syndicate Method</h4>
-                        <ul class="text-purple-600 dark:text-purple-400 space-y-1 text-xs">
-                            <li>• Optimized for group play</li>
-                            <li>• Tiered scoring system</li>
-                            <li>• Coverage analysis</li>
-                            <li>• Export capabilities</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Pipeline Trigger Confirmation Dialog -->
-            <div id="pipeline-trigger-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl">
-                    <div class="flex items-center mb-4">
-                        <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                        <h4 style="color: #ccc; margin-bottom: 15px;">Email Notifications</h4>
+                        <div class="notification-settings">
+                            <label>Pipeline Execution Results</label>
+                            <div class="toggle-switch active" data-setting="email-results">
+                                <div class="toggle-slider"></div>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Trigger Pipeline</h3>
-                            <p class="text-sm text-gray-600 dark:text-gray-400">Are you sure you want to manually trigger the pipeline?</p>
+                        <div class="notification-settings">
+                            <label>System Errors & Warnings</label>
+                            <div class="toggle-switch active" data-setting="email-errors">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="notification-settings">
+                            <label>Winning Predictions Alert</label>
+                            <div class="toggle-switch" data-setting="email-wins">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="notification-email">Email Address</label>
+                            <input type="email" id="notification-email" class="form-control" placeholder="admin@shiolplus.com">
                         </div>
                     </div>
-                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
-                        <p class="text-sm text-gray-700 dark:text-gray-300">
-                            This will start a new pipeline execution that will generate new lottery predictions and update the system data.
-                        </p>
-                    </div>
-                    <div class="flex justify-end space-x-3">
-                        <button id="cancel-trigger-btn" class="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition">
-                            Cancel
-                        </button>
-                        <button id="confirm-trigger-btn" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition">
-                            <i class="fas fa-play mr-2"></i>
-                            Trigger Pipeline
-                        </button>
+                    <div>
+                        <h4 style="color: #ccc; margin-bottom: 15px;">Browser Notifications</h4>
+                        <div class="notification-settings">
+                            <label>Critical Events</label>
+                            <div class="toggle-switch" data-setting="browser-critical">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="notification-settings">
+                            <label>Pipeline Completion</label>
+                            <div class="toggle-switch" data-setting="browser-pipeline">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="session-timeout">Session Timeout (minutes)</label>
+                            <input type="number" id="session-timeout" class="form-control" value="60" min="10" max="480">
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Toast Notification -->
-            <div id="toast-notification" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50">
-                <i class="fas fa-check mr-2"></i>
-                Numbers copied to clipboard!
+            <!-- Performance Analytics -->
+            <div class="config-section">
+                <h3>📈 Performance Analytics</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="win-rate">--%</div>
+                        <div class="stat-label">Overall Win Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avg-score">--</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="best-method">--</div>
+                        <div class="stat-label">Best Method</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-predictions">--</div>
+                        <div class="stat-label">Total Predictions</div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Pipeline Notification -->
-            <div id="pipeline-notification" class="fixed bottom-5 left-5 py-3 px-4 rounded-lg shadow-xl opacity-0 transition-opacity duration-300 z-50">
-                <div class="flex items-center">
-                    <i id="pipeline-notification-icon" class="mr-2"></i>
-                    <span id="pipeline-notification-text"></span>
+            <!-- Configuration Controls -->
+            <div class="config-section">
+                <h3>⚙️ Configuration Management</h3>
+                <div class="form-group">
+                    <button class="btn btn-success" onclick="saveConfiguration()">
+                        💾 Save Configuration
+                    </button>
+                    <button class="btn btn-primary" onclick="exportConfiguration()">
+                        📤 Export Settings
+                    </button>
+                    <button class="btn btn-warning" onclick="importConfiguration()">
+                        📥 Import Settings
+                    </button>
+                    <button class="btn btn-primary" onclick="testPipeline()">
+                        🧪 Test Pipeline
+                    </button>
+                </div>
+                <input type="file" id="config-import" accept=".json" style="display: none;" onchange="handleConfigImport(event)">
+            </div>
+
+            <!-- System Logs -->
+            <div class="config-section">
+                <h3>📋 System Logs</h3>
+                <div class="form-group">
+                    <input type="text" id="log-filter" class="form-control" placeholder="Filter logs..." oninput="filterLogs(this.value)">
+                </div>
+                <div class="log-viewer" id="log-viewer">
+                    <div class="log-entry log-info">[INFO] System initialized successfully</div>
+                    <div class="log-entry log-info">[INFO] Database connection established</div>
+                    <div class="log-entry log-info">[INFO] Configuration dashboard loaded</div>
+                </div>
+                <div class="form-group" style="margin-top: 10px;">
+                    <button class="btn btn-primary" onclick="refreshLogs()">🔄 Refresh</button>
+                    <button class="btn btn-warning" onclick="downloadLogs()">📥 Download</button>
+                    <button class="btn btn-danger" onclick="clearLogs()">🧹 Clear</button>
+                </div>
+            </div>
+
+            <!-- Pipeline Controls -->
+            <div class="config-section">
+                <h3>🎮 Pipeline Controls</h3>
+                <div class="pipeline-controls" style="text-align: center;">
+                    <button class="btn btn-success" onclick="triggerPipeline()" id="trigger-btn">
+                        ▶️ Execute Pipeline
+                    </button>
+                    <button class="btn btn-danger" onclick="stopPipeline()" id="stop-btn" style="display: none;">
+                        ⏹️ Stop Pipeline
+                    </button>
+                    <div class="progress-bar" id="pipeline-progress" style="margin: 20px 0; display: none;">
+                        <div class="progress-fill"></div>
+                    </div>
+                    <div id="pipeline-status-text" style="margin-top: 10px; color: #999;">
+                        Pipeline ready to execute
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <script src="js/powerball-utils.js"></script>
-    <script src="js/auth.js"></script>
-    <script src="js/app.js"></script>
-    <!-- Authentication and dashboard initialization handled by auth.js -->
-    </main>
+    <!-- Cleanup Modal -->
+    <div id="cleanup-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCleanupModal()">&times;</span>
+            <h2 style="color: #ff4444;">⚠️ Database Cleanup</h2>
+            <p>Select what you want to clean from the database:</p>
+            
+            <div class="form-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="clean-predictions">
+                    <label for="clean-predictions">Delete All Predictions</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="clean-validations">
+                    <label for="clean-validations">Delete Validation History</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="clean-logs">
+                    <label for="clean-logs">Clear System Logs</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="clean-models">
+                    <label for="clean-models">Reset AI Models</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="clean-all">
+                    <label for="clean-all" style="color: #ff4444; font-weight: bold;">Complete System Reset</label>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-danger" onclick="executeCleanup()">
+                    🧹 Execute Cleanup
+                </button>
+                <button class="btn btn-primary" onclick="closeCleanupModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/app.js"></script>
+    <script>
+        let systemInterval;
+        let currentConfig = {};
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeDashboard();
+            startSystemMonitoring();
+            loadConfiguration();
+            initializeProfiles();
+            initializeToggles();
+        });
+
+        function initializeDashboard() {
+            console.log('SHIOL+ v6.0 Configuration Dashboard initialized');
+            refreshDatabaseStats();
+            refreshLogs();
+            loadPerformanceAnalytics();
+        }
+
+        function initializeProfiles() {
+            const profiles = document.querySelectorAll('.profile-btn');
+            profiles.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    profiles.forEach(p => p.classList.remove('active'));
+                    this.classList.add('active');
+                    loadConfigProfile(this.dataset.profile);
+                });
+            });
+        }
+
+        function initializeToggles() {
+            const toggles = document.querySelectorAll('.toggle-switch');
+            toggles.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    this.classList.toggle('active');
+                });
+            });
+        }
+
+        function loadConfigProfile(profile) {
+            const profiles = {
+                conservative: {
+                    'prediction-count': 50,
+                    'prediction-method': 'deterministic',
+                    'weight-probability': 50,
+                    'weight-diversity': 20,
+                    'weight-historical': 20,
+                    'weight-risk': 10
+                },
+                aggressive: {
+                    'prediction-count': 500,
+                    'prediction-method': 'ensemble',
+                    'weight-probability': 30,
+                    'weight-diversity': 35,
+                    'weight-historical': 20,
+                    'weight-risk': 15
+                },
+                balanced: {
+                    'prediction-count': 100,
+                    'prediction-method': 'smart_ai',
+                    'weight-probability': 40,
+                    'weight-diversity': 25,
+                    'weight-historical': 20,
+                    'weight-risk': 15
+                }
+            };
+
+            if (profiles[profile]) {
+                Object.entries(profiles[profile]).forEach(([key, value]) => {
+                    const element = document.getElementById(key);
+                    if (element) {
+                        element.value = value;
+                        if (key === 'prediction-count') {
+                            updatePredictionCount(value);
+                        }
+                    }
+                });
+                showNotification(`${profile.charAt(0).toUpperCase() + profile.slice(1)} profile loaded`, 'success');
+            }
+        }
+
+        function updatePredictionCount(value) {
+            document.getElementById('prediction-count-display').textContent = value;
+        }
+
+        function startSystemMonitoring() {
+            systemInterval = setInterval(updateSystemMonitoring, 5000);
+            updateSystemMonitoring();
+        }
+
+        async function updateSystemMonitoring() {
+            try {
+                const response = await fetch('/api/v1/system/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    
+                    document.getElementById('cpu-usage').textContent = `${stats.cpu_usage}%`;
+                    document.getElementById('cpu-progress').style.width = `${stats.cpu_usage}%`;
+                    
+                    document.getElementById('memory-usage').textContent = `${stats.memory_usage}%`;
+                    document.getElementById('memory-progress').style.width = `${stats.memory_usage}%`;
+                    
+                    document.getElementById('disk-usage').textContent = `${stats.disk_usage}%`;
+                    document.getElementById('disk-progress').style.width = `${stats.disk_usage}%`;
+                    
+                    document.getElementById('pipeline-status').textContent = stats.pipeline_status;
+                    document.getElementById('last-execution').textContent = `Last: ${stats.last_execution}`;
+                }
+            } catch (error) {
+                console.error('Error updating system monitoring:', error);
+            }
+        }
+
+        async function refreshDatabaseStats() {
+            try {
+                const response = await fetch('/api/v1/database/stats');
+                if (response.ok) {
+                    const stats = await response.json();
+                    document.getElementById('db-records').textContent = stats.total_records || '-';
+                    document.getElementById('db-size').textContent = stats.size_mb ? `${stats.size_mb}MB` : '-';
+                    document.getElementById('db-predictions').textContent = stats.predictions_count || '-';
+                }
+            } catch (error) {
+                console.error('Error refreshing database stats:', error);
+            }
+        }
+
+        async function loadPerformanceAnalytics() {
+            try {
+                const response = await fetch('/api/v1/analytics/performance');
+                if (response.ok) {
+                    const analytics = await response.json();
+                    document.getElementById('win-rate').textContent = `${analytics.win_rate}%`;
+                    document.getElementById('avg-score').textContent = analytics.avg_score.toFixed(3);
+                    document.getElementById('best-method').textContent = analytics.best_method;
+                    document.getElementById('total-predictions').textContent = analytics.total_predictions;
+                }
+            } catch (error) {
+                console.error('Error loading performance analytics:', error);
+            }
+        }
+
+        async function saveConfiguration() {
+            try {
+                const config = collectConfiguration();
+                const response = await fetch('/api/v1/config/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+                
+                if (response.ok) {
+                    showNotification('Configuration saved successfully', 'success');
+                } else {
+                    throw new Error('Failed to save configuration');
+                }
+            } catch (error) {
+                showNotification('Error saving configuration: ' + error.message, 'error');
+            }
+        }
+
+        function collectConfiguration() {
+            return {
+                pipeline: {
+                    execution_days: {
+                        monday: document.getElementById('day-monday').checked,
+                        wednesday: document.getElementById('day-wednesday').checked,
+                        saturday: document.getElementById('day-saturday').checked
+                    },
+                    execution_time: document.getElementById('execution-time').value,
+                    timezone: document.getElementById('timezone').value,
+                    auto_execution: document.getElementById('auto-execution-toggle').classList.contains('active')
+                },
+                predictions: {
+                    count: parseInt(document.getElementById('prediction-count').value),
+                    method: document.getElementById('prediction-method').value,
+                    weights: {
+                        probability: parseInt(document.getElementById('weight-probability').value),
+                        diversity: parseInt(document.getElementById('weight-diversity').value),
+                        historical: parseInt(document.getElementById('weight-historical').value),
+                        risk: parseInt(document.getElementById('weight-risk').value)
+                    }
+                },
+                notifications: {
+                    email: document.getElementById('notification-email').value,
+                    session_timeout: parseInt(document.getElementById('session-timeout').value)
+                }
+            };
+        }
+
+        async function loadConfiguration() {
+            try {
+                const response = await fetch('/api/v1/config/load');
+                if (response.ok) {
+                    const config = await response.json();
+                    applyConfiguration(config);
+                }
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+            }
+        }
+
+        function applyConfiguration(config) {
+            if (config.pipeline) {
+                if (config.pipeline.execution_days) {
+                    document.getElementById('day-monday').checked = config.pipeline.execution_days.monday;
+                    document.getElementById('day-wednesday').checked = config.pipeline.execution_days.wednesday;
+                    document.getElementById('day-saturday').checked = config.pipeline.execution_days.saturday;
+                }
+                if (config.pipeline.execution_time) {
+                    document.getElementById('execution-time').value = config.pipeline.execution_time;
+                }
+                if (config.pipeline.timezone) {
+                    document.getElementById('timezone').value = config.pipeline.timezone;
+                }
+            }
+            
+            if (config.predictions) {
+                if (config.predictions.count) {
+                    document.getElementById('prediction-count').value = config.predictions.count;
+                    updatePredictionCount(config.predictions.count);
+                }
+                if (config.predictions.method) {
+                    document.getElementById('prediction-method').value = config.predictions.method;
+                }
+            }
+        }
+
+        function showCleanupModal() {
+            document.getElementById('cleanup-modal').style.display = 'block';
+        }
+
+        function closeCleanupModal() {
+            document.getElementById('cleanup-modal').style.display = 'none';
+        }
+
+        async function executeCleanup() {
+            const cleanupOptions = {
+                predictions: document.getElementById('clean-predictions').checked,
+                validations: document.getElementById('clean-validations').checked,
+                logs: document.getElementById('clean-logs').checked,
+                models: document.getElementById('clean-models').checked,
+                complete_reset: document.getElementById('clean-all').checked
+            };
+
+            try {
+                const response = await fetch('/api/v1/database/cleanup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cleanupOptions)
+                });
+
+                if (response.ok) {
+                    showNotification('Database cleanup completed successfully', 'success');
+                    closeCleanupModal();
+                    refreshDatabaseStats();
+                } else {
+                    throw new Error('Cleanup failed');
+                }
+            } catch (error) {
+                showNotification('Error during cleanup: ' + error.message, 'error');
+            }
+        }
+
+        async function triggerPipeline() {
+            try {
+                const response = await fetch('/api/v1/pipeline/trigger', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('Pipeline execution started', 'success');
+                    document.getElementById('trigger-btn').style.display = 'none';
+                    document.getElementById('stop-btn').style.display = 'inline-block';
+                    document.getElementById('pipeline-progress').style.display = 'block';
+                    startPipelineMonitoring();
+                } else {
+                    throw new Error('Failed to trigger pipeline');
+                }
+            } catch (error) {
+                showNotification('Error triggering pipeline: ' + error.message, 'error');
+            }
+        }
+
+        function startPipelineMonitoring() {
+            const progressBar = document.getElementById('pipeline-progress').querySelector('.progress-fill');
+            const statusText = document.getElementById('pipeline-status-text');
+            
+            let progress = 0;
+            const interval = setInterval(async () => {
+                try {
+                    const response = await fetch('/api/v1/pipeline/status');
+                    const status = await response.json();
+                    
+                    if (status.running) {
+                        progress = Math.min(progress + 10, 90);
+                        progressBar.style.width = `${progress}%`;
+                        statusText.textContent = `Pipeline running: ${status.current_step || 'Processing...'}`;
+                    } else {
+                        clearInterval(interval);
+                        progressBar.style.width = '100%';
+                        statusText.textContent = 'Pipeline completed';
+                        
+                        setTimeout(() => {
+                            document.getElementById('trigger-btn').style.display = 'inline-block';
+                            document.getElementById('stop-btn').style.display = 'none';
+                            document.getElementById('pipeline-progress').style.display = 'none';
+                            statusText.textContent = 'Pipeline ready to execute';
+                        }, 2000);
+                    }
+                } catch (error) {
+                    clearInterval(interval);
+                    showNotification('Error monitoring pipeline', 'error');
+                }
+            }, 1000);
+        }
+
+        async function refreshLogs() {
+            try {
+                const response = await fetch('/api/v1/logs');
+                if (response.ok) {
+                    const logs = await response.json();
+                    const logViewer = document.getElementById('log-viewer');
+                    logViewer.innerHTML = logs.map(log => 
+                        `<div class="log-entry log-${log.level}">[${log.level.toUpperCase()}] ${log.message}</div>`
+                    ).join('');
+                    logViewer.scrollTop = logViewer.scrollHeight;
+                }
+            } catch (error) {
+                console.error('Error refreshing logs:', error);
+            }
+        }
+
+        function filterLogs(filter) {
+            const entries = document.querySelectorAll('.log-entry');
+            entries.forEach(entry => {
+                if (entry.textContent.toLowerCase().includes(filter.toLowerCase()) || filter === '') {
+                    entry.style.display = 'block';
+                } else {
+                    entry.style.display = 'none';
+                }
+            });
+        }
+
+        function exportConfiguration() {
+            const config = collectConfiguration();
+            const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `shiolplus-config-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('Configuration exported successfully', 'success');
+        }
+
+        function importConfiguration() {
+            document.getElementById('config-import').click();
+        }
+
+        function handleConfigImport(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const config = JSON.parse(e.target.result);
+                        applyConfiguration(config);
+                        showNotification('Configuration imported successfully', 'success');
+                    } catch (error) {
+                        showNotification('Error importing configuration: Invalid JSON', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        async function testPipeline() {
+            try {
+                const response = await fetch('/api/v1/pipeline/test', { method: 'POST' });
+                if (response.ok) {
+                    const result = await response.json();
+                    showNotification(`Pipeline test completed: ${result.message}`, 'success');
+                } else {
+                    throw new Error('Pipeline test failed');
+                }
+            } catch (error) {
+                showNotification('Error testing pipeline: ' + error.message, 'error');
+            }
+        }
+
+        async function backupDatabase() {
+            try {
+                const response = await fetch('/api/v1/database/backup', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('Database backup created successfully', 'success');
+                } else {
+                    throw new Error('Backup failed');
+                }
+            } catch (error) {
+                showNotification('Error creating backup: ' + error.message, 'error');
+            }
+        }
+
+        async function retrainModel() {
+            try {
+                const response = await fetch('/api/v1/model/retrain', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('Model retraining started', 'success');
+                } else {
+                    throw new Error('Retraining failed');
+                }
+            } catch (error) {
+                showNotification('Error retraining model: ' + error.message, 'error');
+            }
+        }
+
+        function showNotification(message, type = 'info') {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+                max-width: 300px;
+            `;
+            
+            switch(type) {
+                case 'success':
+                    notification.style.background = 'linear-gradient(45deg, #44ff44, #00cc00)';
+                    break;
+                case 'error':
+                    notification.style.background = 'linear-gradient(45deg, #ff4444, #cc0000)';
+                    break;
+                case 'warning':
+                    notification.style.background = 'linear-gradient(45deg, #ffaa00, #cc8800)';
+                    break;
+                default:
+                    notification.style.background = 'linear-gradient(45deg, #00d4ff, #0099cc)';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        function logout() {
+            fetch('/api/v1/auth/logout', { method: 'POST' })
+                .then(() => {
+                    window.location.href = '/login.html';
+                })
+                .catch(() => {
+                    window.location.href = '/login.html';
+                });
+        }
+
+        // Add CSS animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>
