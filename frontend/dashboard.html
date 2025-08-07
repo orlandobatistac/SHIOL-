@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -299,7 +298,7 @@
             <div class="config-grid">
                 <div class="config-section">
                     <h3>🚀 Pipeline Configuration</h3>
-                    
+
                     <div class="form-group">
                         <label>Execution Days</label>
                         <div class="checkbox-group">
@@ -346,7 +345,7 @@
 
                 <div class="config-section">
                     <h3>🎲 Prediction Settings</h3>
-                    
+
                     <div class="form-group">
                         <label for="prediction-count">Number of Predictions</label>
                         <input type="range" id="prediction-count" class="form-control" min="10" max="1000" value="100" oninput="updatePredictionCount(this.value)">
@@ -370,13 +369,13 @@
                         <div style="margin-top: 10px;">
                             <label for="weight-probability">Probability (40%)</label>
                             <input type="range" id="weight-probability" class="form-control" min="0" max="100" value="40">
-                            
+
                             <label for="weight-diversity">Diversity (25%)</label>
                             <input type="range" id="weight-diversity" class="form-control" min="0" max="100" value="25">
-                            
+
                             <label for="weight-historical">Historical (20%)</label>
                             <input type="range" id="weight-historical" class="form-control" min="0" max="100" value="20">
-                            
+
                             <label for="weight-risk">Risk-Adjusted (15%)</label>
                             <input type="range" id="weight-risk" class="form-control" min="0" max="100" value="15">
                         </div>
@@ -388,7 +387,7 @@
             <div class="config-grid">
                 <div class="config-section">
                     <h3>🗄️ Database Management</h3>
-                    
+
                     <div class="stats-grid" style="margin-bottom: 20px;">
                         <div class="stat-card">
                             <div class="stat-number" id="db-records">-</div>
@@ -405,16 +404,16 @@
                     </div>
 
                     <div class="form-group">
-                        <button class="btn btn-primary" onclick="refreshDatabaseStats()">
+                        <button class="btn btn-primary" id="refresh-db-stats-btn">
                             🔄 Refresh Stats
                         </button>
-                        <button class="btn btn-warning" onclick="backupDatabase()">
+                        <button class="btn btn-warning" id="backup-db-btn">
                             💾 Create Backup
                         </button>
                     </div>
 
                     <div class="form-group">
-                        <button class="btn btn-danger" onclick="showCleanupModal()">
+                        <button class="btn btn-danger" id="cleanup-db-btn">
                             🧹 Clean Database
                         </button>
                         <small style="color: #999; display: block; margin-top: 5px;">
@@ -425,7 +424,7 @@
 
                 <div class="config-section">
                     <h3>🤖 Model Management</h3>
-                    
+
                     <div class="status-card" style="margin-bottom: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
@@ -438,16 +437,16 @@
                     </div>
 
                     <div class="form-group">
-                        <button class="btn btn-primary" onclick="retrainModel()">
+                        <button class="btn btn-primary" id="retrain-model-btn">
                             🔄 Retrain Models
                         </button>
-                        <button class="btn btn-warning" onclick="backupModels()">
+                        <button class="btn btn-warning" id="backup-models-btn">
                             💾 Backup Models
                         </button>
                     </div>
 
                     <div class="form-group">
-                        <button class="btn btn-danger" onclick="resetModels()">
+                        <button class="btn btn-danger" id="reset-models-btn">
                             🔄 Reset AI Models
                         </button>
                         <small style="color: #999; display: block; margin-top: 5px;">
@@ -568,16 +567,16 @@
             <div class="config-section">
                 <h3>⚙️ Configuration Management</h3>
                 <div class="form-group">
-                    <button class="btn btn-success" onclick="saveConfiguration()">
+                    <button class="btn btn-success" id="save-config-btn">
                         💾 Save Configuration
                     </button>
-                    <button class="btn btn-primary" onclick="exportConfiguration()">
+                    <button class="btn btn-primary" id="export-config-btn">
                         📤 Export Settings
                     </button>
-                    <button class="btn btn-warning" onclick="importConfiguration()">
+                    <button class="btn btn-warning" id="import-config-btn">
                         📥 Import Settings
                     </button>
-                    <button class="btn btn-primary" onclick="testPipeline()">
+                    <button class="btn btn-primary" id="test-pipeline-btn">
                         🧪 Test Pipeline
                     </button>
                 </div>
@@ -596,9 +595,9 @@
                     <div class="log-entry log-info">[INFO] Configuration dashboard loaded</div>
                 </div>
                 <div class="form-group" style="margin-top: 10px;">
-                    <button class="btn btn-primary" onclick="refreshLogs()">🔄 Refresh</button>
-                    <button class="btn btn-warning" onclick="downloadLogs()">📥 Download</button>
-                    <button class="btn btn-danger" onclick="clearLogs()">🧹 Clear</button>
+                    <button class="btn btn-primary" id="refresh-logs-btn">🔄 Refresh</button>
+                    <button class="btn btn-warning" id="download-logs-btn">📥 Download</button>
+                    <button class="btn btn-danger" id="clear-logs-btn">🧹 Clear</button>
                 </div>
             </div>
 
@@ -606,10 +605,10 @@
             <div class="config-section">
                 <h3>🎮 Pipeline Controls</h3>
                 <div class="pipeline-controls" style="text-align: center;">
-                    <button class="btn btn-success" onclick="triggerPipeline()" id="trigger-btn">
+                    <button class="btn btn-success" id="trigger-pipeline-btn">
                         ▶️ Execute Pipeline
                     </button>
-                    <button class="btn btn-danger" onclick="stopPipeline()" id="stop-btn" style="display: none;">
+                    <button class="btn btn-danger" id="stop-pipeline-btn" style="display: none;">
                         ⏹️ Stop Pipeline
                     </button>
                     <div class="progress-bar" id="pipeline-progress" style="margin: 20px 0; display: none;">
@@ -629,7 +628,7 @@
             <span class="close" onclick="closeCleanupModal()">&times;</span>
             <h2 style="color: #ff4444;">⚠️ Database Cleanup</h2>
             <p>Select what you want to clean from the database:</p>
-            
+
             <div class="form-group">
                 <div class="checkbox-item">
                     <input type="checkbox" id="clean-predictions">
@@ -654,10 +653,10 @@
             </div>
 
             <div style="margin-top: 20px;">
-                <button class="btn btn-danger" onclick="executeCleanup()">
+                <button class="btn btn-danger" id="execute-cleanup-btn">
                     🧹 Execute Cleanup
                 </button>
-                <button class="btn btn-primary" onclick="closeCleanupModal()">
+                <button class="btn btn-primary" id="cancel-cleanup-btn">
                     Cancel
                 </button>
             </div>
@@ -675,6 +674,7 @@
             loadConfiguration();
             initializeProfiles();
             initializeToggles();
+            setupEventListeners(); // New function to set up event listeners
         });
 
         function initializeDashboard() {
@@ -702,6 +702,26 @@
                     this.classList.toggle('active');
                 });
             });
+        }
+
+        function setupEventListeners() {
+            document.getElementById('refresh-db-stats-btn')?.addEventListener('click', refreshDatabaseStats);
+            document.getElementById('backup-db-btn')?.addEventListener('click', backupDatabase);
+            document.getElementById('cleanup-db-btn')?.addEventListener('click', showCleanupModal);
+            document.getElementById('retrain-model-btn')?.addEventListener('click', retrainModel);
+            document.getElementById('backup-models-btn')?.addEventListener('click', backupModels);
+            document.getElementById('reset-models-btn')?.addEventListener('click', resetModels);
+            document.getElementById('save-config-btn')?.addEventListener('click', saveConfiguration);
+            document.getElementById('export-config-btn')?.addEventListener('click', exportConfiguration);
+            document.getElementById('import-config-btn')?.addEventListener('click', importConfiguration);
+            document.getElementById('test-pipeline-btn')?.addEventListener('click', testPipeline);
+            document.getElementById('refresh-logs-btn')?.addEventListener('click', refreshLogs);
+            document.getElementById('download-logs-btn')?.addEventListener('click', downloadLogs);
+            document.getElementById('clear-logs-btn')?.addEventListener('click', clearLogs);
+            document.getElementById('trigger-pipeline-btn')?.addEventListener('click', triggerPipeline);
+            document.getElementById('stop-pipeline-btn')?.addEventListener('click', stopPipeline);
+            document.getElementById('execute-cleanup-btn')?.addEventListener('click', executeCleanup);
+            document.getElementById('cancel-cleanup-btn')?.addEventListener('click', closeCleanupModal);
         }
 
         function loadConfigProfile(profile) {
@@ -760,16 +780,16 @@
                 const response = await fetch('/api/v1/system/stats');
                 if (response.ok) {
                     const stats = await response.json();
-                    
+
                     document.getElementById('cpu-usage').textContent = `${stats.cpu_usage}%`;
                     document.getElementById('cpu-progress').style.width = `${stats.cpu_usage}%`;
-                    
+
                     document.getElementById('memory-usage').textContent = `${stats.memory_usage}%`;
                     document.getElementById('memory-progress').style.width = `${stats.memory_usage}%`;
-                    
+
                     document.getElementById('disk-usage').textContent = `${stats.disk_usage}%`;
                     document.getElementById('disk-progress').style.width = `${stats.disk_usage}%`;
-                    
+
                     document.getElementById('pipeline-status').textContent = stats.pipeline_status;
                     document.getElementById('last-execution').textContent = `Last: ${stats.last_execution}`;
                 }
@@ -815,7 +835,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(config)
                 });
-                
+
                 if (response.ok) {
                     showNotification('Configuration saved successfully', 'success');
                 } else {
@@ -881,7 +901,7 @@
                     document.getElementById('timezone').value = config.pipeline.timezone;
                 }
             }
-            
+
             if (config.predictions) {
                 if (config.predictions.count) {
                     document.getElementById('prediction-count').value = config.predictions.count;
@@ -934,8 +954,8 @@
                 const response = await fetch('/api/v1/pipeline/trigger', { method: 'POST' });
                 if (response.ok) {
                     showNotification('Pipeline execution started', 'success');
-                    document.getElementById('trigger-btn').style.display = 'none';
-                    document.getElementById('stop-btn').style.display = 'inline-block';
+                    document.getElementById('trigger-pipeline-btn').style.display = 'none';
+                    document.getElementById('stop-pipeline-btn').style.display = 'inline-block';
                     document.getElementById('pipeline-progress').style.display = 'block';
                     startPipelineMonitoring();
                 } else {
@@ -949,13 +969,13 @@
         function startPipelineMonitoring() {
             const progressBar = document.getElementById('pipeline-progress').querySelector('.progress-fill');
             const statusText = document.getElementById('pipeline-status-text');
-            
+
             let progress = 0;
             const interval = setInterval(async () => {
                 try {
                     const response = await fetch('/api/v1/pipeline/status');
                     const status = await response.json();
-                    
+
                     if (status.running) {
                         progress = Math.min(progress + 10, 90);
                         progressBar.style.width = `${progress}%`;
@@ -964,10 +984,10 @@
                         clearInterval(interval);
                         progressBar.style.width = '100%';
                         statusText.textContent = 'Pipeline completed';
-                        
+
                         setTimeout(() => {
-                            document.getElementById('trigger-btn').style.display = 'inline-block';
-                            document.getElementById('stop-btn').style.display = 'none';
+                            document.getElementById('trigger-pipeline-btn').style.display = 'inline-block';
+                            document.getElementById('stop-pipeline-btn').style.display = 'none';
                             document.getElementById('pipeline-progress').style.display = 'none';
                             statusText.textContent = 'Pipeline ready to execute';
                         }, 2000);
@@ -1095,7 +1115,7 @@
                 animation: slideIn 0.3s ease;
                 max-width: 300px;
             `;
-            
+
             switch(type) {
                 case 'success':
                     notification.style.background = 'linear-gradient(45deg, #44ff44, #00cc00)';
@@ -1109,10 +1129,10 @@
                 default:
                     notification.style.background = 'linear-gradient(45deg, #00d4ff, #0099cc)';
             }
-            
+
             notification.textContent = message;
             document.body.appendChild(notification);
-            
+
             setTimeout(() => {
                 notification.remove();
             }, 5000);
