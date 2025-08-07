@@ -742,6 +742,50 @@ async def run_adaptive_validation(enable_learning: bool = Query(True, descriptio
         logger.error(f"Error in adaptive validation: {e}")
         raise HTTPException(status_code=500, detail="Adaptive validation failed.")
 
+@api_router.get("/prediction-history-public")
+async def get_prediction_history_public(
+    limit: int = Query(25, ge=1, le=50, description="Number of recent predictions to return")
+):
+    """
+    Get public prediction history for display on main page.
+    Returns formatted prediction history for public interface.
+    """
+    try:
+        logger.info(f"Received request for public prediction history (limit: {limit})")
+
+        # Get prediction history from database
+        history = db.get_prediction_history(limit=limit)
+
+        if history.empty:
+            return {
+                "history": [],
+                "count": 0,
+                "message": "No prediction history available"
+            }
+
+        # Format predictions for public display
+        formatted_history = []
+        for _, row in history.iterrows():
+            formatted_pred = {
+                "date": row['timestamp'].strftime('%Y-%m-%d') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp']),
+                "formatted_date": row['timestamp'].strftime('%d %b %Y') if hasattr(row['timestamp'], 'strftime') else str(row['timestamp']),
+                "numbers": [int(row['n1']), int(row['n2']), int(row['n3']), int(row['n4']), int(row['n5'])],
+                "powerball": int(row['powerball']),
+                "score": float(row['score_total']),
+                "prediction_id": int(row['id'])
+            }
+            formatted_history.append(formatted_pred)
+
+        return {
+            "history": formatted_history,
+            "count": len(formatted_history),
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error retrieving public prediction history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve prediction history")
+
 @api_router.get("/predict/smart")
 async def get_smart_predictions(
     limit: int = Query(100, ge=1, le=100, description="Number of Smart AI predictions to retrieve from database")
