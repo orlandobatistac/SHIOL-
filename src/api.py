@@ -919,22 +919,21 @@ async def get_smart_predictions(
         for i, pred in enumerate(predictions_list):
             # Safely convert all values to ensure JSON serialization
             try:
+                # Use convert_numpy_types helper function for safe conversion
                 smart_pred = {
-                    "rank": int(i + 1),
-                    "numbers": [int(pred["n1"]), int(pred["n2"]),
-                               int(pred["n3"]), int(pred["n4"]),
-                               int(pred["n5"])],
-                    "powerball": int(pred["powerball"]),
-                    "total_score": float(pred["score_total"]),
+                    "rank": convert_numpy_types(i + 1),
+                    "numbers": convert_numpy_types([pred["n1"], pred["n2"], pred["n3"], pred["n4"], pred["n5"]]),
+                    "powerball": convert_numpy_types(pred["powerball"]),
+                    "total_score": convert_numpy_types(pred["score_total"]),
                     "score_details": {
-                        "probability": float(pred["score_total"]) * 0.4,
-                        "diversity": float(pred["score_total"]) * 0.25,
-                        "historical": float(pred["score_total"]) * 0.2,
-                        "risk_adjusted": float(pred["score_total"]) * 0.15
+                        "probability": convert_numpy_types(pred["score_total"]) * 0.4,
+                        "diversity": convert_numpy_types(pred["score_total"]) * 0.25,
+                        "historical": convert_numpy_types(pred["score_total"]) * 0.2,
+                        "risk_adjusted": convert_numpy_types(pred["score_total"]) * 0.15
                     },
                     "model_version": str(pred.get("model_version", "pipeline_v1.0")),
                     "dataset_hash": str(pred.get("dataset_hash", "pipeline_generated")),
-                    "prediction_id": int(pred["id"]),
+                    "prediction_id": convert_numpy_types(pred["id"]),
                     "generated_at": str(pred["timestamp"]),
                     "method": "smart_ai_pipeline"
                 }
@@ -966,10 +965,10 @@ async def get_smart_predictions(
                 }
                 smart_predictions.append(smart_pred)
 
-        # Calculate statistics
+        # Calculate statistics with safe conversion
         if smart_predictions:
-            avg_score = sum(p["total_score"] for p in smart_predictions) / len(smart_predictions)
-            best_score = max(p["total_score"] for p in smart_predictions)
+            avg_score = sum(convert_numpy_types(p["total_score"]) for p in smart_predictions) / len(smart_predictions)
+            best_score = max(convert_numpy_types(p["total_score"]) for p in smart_predictions)
         else:
             avg_score = 0.0
             best_score = 0.0
@@ -977,14 +976,14 @@ async def get_smart_predictions(
         return {
             "method": "smart_ai_database",
             "smart_predictions": smart_predictions,
-            "total_predictions": len(smart_predictions),
-            "average_score": avg_score,
-            "best_score": best_score,
+            "total_predictions": convert_numpy_types(len(smart_predictions)),
+            "average_score": convert_numpy_types(avg_score),
+            "best_score": convert_numpy_types(best_score),
             "data_source": "database" if smart_predictions and "pipeline" in smart_predictions[0].get("method", "") else "realtime_generation",
             "next_drawing": {
                 "date": next_drawing_date,
                 "formatted_date": next_date.strftime('%B %d, %Y'),
-                "days_until": days_until_drawing,
+                "days_until": convert_numpy_types(days_until_drawing),
                 "is_today": days_until_drawing == 0,
                 "is_drawing_day": is_drawing_day,
                 "drawing_schedule": {
