@@ -1030,13 +1030,13 @@
             showNotification('🔄 Starting comprehensive test of all functions...', 'info');
 
             const tests = [
-                { name: 'System Monitoring', func: updateSystemMonitoring },
                 { name: 'Database Statistics', func: refreshDatabaseStats },
                 { name: 'Performance Analytics', func: loadPerformanceAnalytics },
                 { name: 'Load Configuration', func: loadConfiguration },
                 { name: 'Save Configuration', func: saveConfiguration },
                 { name: 'Pipeline Test', func: testPipeline },
-                { name: 'Database Backup', func: backupDatabase }
+                { name: 'Database Backup', func: backupDatabase },
+                { name: 'Models Backup', func: backupModels }
             ];
 
             let passedTests = 0;
