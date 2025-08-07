@@ -2117,6 +2117,32 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
             results.append(f"Cleared {log_files_cleared} log files")
             logger.info(f"Cleared {log_files_cleared} log files")
 
+        if cleanup_options.get('pipeline_logs', False):
+            # Clear pipeline execution reports and system logs
+            pipeline_files_cleared = 0
+            
+            # Clear pipeline reports
+            reports_dir = Path('reports')
+            if reports_dir.exists():
+                for report_file in reports_dir.glob('pipeline_report_*.json'):
+                    report_file.unlink()
+                    pipeline_files_cleared += 1
+            
+            # Clear system logs
+            logs_dir = Path('logs')
+            if logs_dir.exists():
+                for log_file in logs_dir.glob('*.log'):
+                    log_file.unlink()
+                    pipeline_files_cleared += 1
+            
+            # Clear global pipeline execution tracking
+            global pipeline_executions, pipeline_logs
+            pipeline_executions.clear()
+            pipeline_logs.clear()
+            
+            results.append(f"Cleared {pipeline_files_cleared} pipeline log files and execution history")
+            logger.info(f"Cleared {pipeline_files_cleared} pipeline log files and execution history")
+
         if cleanup_options.get('models', False):
             # Reset AI models data
             cursor.execute('DELETE FROM adaptive_weights')
@@ -2145,7 +2171,18 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
                     if log_file.is_file():
                         log_file.unlink()
 
-            results.append(f"Complete system reset: cleared {total_cleared} total records and all log files (kept historical draw data and configuration)")
+            # Clear pipeline reports
+            reports_dir = Path('reports')
+            if reports_dir.exists():
+                for report_file in reports_dir.glob('pipeline_report_*.json'):
+                    report_file.unlink()
+
+            # Clear global pipeline execution tracking
+            global pipeline_executions, pipeline_logs
+            pipeline_executions.clear()
+            pipeline_logs.clear()
+
+            results.append(f"Complete system reset: cleared {total_cleared} total records, all log files, and pipeline execution history (kept historical draw data and configuration)")
             logger.info(f"Complete system reset performed")
 
         # Commit all changes
