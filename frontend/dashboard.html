@@ -518,7 +518,7 @@
                         <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">Clear System Logs</span>
                     </label>
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="cleanup-models" name="models" class="form-checkbox h-5 w-5 text-blue-600">
+                        <input type="checkbox" id="cleanup-models" name="models" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500 mr-3">
                         <div>
                             <div class="font-medium text-gray-900 dark:text-white">Reset AI Models</div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Clear adaptive weights and model feedback (keeps training data)</div>
@@ -526,7 +526,7 @@
                     </label>
 
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="cleanup-pipeline-logs" name="pipeline_logs" class="form-checkbox h-5 w-5 text-orange-600">
+                        <input type="checkbox" id="cleanup-pipeline-logs" name="pipeline_logs" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500 mr-3">
                         <div>
                             <div class="font-medium text-gray-900 dark:text-white">Clear Pipeline Logs</div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Remove all pipeline execution logs and system logs</div>
@@ -534,7 +534,7 @@
                     </label>
 
                     <label class="flex items-center cursor-pointer">
-                        <input type="checkbox" id="cleanup-complete" name="complete_reset" class="form-checkbox h-5 w-5 text-red-600">
+                        <input type="checkbox" id="cleanup-complete" name="complete_reset" class="rounded border-gray-300 text-red-600 focus:ring-red-500 mr-3">
                         <div>
                             <div class="font-medium text-gray-900 dark:text-white text-red-600">Complete System Reset</div>
                             <div class="text-sm text-gray-500 dark:text-gray-400">Reset everything except historical draw data and configuration</div>
@@ -1066,6 +1066,14 @@
                 if (response.ok) {
                     const result = await response.json();
                     alert('✅ Cleanup completed successfully');
+                    
+                    // Refresh pipeline execution history if pipeline logs were cleared
+                    if (cleanupOptions.pipeline_logs || cleanupOptions.complete_reset) {
+                        setTimeout(() => {
+                            loadPipelineExecutionHistory();
+                        }, 1000);
+                    }
+                    
                     closeCleanupModal();
                 } else {
                     throw new Error('Cleanup error');
