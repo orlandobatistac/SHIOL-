@@ -416,8 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!autoRefreshCheckbox) return;
 
         if (autoRefreshCheckbox.checked) {
-            // Start auto-refresh every 30 seconds
-            autoRefreshInterval = setInterval(fetchPipelineStatus, 30000);
+            // Start auto-refresh every 60 seconds
+            autoRefreshInterval = setInterval(fetchPipelineStatus, 60000);
             showPipelineNotification('Auto-refresh enabled', 'info');
         } else {
             // Stop auto-refresh

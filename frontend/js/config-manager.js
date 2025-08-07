@@ -289,7 +289,7 @@ class ConfigurationManager {
         this.updateSystemStats();
         this.systemInterval = setInterval(() => {
             this.updateSystemStats();
-        }, 5000);
+        }, 30000); // Changed from 5000ms (5s) to 30000ms (30s)
     }
 
     async updateSystemStats() {
