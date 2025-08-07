@@ -11,6 +11,7 @@ import json
 import psutil
 import shutil
 from typing import Optional, Dict, Any, List
+import configparser
 
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator, DeterministicGenerator
@@ -1782,15 +1783,15 @@ async def get_system_stats():
     try:
         import psutil
         from datetime import datetime
-        
+
         cpu_percent = psutil.cpu_percent(interval=1)
         memory = psutil.virtual_memory()
         disk = psutil.disk_usage('/')
-        
+
         # Get pipeline status
         pipeline_status = "idle"
         last_execution = "Never"
-        
+
         try:
             # Check if pipeline is currently running
             pipeline_status = "ready"
@@ -1798,7 +1799,7 @@ async def get_system_stats():
             last_execution = datetime.now().strftime("%Y-%m-%d %H:%M")
         except Exception:
             pass
-        
+
         return {
             "cpu_usage": round(cpu_percent, 1),
             "memory_usage": round(memory.percent, 1),
@@ -1817,19 +1818,19 @@ async def get_system_stats():
 async def get_database_stats():
     """Get database statistics for dashboard"""
     try:
-        conn = get_db_connection()
+        conn = db.get_db_connection()
         cursor = conn.cursor()
-        
+
         # Get total records from main tables
         cursor.execute("SELECT COUNT(*) FROM powerball_draws")
         draws_count = cursor.fetchone()[0]
-        
-        cursor.execute("SELECT COUNT(*) FROM predictions")
+
+        cursor.execute("SELECT COUNT(*) FROM predictions_log")
         predictions_count = cursor.fetchone()[0]
-        
+
         cursor.execute("SELECT COUNT(*) FROM prediction_validations")
         validations_count = cursor.fetchone()[0]
-        
+
         # Get database file size
         db_path = os.path.join(os.path.dirname(__file__), "..", "db", "shiolplus.db")
         try:
@@ -1837,9 +1838,9 @@ async def get_database_stats():
             db_size_mb = round(db_size_bytes / (1024 * 1024), 2)
         except:
             db_size_mb = 0
-        
+
         conn.close()
-        
+
         return {
             "total_records": draws_count + predictions_count + validations_count,
             "draws_count": draws_count,
@@ -1856,24 +1857,24 @@ async def get_database_stats():
 async def get_performance_analytics():
     """Get performance analytics for dashboard"""
     try:
-        conn = get_db_connection()
-        
+        conn = db.get_db_connection()
+
         # Get performance data from database
-        performance_data = get_performance_analytics(conn, days=30)
-        
+        performance_data = db.get_performance_analytics(conn, days=30)
+
         conn.close()
-        
+
         # Calculate key metrics
         total_predictions = performance_data.get('total_predictions', 0)
         winning_predictions = performance_data.get('winning_predictions', 0)
         win_rate = (winning_predictions / total_predictions * 100) if total_predictions > 0 else 0
-        
+
         return {
             "win_rate": round(win_rate, 1),
             "avg_score": round(performance_data.get('avg_score', 0), 3),
+            "best_method": performance_data.get('best_method', 'smart_ai'),
             "total_predictions": total_predictions,
             "winning_predictions": winning_predictions,
-            "best_method": performance_data.get('best_method', 'smart_ai'),
             "total_prize_amount": performance_data.get('total_prize_amount', 0),
             "roi_percentage": round(performance_data.get('roi_percentage', 0), 2)
         }
@@ -1888,14 +1889,14 @@ async def load_configuration():
         config_path = os.path.join(os.path.dirname(__file__), "..", "config", "config.ini")
         config = configparser.ConfigParser()
         config.read(config_path)
-        
+
         # Convert to dictionary format expected by frontend
         config_dict = {}
         for section in config.sections():
             config_dict[section] = {}
             for key, value in config.items(section):
                 config_dict[section][key] = value
-        
+
         return {
             "pipeline": {
                 "execution_days": {
@@ -1932,28 +1933,28 @@ async def save_configuration(config_data: Dict[str, Any]):
     try:
         config_path = os.path.join(os.path.dirname(__file__), "..", "config", "config.ini")
         config = configparser.ConfigParser()
-        
+
         # Convert from frontend format to config file format
         if "pipeline" in config_data:
             config.add_section("pipeline")
             pipeline = config_data["pipeline"]
-            
+
             if "execution_days" in pipeline:
                 config.set("pipeline", "execution_days_monday", str(pipeline["execution_days"].get("monday", True)))
                 config.set("pipeline", "execution_days_wednesday", str(pipeline["execution_days"].get("wednesday", True)))
                 config.set("pipeline", "execution_days_saturday", str(pipeline["execution_days"].get("saturday", True)))
-            
+
             config.set("pipeline", "execution_time", pipeline.get("execution_time", "02:00"))
             config.set("pipeline", "timezone", pipeline.get("timezone", "America/New_York"))
             config.set("pipeline", "auto_execution", str(pipeline.get("auto_execution", True)))
-        
+
         if "predictions" in config_data:
             config.add_section("predictions")
             predictions = config_data["predictions"]
-            
+
             config.set("predictions", "count", str(predictions.get("count", 100)))
             config.set("predictions", "method", predictions.get("method", "smart_ai"))
-            
+
             if "weights" in predictions:
                 config.add_section("weights")
                 weights = predictions["weights"]
@@ -1961,20 +1962,20 @@ async def save_configuration(config_data: Dict[str, Any]):
                 config.set("weights", "diversity", str(weights.get("diversity", 25)))
                 config.set("weights", "historical", str(weights.get("historical", 20)))
                 config.set("weights", "risk", str(weights.get("risk", 15)))
-        
+
         if "notifications" in config_data:
             config.add_section("notifications")
             notifications = config_data["notifications"]
-            
+
             config.set("notifications", "email", notifications.get("email", ""))
             config.set("notifications", "session_timeout", str(notifications.get("session_timeout", 60)))
-        
+
         with open(config_path, 'w') as configfile:
             config.write(configfile)
-        
+
         logger.info("Configuration saved successfully")
         return {"message": "Configuration saved successfully"}
-        
+
     except Exception as e:
         logger.error(f"Error saving configuration: {e}")
         raise HTTPException(status_code=500, detail=f"Error saving configuration: {str(e)}")
@@ -1983,41 +1984,41 @@ async def save_configuration(config_data: Dict[str, Any]):
 async def cleanup_database(cleanup_options: Dict[str, bool]):
     """Clean database based on selected options"""
     try:
-        conn = get_db_connection()
+        conn = db.get_db_connection()
         cursor = conn.cursor()
-        
+
         results = []
-        
+
         if cleanup_options.get("predictions", False):
-            cursor.execute("DELETE FROM predictions")
+            cursor.execute("DELETE FROM predictions_log")
             results.append(f"Deleted {cursor.rowcount} predictions")
-        
+
         if cleanup_options.get("validations", False):
-            cursor.execute("DELETE FROM prediction_validations")
+            cursor.execute("DELETE FROM validation_results")
             results.append(f"Deleted {cursor.rowcount} validations")
-        
+
         if cleanup_options.get("logs", False):
             # Clear application logs if needed
             results.append("Logs cleared")
-        
+
         if cleanup_options.get("models", False):
             # Reset model training data if needed
             results.append("Models reset")
-        
+
         if cleanup_options.get("complete_reset", False):
             # Complete database reset
-            cursor.execute("DELETE FROM predictions")
+            cursor.execute("DELETE FROM predictions_log")
             cursor.execute("DELETE FROM prediction_validations")
             cursor.execute("DELETE FROM adaptive_weights")
-            cursor.execute("DELETE FROM model_feedback")
+            cursor.execute("DELETE FROM adaptive_performance")
             results.append("Complete database reset performed")
-        
+
         conn.commit()
         conn.close()
-        
+
         logger.info(f"Database cleanup completed: {results}")
         return {"message": "Database cleanup completed", "results": results}
-        
+
     except Exception as e:
         logger.error(f"Error during database cleanup: {e}")
         raise HTTPException(status_code=500, detail=f"Error during database cleanup: {str(e)}")
@@ -2028,20 +2029,20 @@ async def backup_database():
     try:
         from shutil import copy2
         from datetime import datetime
-        
+
         db_path = os.path.join(os.path.dirname(__file__), "..", "db", "shiolplus.db")
         backup_dir = os.path.join(os.path.dirname(__file__), "..", "db", "backups")
-        
+
         os.makedirs(backup_dir, exist_ok=True)
-        
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(backup_dir, f"shiolplus_backup_{timestamp}.db")
-        
+
         copy2(db_path, backup_path)
-        
+
         logger.info(f"Database backup created: {backup_path}")
         return {"message": "Database backup created successfully", "backup_file": backup_path}
-        
+
     except Exception as e:
         logger.error(f"Error creating database backup: {e}")
         raise HTTPException(status_code=500, detail=f"Error creating database backup: {str(e)}")
@@ -2052,20 +2053,20 @@ async def get_system_logs():
     try:
         logs_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
         log_files = []
-        
+
         if os.path.exists(logs_dir):
             log_files = [f for f in os.listdir(logs_dir) if f.endswith('.log')]
-        
+
         recent_logs = []
-        
+
         # Read recent log entries (last 100 lines)
         if log_files:
             latest_log = max(log_files, key=lambda x: os.path.getctime(os.path.join(logs_dir, x)))
             log_path = os.path.join(logs_dir, latest_log)
-            
+
             with open(log_path, 'r') as f:
                 lines = f.readlines()[-100:]  # Last 100 lines
-                
+
             for line in lines:
                 if 'ERROR' in line:
                     level = 'error'
@@ -2073,15 +2074,15 @@ async def get_system_logs():
                     level = 'warning'
                 else:
                     level = 'info'
-                
+
                 recent_logs.append({
                     'level': level,
                     'message': line.strip(),
                     'timestamp': datetime.now().isoformat()
                 })
-        
+
         return recent_logs
-        
+
     except Exception as e:
         logger.error(f"Error getting logs: {e}")
         return []
@@ -2090,21 +2091,21 @@ async def get_system_logs():
 async def test_pipeline():
     """Test pipeline configuration without full execution"""
     try:
-        # Perform basic pipeline validation
+        # Placeholder for pipeline test logic
         test_results = {
             "database_connection": True,
             "model_loaded": True,
             "configuration_valid": True,
             "api_responsive": True
         }
-        
+
         logger.info("Pipeline test completed successfully")
         return {
             "message": "Pipeline test completed successfully",
             "results": test_results,
             "status": "passed"
         }
-        
+
     except Exception as e:
         logger.error(f"Pipeline test failed: {e}")
         raise HTTPException(status_code=500, detail=f"Pipeline test failed: {str(e)}")
@@ -2120,7 +2121,7 @@ async def retrain_model():
             "status": "initiated",
             "estimated_completion": "15-30 minutes"
         }
-        
+
     except Exception as e:
         logger.error(f"Error starting model retraining: {e}")
         raise HTTPException(status_code=500, detail=f"Error starting model retraining: {str(e)}")
@@ -2299,10 +2300,10 @@ async def database_cleanup(cleanup_options: dict):
         perform_backup = any(cleanup_options.values())
         if perform_backup:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            backup_dir = "db/backups"
+            backup_dir = "db/backups" # Use a dedicated directory for backups
             os.makedirs(backup_dir, exist_ok=True) # Ensure backup directory exists
             backup_path = os.path.join(backup_dir, f"backup_before_cleanup_{timestamp}.db")
-            
+
             try:
                 shutil.copy2("db/shiolplus.db", backup_path)
                 logger.info(f"Database backed up to {backup_path}")
@@ -2364,7 +2365,7 @@ async def database_cleanup(cleanup_options: dict):
         if cleanup_options.get('complete_reset', False):
             # Re-execute specific delete operations for clarity
             cursor.execute("DELETE FROM predictions_log")
-            cursor.execute("DELETE FROM validation_results")
+            cursor.execute("DELETE FROM prediction_validations")
             cursor.execute("DELETE FROM adaptive_weights")
             cursor.execute("DELETE FROM adaptive_performance")
 
@@ -2380,7 +2381,7 @@ async def database_cleanup(cleanup_options: dict):
                         logger.error(f"Failed to clear directory {dir_path}: {dir_clear_err}")
                 else:
                     logger.warning(f"Directory not found for clearing: {dir_path}")
-            
+
             # Optionally remove model files again if part of complete reset logic
             for model_file in model_files_to_remove:
                 if os.path.exists(model_file):
@@ -2426,7 +2427,7 @@ async def create_database_backup():
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         backup_dir = "db/backups" # Use a dedicated directory for backups
         os.makedirs(backup_dir, exist_ok=True) # Ensure the backup directory exists
-        
+
         source_db_path = "db/shiolplus.db"
         backup_path = os.path.join(backup_dir, f"backup_{timestamp}.db")
 
@@ -2459,7 +2460,7 @@ async def load_configuration():
 
         config = configparser.ConfigParser()
         config_file_path = 'config/config.ini'
-        
+
         if not os.path.exists(config_file_path):
             logger.warning(f"Configuration file not found at {config_file_path}. Returning default structure.")
             # Return a default structure if config file doesn't exist
@@ -2478,7 +2479,7 @@ async def load_configuration():
                 "notifications": {"email": ""},
                 "security": {"session_timeout": 60}
             }
-            
+
         config.read(config_file_path)
 
         # Convert to dictionary format, using fallback values for missing options
@@ -2500,7 +2501,7 @@ async def load_configuration():
                     "probability": config.getint('scoring', 'probability_weight', fallback=40),
                     "diversity": config.getint('scoring', 'diversity_weight', fallback=25),
                     "historical": config.getint('scoring', 'historical_weight', fallback=20),
-                    "risk": config.getint('scoring', 'risk_weight', fallback=15) # Assuming 'risk' maps to 'risk_adjusted'
+                    "risk": config.getint('scoring', 'risk_weight', fallback=15) # Map 'risk' to 'risk_adjusted'
                 }
             },
             "notifications": {
@@ -2538,7 +2539,7 @@ async def save_configuration(config_data: dict):
         # Read existing config or create a new one if it doesn't exist
         if os.path.exists(config_file_path):
             config.read(config_file_path)
-        
+
         # Helper to ensure section exists
         def ensure_section(section_name):
             if not config.has_section(section_name):
