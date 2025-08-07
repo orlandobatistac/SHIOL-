@@ -2325,6 +2325,10 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
         logger.error(f"Error retrieving pipeline execution history: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
 
+    except Exception as e:
+        logger.error(f"Error retrieving pipeline execution history: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
+
 @api_router.post("/database/backup")
 async def backup_database():
     """Create database backup"""
@@ -2344,13 +2348,6 @@ async def backup_database():
 
         logger.info(f"Database backup created: {backup_path}")
         return {"message": "Database backup created successfully", "backup_file": backup_path}
-
-    except FileNotFoundError:
-        logger.error(f"Database file not found for backup: {db_path}")
-        raise HTTPException(status_code=404, detail=f"Database file not found at {db_path}")
-    except Exception as e:
-        logger.error(f"Error creating database backup: {e}")
-        raise HTTPException(status_code=500, detail=f"Error creating database backup: {str(e)}")
 
     except FileNotFoundError:
         logger.error(f"Database file not found for backup: {db_path}")
