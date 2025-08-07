@@ -428,7 +428,7 @@
                         <i class="fas fa-exclamation-triangle mr-2"></i>
                         Database Cleanup
                     </h3>
-                    <button onclick="closeCleanupModal()" class="text-gray-400 hover:text-gray-600">
+                    <button type="button" onclick="closeCleanupModal()" class="text-gray-400 hover:text-gray-600 text-xl">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -436,33 +436,40 @@
             <div class="p-6">
                 <p class="text-gray-600 dark:text-gray-400 mb-4">Select what you want to clean from the database:</p>
                 <div class="space-y-3">
-                    <label class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
                         <input type="checkbox" id="clean-predictions" name="predictions" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Delete All Predictions</span>
+                        <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">Delete All Predictions</span>
                     </label>
-                    <label class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
                         <input type="checkbox" id="clean-validations" name="validations" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Delete Validation History</span>
+                        <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">Delete Validation History</span>
                     </label>
-                    <label class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
                         <input type="checkbox" id="clean-logs" name="logs" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Clear System Logs</span>
+                        <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">Clear System Logs</span>
                     </label>
-                    <label class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
                         <input type="checkbox" id="clean-models" name="models" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Reset AI Models</span>
+                        <span class="ml-3 text-sm text-gray-700 dark:text-gray-300">Reset AI Models</span>
                     </label>
-                    <label class="flex items-center">
+                    <label class="flex items-center cursor-pointer">
                         <input type="checkbox" id="clean-all" name="complete_reset" class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                        <span class="ml-2 text-sm text-red-600 font-medium">Complete System Reset</span>
+                        <span class="ml-3 text-sm text-red-600 font-medium">Complete System Reset</span>
                     </label>
+                </div>
+                <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <p class="text-xs text-yellow-700 dark:text-yellow-300">
+                        ⚠️ Warning: These operations are permanent and cannot be undone.
+                    </p>
                 </div>
             </div>
             <div class="p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3">
-                <button id="execute-cleanup-btn" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <button type="button" id="execute-cleanup-btn" class="flex-1 bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-trash-alt mr-2"></i>
                     Execute Cleanup
                 </button>
-                <button id="cancel-cleanup-btn" onclick="closeCleanupModal()" class="flex-1 bg-slate-400 hover:bg-slate-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                <button type="button" id="cancel-cleanup-btn" class="flex-1 bg-slate-400 hover:bg-slate-500 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                    <i class="fas fa-times mr-2"></i>
                     Cancel
                 </button>
             </div>
@@ -576,6 +583,20 @@
             // Event listener for cleanup execution (with safety checks)
             const executeCleanupBtn = document.getElementById('execute-cleanup-btn');
             if (executeCleanupBtn) executeCleanupBtn.addEventListener('click', executeCleanup);
+            
+            // Event listener for cancel cleanup button
+            const cancelCleanupBtn = document.getElementById('cancel-cleanup-btn');
+            if (cancelCleanupBtn) cancelCleanupBtn.addEventListener('click', closeCleanupModal);
+
+            // Close modal when clicking outside of it
+            const cleanupModal = document.getElementById('cleanup-modal');
+            if (cleanupModal) {
+                cleanupModal.addEventListener('click', function(event) {
+                    if (event.target === cleanupModal) {
+                        closeCleanupModal();
+                    }
+                });
+            }
         }
 
         function loadConfigProfile(profile) {
@@ -764,24 +785,57 @@
         }
 
         function showCleanupModal() {
-            document.getElementById('cleanup-modal').classList.remove('hidden');
+            const modal = document.getElementById('cleanup-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                // Reset all checkboxes
+                const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            }
         }
 
         function closeCleanupModal() {
-            document.getElementById('cleanup-modal').classList.add('hidden');
+            const modal = document.getElementById('cleanup-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                // Reset all checkboxes when closing
+                const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+            }
         }
-
-        
 
         async function executeCleanup() {
             const checkboxes = document.querySelectorAll('#cleanup-modal input[type="checkbox"]');
             const cleanupOptions = {};
+            let selectedCount = 0;
 
             checkboxes.forEach(checkbox => {
-                cleanupOptions[checkbox.id.replace('clean-', '')] = checkbox.checked;
+                const isChecked = checkbox.checked;
+                cleanupOptions[checkbox.name || checkbox.id.replace('clean-', '')] = isChecked;
+                if (isChecked) selectedCount++;
             });
 
+            if (selectedCount === 0) {
+                showNotification('Please select at least one cleanup option', 'warning');
+                return;
+            }
+
+            // Show confirmation for dangerous operations
+            const dangerousOptions = ['complete_reset', 'models', 'predictions'];
+            const selectedDangerous = Object.keys(cleanupOptions).filter(key => 
+                cleanupOptions[key] && dangerousOptions.includes(key)
+            );
+
+            if (selectedDangerous.length > 0) {
+                const confirmMessage = `WARNING: This will permanently delete data. Selected operations: ${selectedDangerous.join(', ')}. Are you sure?`;
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
+            }
+
             try {
+                showNotification('Executing database cleanup...', 'info');
+                
                 const response = await fetch('/api/v1/database/cleanup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -794,9 +848,11 @@
                     closeCleanupModal();
                     refreshDatabaseStats();
                 } else {
-                    throw new Error('Cleanup failed');
+                    const errorText = await response.text();
+                    throw new Error(`Cleanup failed: ${response.status} - ${errorText}`);
                 }
             } catch (error) {
+                console.error('Cleanup error:', error);
                 showNotification('Error during cleanup: ' + error.message, 'error');
             }
         }

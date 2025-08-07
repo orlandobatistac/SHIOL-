@@ -2013,66 +2013,128 @@ async def save_configuration(config_data: Dict[str, Any]):
 async def cleanup_database(cleanup_options: Dict[str, bool]):
     """Clean database based on selected options"""
     try:
+        logger.info(f"Starting database cleanup with options: {cleanup_options}")
+        
         conn = db.get_db_connection()
         cursor = conn.cursor()
-
         results = []
 
         if cleanup_options.get("predictions", False):
-            cursor.execute("DELETE FROM predictions_log")
-            deleted_predictions = cursor.rowcount
-            results.append(f"Deleted {deleted_predictions} predictions")
+            try:
+                cursor.execute("DELETE FROM predictions_log")
+                deleted_predictions = cursor.rowcount
+                results.append(f"Deleted {deleted_predictions} predictions")
+                logger.info(f"Deleted {deleted_predictions} prediction records")
+            except Exception as e:
+                logger.error(f"Error deleting predictions: {e}")
+                results.append(f"Error deleting predictions: {str(e)}")
 
         if cleanup_options.get("validations", False):
-            # Use correct table names from the schema
-            cursor.execute("DELETE FROM performance_tracking")
-            deleted_performance = cursor.rowcount
-            results.append(f"Deleted {deleted_performance} performance tracking records")
+            try:
+                cursor.execute("DELETE FROM performance_tracking")
+                deleted_performance = cursor.rowcount
+                results.append(f"Deleted {deleted_performance} performance tracking records")
+                logger.info(f"Deleted {deleted_performance} performance tracking records")
+            except Exception as e:
+                logger.error(f"Error deleting validations: {e}")
+                results.append(f"Error deleting validations: {str(e)}")
 
         if cleanup_options.get("logs", False):
-            # Clear system logs from file system
-            import os
-            import glob
-            log_files = glob.glob("logs/*.log")
-            cleared_files = 0
-            for log_file in log_files:
-                try:
-                    open(log_file, 'w').close()  # Clear file content
-                    cleared_files += 1
-                except:
-                    pass
-            results.append(f"Cleared {cleared_files} log files")
+            try:
+                import os
+                import glob
+                log_files = glob.glob("logs/*.log")
+                cleared_files = 0
+                for log_file in log_files:
+                    try:
+                        with open(log_file, 'w') as f:
+                            f.truncate(0)  # Clear file content
+                        cleared_files += 1
+                    except Exception as file_error:
+                        logger.warning(f"Could not clear log file {log_file}: {file_error}")
+                results.append(f"Cleared {cleared_files} log files")
+                logger.info(f"Cleared {cleared_files} log files")
+            except Exception as e:
+                logger.error(f"Error clearing logs: {e}")
+                results.append(f"Error clearing logs: {str(e)}")
 
         if cleanup_options.get("models", False):
-            # Reset adaptive system tables
-            cursor.execute("DELETE FROM adaptive_weights")
-            deleted_weights = cursor.rowcount
-            cursor.execute("DELETE FROM model_feedback")
-            deleted_feedback = cursor.rowcount
-            results.append(f"Reset models: deleted {deleted_weights} weight sets and {deleted_feedback} feedback records")
+            try:
+                # Reset adaptive system tables
+                cursor.execute("DELETE FROM adaptive_weights")
+                deleted_weights = cursor.rowcount
+                cursor.execute("DELETE FROM model_feedback")
+                deleted_feedback = cursor.rowcount
+                cursor.execute("DELETE FROM reliable_plays")
+                deleted_reliable = cursor.rowcount
+                results.append(f"Reset AI models: deleted {deleted_weights} weight sets, {deleted_feedback} feedback records, {deleted_reliable} reliable plays")
+                logger.info(f"Reset AI models data")
+            except Exception as e:
+                logger.error(f"Error resetting models: {e}")
+                results.append(f"Error resetting models: {str(e)}")
 
         if cleanup_options.get("complete_reset", False):
-            # Complete database reset using correct table names
-            cursor.execute("DELETE FROM predictions_log")
-            cursor.execute("DELETE FROM performance_tracking")
-            cursor.execute("DELETE FROM adaptive_weights")
-            cursor.execute("DELETE FROM pattern_analysis")
-            cursor.execute("DELETE FROM reliable_plays")
-            cursor.execute("DELETE FROM model_feedback")
-            # Keep powerball_draws and system_config tables
-            results.append("Complete database reset performed (kept draw data and configuration)")
+            try:
+                # Complete database reset - clear all analysis tables but keep historical draws and config
+                tables_to_clear = [
+                    "predictions_log",
+                    "performance_tracking", 
+                    "adaptive_weights",
+                    "pattern_analysis",
+                    "reliable_plays",
+                    "model_feedback"
+                ]
+                
+                total_deleted = 0
+                for table in tables_to_clear:
+                    try:
+                        cursor.execute(f"DELETE FROM {table}")
+                        deleted = cursor.rowcount
+                        total_deleted += deleted
+                        logger.info(f"Cleared {deleted} records from {table}")
+                    except Exception as table_error:
+                        logger.warning(f"Could not clear table {table}: {table_error}")
+                
+                # Also clear log files for complete reset
+                import os
+                import glob
+                log_files = glob.glob("logs/*.log")
+                for log_file in log_files:
+                    try:
+                        with open(log_file, 'w') as f:
+                            f.truncate(0)
+                    except:
+                        pass
+                        
+                results.append(f"Complete system reset: cleared {total_deleted} total records and all log files (kept historical draw data and configuration)")
+                logger.info(f"Complete system reset performed")
+            except Exception as e:
+                logger.error(f"Error in complete reset: {e}")
+                results.append(f"Error in complete reset: {str(e)}")
 
+        # Commit all changes
         conn.commit()
         conn.close()
 
-        logger.info(f"Database cleanup completed: {results}")
-        return {"message": "Database cleanup completed successfully", "results": results}
+        if not results:
+            results.append("No cleanup options selected")
+
+        logger.info(f"Database cleanup completed successfully: {results}")
+        return {
+            "success": True,
+            "message": "Database cleanup completed successfully", 
+            "results": results,
+            "options_processed": cleanup_options
+        }
 
     except Exception as e:
-        logger.error(f"Error during database cleanup: {e}")
+        logger.error(f"Critical error during database cleanup: {e}")
         if 'conn' in locals():
-            conn.close()
-        raise HTTPException(status_code=500, detail=f"Error during database cleanup: {str(e)}")
+            try:
+                conn.close()
+            except:
+                pass
+        raise HTTPException(status_code=500, detail=f"Critical error during database cleanup: {str(e)}")
 
 @api_router.get("/database/status")
 async def get_database_status():
