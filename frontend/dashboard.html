@@ -1003,6 +1003,12 @@
 
         async function testAllFunctions() {
             showNotification('🔄 Starting comprehensive test of all functions...', 'info');
+            
+            // Clear any existing console errors
+            if (typeof console !== 'undefined' && console.clear) {
+                // Don't clear console to avoid hiding important errors
+                // console.clear();
+            }
 
             const tests = [
                 { name: 'Database Statistics', func: refreshDatabaseStats },

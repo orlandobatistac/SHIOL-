@@ -888,12 +888,18 @@ def start_api_server(host: str = "0.0.0.0", port: int = 8000, auto_detect_ip: bo
         print("   Make sure to run this script from the project root directory")
         sys.exit(1)
 
-    # Check if virtual environment is activated
-    if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+    # Check if virtual environment is activated (improved detection)
+    in_venv = (
+        hasattr(sys, 'real_prefix') or 
+        (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix) or
+        os.environ.get('VIRTUAL_ENV') is not None or
+        os.environ.get('CONDA_DEFAULT_ENV') is not None
+    )
+    
+    if not in_venv:
         print("⚠️  Warning: No virtual environment detected")
-        print("   It's recommended to activate the virtual environment first:")
-        print("   source venv/bin/activate  # Linux/Mac")
-        print("   .\\venv\\Scripts\\activate  # Windows")
+        print("   Running in system Python environment")
+        print("   For Replit: This is normal and expected")
         print()
 
     # Server configuration
