@@ -746,109 +746,196 @@ input:focus,
     background-color: #3b82f6;
 }
 
-/* Responsive design for pipeline dashboard */
-@media (max-width: 768px) {
-    .pipeline-status-card {
-        margin-bottom: 1rem;
-    }
+/* Modern Dashboard Styling */
+.profile-btn {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
 
-    #pipeline-trigger-modal .bg-white {
-        margin: 1rem;
-        max-width: calc(100vw - 2rem);
-    }
+.profile-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
 
-    #pipeline-notification {
-        left: 1rem;
-        right: 1rem;
-        min-width: auto;
-    }
+.profile-btn.active {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
 
-    .pipeline-dashboard-bg {
-        padding: 1rem;
+/* Range input styling */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-track {
+    background: #e2e8f0;
+    height: 8px;
+    border-radius: 4px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-moz-range-track {
+    background: #e2e8f0;
+    height: 8px;
+    border-radius: 4px;
+    border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #ffffff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Card hover effects */
+.bg-white:hover,
+.dark .bg-gray-800:hover {
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Toggle switch animations */
+.toggle-switch {
+    transition: all 0.3s ease;
+}
+
+.toggle-switch span {
+    transition: all 0.3s ease;
+}
+
+/* Progress bar animations */
+.bg-green-600,
+.bg-blue-600,
+.bg-yellow-600,
+.bg-purple-600 {
+    transition: width 0.5s ease-in-out;
+}
+
+/* Button hover effects */
+button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Modal animations */
+.modal-enter {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }
 
-@media (max-width: 640px) {
-    .pipeline-status-card h3 {
-        font-size: 0.75rem;
-    }
+/* Dashboard specific grid styling */
+.dashboard-grid {
+    display: grid;
+    gap: 2rem;
+}
 
-    .pipeline-status-card div:first-child {
-        font-size: 1rem;
-    }
-
-    #execution-history-tbody {
-        font-size: 0.75rem;
-    }
-
-    .status-badge {
-        font-size: 0.625rem;
-        padding: 0.125rem 0.5rem;
+@media (min-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
-/* Accessibility improvements */
-.pipeline-status-card:focus-within {
-    outline: 2px solid #6366f1;
+/* Enhanced focus states */
+input:focus,
+select:focus,
+button:focus {
+    outline: 2px solid #3b82f6;
     outline-offset: 2px;
 }
 
-#trigger-pipeline-btn:focus,
-#view-logs-btn:focus,
-#refresh-pipeline-btn:focus {
-    outline: 2px solid #6366f1;
-    outline-offset: 2px;
+/* Dark mode enhancements */
+.dark input[type="range"]::-webkit-slider-track {
+    background: #4a5568;
 }
 
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-    .pipeline-status-card {
-        border-width: 2px;
-    }
-
-    .status-badge {
-        border-width: 2px;
-    }
-
-    #pipeline-status-indicator,
-    #system-health-indicator {
-        border: 2px solid currentColor;
-    }
+.dark input[type="range"]::-moz-range-track {
+    background: #4a5568;
 }
 
-/* Reduced motion support */
-@media (prefers-reduced-motion: reduce) {
-    .pipeline-status-card,
-    #trigger-pipeline-btn,
-    #view-logs-btn,
-    #execution-history-tbody tr {
-        transition: none;
-    }
+/* Status indicators with animations */
+.status-indicator {
+    animation: pulse 2s infinite;
+}
 
-    #pipeline-status-indicator.status-running,
-    #pipeline-status-indicator.status-failed,
-    #pipeline-status-indicator.status-warning,
-    .status-badge.running,
-    .pipeline-progress-bar {
-        animation: none;
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
     }
 }
 
-/* Toast notifications */
-.success {
-    background-color: #10b981;
+/* Metric cards styling */
+.metric-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.3s ease;
 }
 
-.error {
-    background-color: #ef4444;
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
 }
 
-.warning {
-    background-color: #f59e0b;
+/* Configuration section styling */
+.config-section {
+    transition: all 0.3s ease;
 }
 
-.info {
-    background-color: #3b82f6;
+.config-section:hover {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* Interactive elements */
+.interactive:hover {
+    transform: scale(1.02);
+    transition: transform 0.2s ease;
+}
+
+/* Gradient backgrounds */
+.gradient-bg {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-text {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 /* Syndicate-specific styles */
