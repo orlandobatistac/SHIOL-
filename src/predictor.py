@@ -387,24 +387,43 @@ class Predictor:
         """Load the trained model from the specified path."""
         self.model = self.model_trainer.load_model()
         if self.model is None:
-            logger.info("No pre-trained model found. Training initial model with available data...")
+            logger.info("No pre-trained model found. Training initial model with feature engineering...")
             # Try to train a model automatically if we have data
             try:
                 if self.historical_data is not None and not self.historical_data.empty:
-                    logger.info("Training initial model...")
-                    self.model_trainer.data = self.historical_data
+                    logger.info("🔧 Engineering features for model training...")
+                    
+                    # Engineer features using FeatureEngineer
+                    engineered_features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
+                    
+                    if engineered_features.empty:
+                        logger.error("Feature engineering failed - cannot train model")
+                        return
+                    
+                    # Combine original data with engineered features
+                    combined_data = self.historical_data.merge(
+                        engineered_features, 
+                        left_index=True, 
+                        right_index=True, 
+                        how='inner'
+                    )
+                    
+                    logger.info(f"🤖 Training model with {combined_data.shape[1]} features...")
+                    self.model_trainer.data = combined_data
+                    
                     if self.model_trainer.train_model():
                         self.model = self.model_trainer.load_model()
-                        logger.info("Initial model trained and loaded successfully.")
+                        logger.info("✅ Initial model trained and loaded successfully.")
                     else:
-                        logger.warning("Initial model training failed.")
+                        logger.warning("❌ Initial model training failed.")
                 else:
                     logger.warning("No historical data available for initial model training.")
             except Exception as e:
                 logger.error(f"Error during automatic model training: {e}")
+                logger.exception("Full traceback:")
                 logger.warning("Model will be trained on first prediction request.")
         else:
-            logger.info("Model loaded successfully.")
+            logger.info("✅ Model loaded successfully.")
 
     def _initialize_ensemble_system(self) -> None:
         """Initialize the enhanced ensemble prediction system"""
