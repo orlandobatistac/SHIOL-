@@ -280,6 +280,11 @@ class PipelineOrchestrator:
         next_drawing_date = current_date + timedelta(days=days_ahead)
         return next_drawing_date.strftime('%Y-%m-%d')
 
+    def _execute_step(self, step_name: str, step_function) -> Dict[str, Any]:
+        """
+        Execute a single pipeline step with error handling.
+
+        Args:
             step_name: Name of the step
             step_function: Function to execute
 
