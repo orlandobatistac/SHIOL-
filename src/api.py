@@ -1219,18 +1219,24 @@ async def get_pipeline_status():
             for _, row in history.iterrows():
                 # Safely convert all values to ensure JSON serialization
                 try:
+                    # Use direct type conversion for better safety
+                    numbers = []
+                    for col in ['n1', 'n2', 'n3', 'n4', 'n5']:
+                        val = row.get(col, 0)
+                        numbers.append(int(val) if val is not None else 0)
+                    
+                    powerball_val = row.get('powerball', 0)
+                    powerball = int(powerball_val) if powerball_val is not None else 0
+                    
+                    score_val = row.get('score_total', 0.0)
+                    score = float(score_val) if score_val is not None else 0.0
+                    
                     recent_plays.append({
-                        "numbers": [
-                            convert_numpy_types(row['n1']), 
-                            convert_numpy_types(row['n2']), 
-                            convert_numpy_types(row['n3']), 
-                            convert_numpy_types(row['n4']), 
-                            convert_numpy_types(row['n5'])
-                        ],
-                        "powerball": convert_numpy_types(row['powerball']),
-                        "score": convert_numpy_types(row['score_total']),
-                        "timestamp": str(row['timestamp']) if row['timestamp'] is not None else "",
-                        "dataset_hash": str(row['dataset_hash']) if row['dataset_hash'] is not None else ""
+                        "numbers": numbers,
+                        "powerball": powerball,
+                        "score": score,
+                        "timestamp": str(row['timestamp']) if row.get('timestamp') is not None else "",
+                        "dataset_hash": str(row['dataset_hash']) if row.get('dataset_hash') is not None else ""
                     })
                 except Exception as convert_error:
                     logger.warning(f"Error converting prediction row to JSON-safe format: {convert_error}")
@@ -1245,11 +1251,11 @@ async def get_pipeline_status():
             disk = psutil.disk_usage('.')
 
             system_health = {
-                "cpu_usage_percent": cpu_percent,
-                "memory_usage_percent": memory.percent,
-                "memory_available_gb": round(memory.available / (1024**3), 2),
-                "disk_usage_percent": disk.percent,
-                "disk_free_gb": round(disk.free / (1024**3), 2)
+                "cpu_usage_percent": float(cpu_percent),
+                "memory_usage_percent": float(memory.percent),
+                "memory_available_gb": round(float(memory.available) / (1024**3), 2),
+                "disk_usage_percent": float(disk.percent),
+                "disk_free_gb": round(float(disk.free) / (1024**3), 2)
             }
         except Exception as e:
             logger.warning(f"Could not get system health metrics: {e}")
@@ -1266,8 +1272,8 @@ async def get_pipeline_status():
             elif latest_execution.get("status") == "completed":
                 current_status = "completed"
 
-
-        return {
+        # Apply convert_numpy_types to the entire response to ensure safety
+        response_data = {
             "pipeline_status": {
                 "current_status": current_status,
                 "last_execution": sorted_executions[0] if sorted_executions else None,
@@ -1279,6 +1285,8 @@ async def get_pipeline_status():
             "generated_plays_last_run": recent_plays,
             "timestamp": datetime.now().isoformat()
         }
+
+        return convert_numpy_types(response_data)
 
     except HTTPException:
         raise

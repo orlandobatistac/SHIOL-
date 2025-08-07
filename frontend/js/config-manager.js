@@ -476,11 +476,24 @@ class ConfigurationManager {
             }
         };
 
+        let monitoringAttempts = 0;
+        const maxAttempts = 60; // Maximum 5 minutes of monitoring
+
         const checkStatus = async () => {
             try {
+                monitoringAttempts++;
+                if (monitoringAttempts > maxAttempts) {
+                    console.log('⏰ Pipeline monitoring timeout reached');
+                    this.showNotification('Pipeline monitoring timeout. Execution may still be running.', 'warning');
+                    resetButton();
+                    return;
+                }
+
                 const response = await fetch(`${this.API_BASE_URL}/pipeline/status`);
                 if (!response.ok) {
-                    console.warn('Pipeline status check failed');
+                    console.warn(`Pipeline status check failed: ${response.status}`);
+                    // Continue monitoring despite HTTP errors
+                    setTimeout(checkStatus, 10000);
                     return;
                 }
 
@@ -499,9 +512,14 @@ class ConfigurationManager {
                         return; // Stop monitoring
                     } else if (execution.status === 'failed') {
                         console.log('❌ Pipeline execution failed');
-                        this.showNotification('Pipeline execution failed. Check logs for details.', 'error');
+                        this.showNotification(`Pipeline execution failed: ${execution.error || 'Unknown error'}`, 'error');
                         resetButton();
                         return; // Stop monitoring
+                    } else if (execution.status === 'running') {
+                        // Update button text with current step if available
+                        if (executeButton && execution.current_step) {
+                            executeButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${execution.current_step}...`;
+                        }
                     }
                 }
 
@@ -510,7 +528,8 @@ class ConfigurationManager {
 
             } catch (error) {
                 console.warn('Pipeline status check failed:', error);
-                setTimeout(checkStatus, 10000); // Retry in 10 seconds on error
+                // Continue monitoring but with longer delay on errors
+                setTimeout(checkStatus, 15000); // Retry in 15 seconds on error
             }
         };
 

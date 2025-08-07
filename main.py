@@ -817,17 +817,20 @@ class PipelineOrchestrator:
                 historical_data = get_all_draws()
                 performance_analytics = get_performance_analytics(7)
 
+                # Ensure all values are converted to native Python types
                 status.update({
-                    'database_records': len(historical_data),
+                    'database_records': int(len(historical_data)),
                     'latest_draw_date': historical_data['draw_date'].max().strftime('%Y-%m-%d') if not historical_data.empty else None,
-                    'recent_predictions': performance_analytics.get('total_predictions', 0),
-                    'recent_win_rate': f"{performance_analytics.get('win_rate', 0):.1f}%"
+                    'recent_predictions': int(performance_analytics.get('total_predictions', 0)),
+                    'recent_win_rate': f"{float(performance_analytics.get('win_rate', 0)):.1f}%"
                 })
             except Exception as e:
                 logger.warning(f"Could not retrieve database statistics: {e}")
                 status['database_error'] = str(e)
 
-            return status
+            # Import and apply convert_numpy_types to ensure all numpy types are converted
+            from src.api import convert_numpy_types
+            return convert_numpy_types(status)
 
         except Exception as e:
             logger.error(f"Error getting pipeline status: {e}")
