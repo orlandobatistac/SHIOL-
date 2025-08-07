@@ -261,6 +261,17 @@ def initialize_database():
                 )
             """)
 
+            # Create performance indexes for frequently queried columns
+            try:
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_log_created_at ON predictions_log (created_at DESC)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_predictions_log_target_date ON predictions_log (target_draw_date)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_performance_tracking_prediction_id ON performance_tracking (prediction_id)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_performance_tracking_draw_date ON performance_tracking (draw_date)")
+                cursor.execute("CREATE INDEX IF NOT EXISTS idx_powerball_draws_date ON powerball_draws (draw_date)")
+                logger.info("Database performance indexes created successfully")
+            except sqlite3.Error as idx_error:
+                logger.warning(f"Error creating indexes (may already exist): {idx_error}")
+
             conn.commit()
             
             # Check if we have any historical data, if not add sample data
@@ -412,6 +423,17 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
         if not target_draw_date:
             target_draw_date = calculate_next_drawing_date()
 
+        # Safe type conversion to avoid numpy issues
+        def safe_int(value):
+            if hasattr(value, 'item'):  # numpy scalar
+                return int(value.item())
+            return int(value)
+        
+        def safe_float(value):
+            if hasattr(value, 'item'):  # numpy scalar
+                return float(value.item())
+            return float(value)
+
         # Insertar registro en SQLite
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -421,18 +443,18 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
                  model_version, dataset_hash, json_details_path, target_draw_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                prediction_data['timestamp'],
-                int(prediction_data['numbers'][0]),
-                int(prediction_data['numbers'][1]),
-                int(prediction_data['numbers'][2]),
-                int(prediction_data['numbers'][3]),
-                int(prediction_data['numbers'][4]),
-                int(prediction_data['powerball']),
-                float(prediction_data['score_total']),
-                prediction_data['model_version'],
-                prediction_data['dataset_hash'],
+                str(prediction_data['timestamp']),
+                safe_int(prediction_data['numbers'][0]),
+                safe_int(prediction_data['numbers'][1]),
+                safe_int(prediction_data['numbers'][2]),
+                safe_int(prediction_data['numbers'][3]),
+                safe_int(prediction_data['numbers'][4]),
+                safe_int(prediction_data['powerball']),
+                safe_float(prediction_data['score_total']),
+                str(prediction_data['model_version']),
+                str(prediction_data['dataset_hash']),
                 prediction_data.get('json_details_path', None),
-                target_draw_date
+                str(target_draw_date)
             ))
 
             prediction_id = cursor.lastrowid

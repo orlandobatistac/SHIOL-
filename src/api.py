@@ -30,9 +30,9 @@ from src.public_api import public_router, auth_router
 
 def convert_numpy_types(obj):
     """Convert numpy types to native Python types for JSON serialization."""
-    if isinstance(obj, np.integer):
+    if isinstance(obj, (np.integer, np.int64, np.int32)):
         return int(obj)
-    elif isinstance(obj, np.floating):
+    elif isinstance(obj, (np.floating, np.float64, np.float32)):
         return float(obj)
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
@@ -40,6 +40,8 @@ def convert_numpy_types(obj):
         return [convert_numpy_types(item) for item in obj]
     elif isinstance(obj, dict):
         return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif hasattr(obj, 'item'):  # Handle numpy scalar types
+        return obj.item()
     return obj
 
 # --- Pipeline Monitoring Global Variables ---
@@ -912,20 +914,23 @@ async def get_smart_predictions(
         # Convert database records to Smart AI format
         smart_predictions = []
         for i, pred in enumerate(predictions_list):
+            # Safely convert all values to ensure JSON serialization
             smart_pred = {
-                "rank": i + 1,
-                "numbers": [int(pred["n1"]), int(pred["n2"]), int(pred["n3"]), int(pred["n4"]), int(pred["n5"])],
-                "powerball": int(pred["powerball"]),
-                "total_score": float(pred["score_total"]),
+                "rank": convert_numpy_types(i + 1),
+                "numbers": [convert_numpy_types(pred["n1"]), convert_numpy_types(pred["n2"]), 
+                           convert_numpy_types(pred["n3"]), convert_numpy_types(pred["n4"]), 
+                           convert_numpy_types(pred["n5"])],
+                "powerball": convert_numpy_types(pred["powerball"]),
+                "total_score": convert_numpy_types(pred["score_total"]),
                 "score_details": {
-                    "probability": float(pred["score_total"]) * 0.4,
-                    "diversity": float(pred["score_total"]) * 0.25,
-                    "historical": float(pred["score_total"]) * 0.2,
-                    "risk_adjusted": float(pred["score_total"]) * 0.15
+                    "probability": convert_numpy_types(float(pred["score_total"]) * 0.4),
+                    "diversity": convert_numpy_types(float(pred["score_total"]) * 0.25),
+                    "historical": convert_numpy_types(float(pred["score_total"]) * 0.2),
+                    "risk_adjusted": convert_numpy_types(float(pred["score_total"]) * 0.15)
                 },
-                "model_version": pred.get("model_version", "pipeline_v1.0"),
-                "dataset_hash": pred.get("dataset_hash", "pipeline_generated"),
-                "prediction_id": int(pred["id"]),
+                "model_version": str(pred.get("model_version", "pipeline_v1.0")),
+                "dataset_hash": str(pred.get("dataset_hash", "pipeline_generated")),
+                "prediction_id": convert_numpy_types(pred["id"]),
                 "generated_at": str(pred["timestamp"]),
                 "method": "smart_ai_pipeline"
             }

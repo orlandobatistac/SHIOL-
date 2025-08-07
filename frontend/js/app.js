@@ -1,17 +1,31 @@
-// Suppress runtime.lastError warnings in development
-if (typeof chrome !== 'undefined' && chrome.runtime) {
-    const originalLastError = chrome.runtime.lastError;
-    Object.defineProperty(chrome.runtime, 'lastError', {
-        get: function() {
-            const error = originalLastError;
-            if (error && error.message && error.message.includes('message port closed')) {
-                // Suppress this specific error silently
-                return undefined;
+// Suppress Chrome extension errors
+try {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+        // Override console.error to filter chrome extension errors
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('Unchecked runtime.lastError') || 
+                message.includes('message port closed') ||
+                message.includes('Extension context invalidated')) {
+                // Suppress these specific chrome extension errors
+                return;
             }
-            return error;
-        },
-        configurable: true
-    });
+            originalConsoleError.apply(console, args);
+        };
+
+        // Also handle the runtime.lastError directly
+        if (chrome.runtime.lastError) {
+            // Clear the error silently
+            const error = chrome.runtime.lastError;
+            if (error.message && error.message.includes('message port closed')) {
+                // Acknowledge the error to clear it
+                void chrome.runtime.lastError;
+            }
+        }
+    }
+} catch (e) {
+    // If chrome object manipulation fails, just continue
 }
 
 document.addEventListener('DOMContentLoaded', () => {
