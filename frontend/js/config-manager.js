@@ -425,16 +425,39 @@ class ConfigurationManager {
     async triggerPipeline() {
         try {
             console.log('🔄 Testing Pipeline Trigger...');
+            
+            // Show loading state
+            const triggerBtn = document.getElementById('trigger-pipeline-btn');
+            if (triggerBtn) {
+                triggerBtn.disabled = true;
+                triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Starting Pipeline...';
+            }
+            
             const response = await fetch(`${this.API_BASE_URL}/pipeline/trigger`, { method: 'POST' });
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Pipeline Trigger Result:', result);
 
                 this.showNotification(`Pipeline execution started: ${result.execution_id}`, 'success');
-                document.getElementById('trigger-pipeline-btn').classList.add('hidden');
-                document.getElementById('stop-pipeline-btn').classList.remove('hidden');
-                document.getElementById('pipeline-progress').classList.remove('hidden');
-                this.startPipelineMonitoring();
+                
+                // Update UI to show pipeline is running
+                if (triggerBtn) {
+                    triggerBtn.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i>Pipeline Running...';
+                    triggerBtn.disabled = true;
+                }
+                
+                const stopBtn = document.getElementById('stop-pipeline-btn');
+                if (stopBtn) {
+                    stopBtn.classList.remove('hidden');
+                }
+                
+                const progressEl = document.getElementById('pipeline-progress');
+                if (progressEl) {
+                    progressEl.classList.remove('hidden');
+                }
+                
+                // Start monitoring pipeline status
+                this.monitorPipelineExecution(result.execution_id);
             } else {
                 const errorText = await response.text();
                 throw new Error(`Failed to trigger pipeline: ${response.status} - ${errorText}`);
@@ -442,6 +465,64 @@ class ConfigurationManager {
         } catch (error) {
             console.error('❌ Pipeline Trigger Error:', error);
             this.showNotification('Error triggering pipeline: ' + error.message, 'error');
+        } finally {
+            // Reset button if there was an error
+            const triggerBtn = document.getElementById('trigger-pipeline-btn');
+            if (triggerBtn && triggerBtn.innerHTML.includes('Starting Pipeline')) {
+                triggerBtn.disabled = false;
+                triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+            }
+        }
+    }
+
+    monitorPipelineExecution(executionId) {
+        const checkStatus = async () => {
+            try {
+                const response = await fetch(`${this.API_BASE_URL}/pipeline/status`);
+                if (response.ok) {
+                    const status = await response.json();
+                    
+                    // Check if our execution is still running
+                    const isRunning = status.pipeline_status?.current_status === 'running';
+                    
+                    if (!isRunning) {
+                        // Pipeline finished
+                        this.resetPipelineUI();
+                        this.showNotification('Pipeline execution completed', 'success');
+                        return;
+                    }
+                    
+                    // Continue monitoring
+                    setTimeout(checkStatus, 2000);
+                } else {
+                    console.warn('Pipeline status check failed');
+                    setTimeout(checkStatus, 5000); // Retry less frequently on error
+                }
+            } catch (error) {
+                console.error('Error monitoring pipeline:', error);
+                setTimeout(checkStatus, 5000); // Retry less frequently on error
+            }
+        };
+        
+        // Start monitoring
+        setTimeout(checkStatus, 2000);
+    }
+
+    resetPipelineUI() {
+        const triggerBtn = document.getElementById('trigger-pipeline-btn');
+        if (triggerBtn) {
+            triggerBtn.disabled = false;
+            triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+        }
+        
+        const stopBtn = document.getElementById('stop-pipeline-btn');
+        if (stopBtn) {
+            stopBtn.classList.add('hidden');
+        }
+        
+        const progressEl = document.getElementById('pipeline-progress');
+        if (progressEl) {
+            progressEl.classList.add('hidden');
         }
     }
 

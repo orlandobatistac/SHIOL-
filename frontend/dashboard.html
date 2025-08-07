@@ -814,18 +814,41 @@
 
         async function triggerPipeline() {
             try {
+                // Show loading state
+                const triggerBtn = document.getElementById('trigger-pipeline-btn');
+                if (triggerBtn) {
+                    triggerBtn.disabled = true;
+                    triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Starting Pipeline...';
+                }
+
                 const response = await fetch('/api/v1/pipeline/trigger', { method: 'POST' });
                 if (response.ok) {
-                    showNotification('Pipeline execution started', 'success');
-                    document.getElementById('trigger-pipeline-btn').classList.add('hidden');
+                    const result = await response.json();
+                    showNotification(`Pipeline execution started: ${result.execution_id}`, 'success');
+                    
+                    // Update button to show running state
+                    if (triggerBtn) {
+                        triggerBtn.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i>Pipeline Running...';
+                        triggerBtn.disabled = true;
+                    }
+                    
                     document.getElementById('stop-pipeline-btn').classList.remove('hidden');
                     document.getElementById('pipeline-progress').classList.remove('hidden');
                     startPipelineMonitoring();
                 } else {
-                    throw new Error('Failed to trigger pipeline');
+                    const errorText = await response.text();
+                    throw new Error(`Failed to trigger pipeline: ${response.status} - ${errorText}`);
                 }
             } catch (error) {
+                console.error('Pipeline trigger error:', error);
                 showNotification('Error triggering pipeline: ' + error.message, 'error');
+                
+                // Reset button on error
+                const triggerBtn = document.getElementById('trigger-pipeline-btn');
+                if (triggerBtn) {
+                    triggerBtn.disabled = false;
+                    triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+                }
             }
         }
 
@@ -837,29 +860,54 @@
             const interval = setInterval(async () => {
                 try {
                     const response = await fetch('/api/v1/pipeline/status');
+                    
+                    if (!response.ok) {
+                        console.warn('Pipeline status request failed:', response.status);
+                        return; // Continue monitoring despite errors
+                    }
+                    
                     const status = await response.json();
+                    const pipelineStatus = status.pipeline_status?.current_status;
 
-                    if (status.running) {
+                    if (pipelineStatus === 'running') {
                         progress = Math.min(progress + 10, 90);
                         progressBar.style.width = `${progress}%`;
-                        statusText.textContent = `Pipeline running: ${status.current_step || 'Processing...'}`;
-                    } else {
+                        
+                        const currentStep = status.pipeline_status?.last_execution?.current_step;
+                        statusText.textContent = `Pipeline running: ${currentStep || 'Processing...'}`;
+                    } else if (pipelineStatus === 'completed' || pipelineStatus === 'failed' || pipelineStatus === 'idle') {
                         clearInterval(interval);
                         progressBar.style.width = '100%';
-                        statusText.textContent = 'Pipeline completed';
+                        statusText.textContent = `Pipeline ${pipelineStatus}`;
 
                         setTimeout(() => {
-                            document.getElementById('trigger-pipeline-btn').classList.remove('hidden');
-                            document.getElementById('stop-pipeline-btn').classList.add('hidden');
-                            document.getElementById('pipeline-progress').classList.add('hidden');
+                            resetPipelineButtons();
                             statusText.textContent = 'Pipeline ready to execute';
                         }, 2000);
                     }
                 } catch (error) {
-                    clearInterval(interval);
-                    showNotification('Error monitoring pipeline', 'error');
+                    console.error('Error monitoring pipeline:', error);
+                    // Don't clear interval immediately - might be temporary network issue
                 }
-            }, 1000);
+            }, 2000); // Check every 2 seconds
+
+            // Clear interval after 5 minutes to prevent endless monitoring
+            setTimeout(() => {
+                clearInterval(interval);
+                resetPipelineButtons();
+            }, 300000); // 5 minutes
+        }
+
+        function resetPipelineButtons() {
+            const triggerBtn = document.getElementById('trigger-pipeline-btn');
+            if (triggerBtn) {
+                triggerBtn.disabled = false;
+                triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+                triggerBtn.classList.remove('hidden');
+            }
+            
+            document.getElementById('stop-pipeline-btn').classList.add('hidden');
+            document.getElementById('pipeline-progress').classList.add('hidden');
         }
 
         function exportConfiguration() {

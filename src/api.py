@@ -1173,8 +1173,8 @@ async def get_pipeline_status():
         # Get recent execution history from global tracking
         recent_executions = []
         # Sort executions by start time descending and take the last 5
-        sorted_executions = sorted(pipeline_executions.values(), key=lambda x: x.get("start_time", ""), reverse=True)
-        for exec_id, execution in list(sorted_executions)[:5]:
+        sorted_executions = sorted(pipeline_executions.items(), key=lambda item: item[1].get("start_time", ""), reverse=True)
+        for exec_id, execution in sorted_executions[:5]:
             recent_executions.append({
                 "execution_id": exec_id,
                 "status": execution.get("status", "unknown"),
