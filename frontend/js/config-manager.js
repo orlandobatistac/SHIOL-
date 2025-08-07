@@ -117,30 +117,37 @@ class ConfigurationManager {
     }
 
     collectConfiguration() {
+        const mondayEl = document.getElementById('day-monday');
+        const wednesdayEl = document.getElementById('day-wednesday');
+        const saturdayEl = document.getElementById('day-saturday');
+        const timeEl = document.getElementById('execution-time');
+        const timezoneEl = document.getElementById('timezone');
+        const toggleEl = document.getElementById('auto-execution-toggle');
+
         return {
             pipeline: {
                 execution_days: {
-                    monday: document.getElementById('day-monday')?.checked || false,
-                    wednesday: document.getElementById('day-wednesday')?.checked || false,
-                    saturday: document.getElementById('day-saturday')?.checked || false
+                    monday: mondayEl ? mondayEl.checked : false,
+                    wednesday: wednesdayEl ? wednesdayEl.checked : false,
+                    saturday: saturdayEl ? saturdayEl.checked : false
                 },
-                execution_time: document.getElementById('execution-time')?.value || '02:00',
-                timezone: document.getElementById('timezone')?.value || 'America/New_York',
-                auto_execution: document.getElementById('auto-execution-toggle')?.classList.contains('active') || false
+                execution_time: timeEl ? timeEl.value : '02:00',
+                timezone: timezoneEl ? timezoneEl.value : 'America/New_York',
+                auto_execution: toggleEl ? toggleEl.classList.contains('active') : false
             },
             predictions: {
-                count: parseInt(document.getElementById('prediction-count')?.value || '100'),
-                method: document.getElementById('prediction-method')?.value || 'smart_ai',
+                count: parseInt((document.getElementById('prediction-count')?.value) || '100'),
+                method: (document.getElementById('prediction-method')?.value) || 'smart_ai',
                 weights: {
-                    probability: parseInt(document.getElementById('weight-probability')?.value || '40'),
-                    diversity: parseInt(document.getElementById('weight-diversity')?.value || '25'),
-                    historical: parseInt(document.getElementById('weight-historical')?.value || '20'),
-                    risk: parseInt(document.getElementById('weight-risk')?.value || '15')
+                    probability: parseInt((document.getElementById('weight-probability')?.value) || '40'),
+                    diversity: parseInt((document.getElementById('weight-diversity')?.value) || '25'),
+                    historical: parseInt((document.getElementById('weight-historical')?.value) || '20'),
+                    risk: parseInt((document.getElementById('weight-risk')?.value) || '15')
                 }
             },
             notifications: {
-                email: document.getElementById('notification-email')?.value || '',
-                session_timeout: parseInt(document.getElementById('session-timeout')?.value || '60')
+                email: (document.getElementById('notification-email')?.value) || '',
+                session_timeout: parseInt((document.getElementById('session-timeout')?.value) || '60')
             }
         };
     }
@@ -153,17 +160,23 @@ class ConfigurationManager {
             const { execution_days, execution_time, timezone, auto_execution } = config.pipeline;
             
             if (execution_days) {
-                document.getElementById('day-monday').checked = execution_days.monday;
-                document.getElementById('day-wednesday').checked = execution_days.wednesday;
-                document.getElementById('day-saturday').checked = execution_days.saturday;
+                const mondayEl = document.getElementById('day-monday');
+                const wednesdayEl = document.getElementById('day-wednesday');
+                const saturdayEl = document.getElementById('day-saturday');
+                
+                if (mondayEl) mondayEl.checked = execution_days.monday;
+                if (wednesdayEl) wednesdayEl.checked = execution_days.wednesday;
+                if (saturdayEl) saturdayEl.checked = execution_days.saturday;
             }
             
             if (execution_time) {
-                document.getElementById('execution-time').value = execution_time;
+                const timeEl = document.getElementById('execution-time');
+                if (timeEl) timeEl.value = execution_time;
             }
             
             if (timezone) {
-                document.getElementById('timezone').value = timezone;
+                const timezoneEl = document.getElementById('timezone');
+                if (timezoneEl) timezoneEl.value = timezone;
             }
             
             const autoToggle = document.getElementById('auto-execution-toggle');
@@ -189,7 +202,8 @@ class ConfigurationManager {
             }
             
             if (method) {
-                document.getElementById('prediction-method').value = method;
+                const methodEl = document.getElementById('prediction-method');
+                if (methodEl) methodEl.value = method;
             }
             
             if (weights) {
@@ -205,11 +219,13 @@ class ConfigurationManager {
             const { email, session_timeout } = config.notifications;
             
             if (email) {
-                document.getElementById('notification-email').value = email;
+                const emailEl = document.getElementById('notification-email');
+                if (emailEl) emailEl.value = email;
             }
             
             if (session_timeout) {
-                document.getElementById('session-timeout').value = session_timeout;
+                const timeoutEl = document.getElementById('session-timeout');
+                if (timeoutEl) timeoutEl.value = session_timeout;
             }
         }
     }

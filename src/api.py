@@ -1808,7 +1808,7 @@ async def get_database_stats():
         cursor.execute("SELECT COUNT(*) FROM predictions_log")
         predictions_count = cursor.fetchone()[0]
 
-        cursor.execute("SELECT COUNT(*) FROM prediction_validations")
+        cursor.execute("SELECT COUNT(*) FROM performance_tracking")
         validations_count = cursor.fetchone()[0]
 
         # Get database file size
