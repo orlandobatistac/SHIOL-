@@ -2079,6 +2079,7 @@ async def save_configuration(config_data: Dict[str, Any]):
 @api_router.post("/database/cleanup")
 async def cleanup_database(cleanup_options: Dict[str, bool]):
     """Clean database based on selected options"""
+    global pipeline_executions, pipeline_logs
     try:
         logger.info(f"Starting database cleanup with options: {cleanup_options}")
 
@@ -2136,7 +2137,6 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
                     pipeline_files_cleared += 1
             
             # Clear global pipeline execution tracking
-            global pipeline_executions, pipeline_logs
             pipeline_executions.clear()
             pipeline_logs.clear()
             
@@ -2178,7 +2178,6 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
                     report_file.unlink()
 
             # Clear global pipeline execution tracking
-            global pipeline_executions, pipeline_logs
             pipeline_executions.clear()
             pipeline_logs.clear()
 
