@@ -585,76 +585,55 @@
         function setupCleanupModalEvents() {
             console.log('🔧 Setting up cleanup modal events...');
             
-            // Remove any existing event listeners by cloning elements
-            const executeCleanupBtn = document.getElementById('execute-cleanup-btn');
-            const cancelCleanupBtn = document.getElementById('cancel-cleanup-btn');
-            const closeCleanupModalBtn = document.getElementById('close-cleanup-modal-btn');
-            const cleanupModal = document.getElementById('cleanup-modal');
+            // Simple event listeners without cloning
+            const executeBtn = document.getElementById('execute-cleanup-btn');
+            const cancelBtn = document.getElementById('cancel-cleanup-btn');
+            const closeBtn = document.getElementById('close-cleanup-modal-btn');
+            const modal = document.getElementById('cleanup-modal');
 
-            // Execute cleanup button
-            if (executeCleanupBtn) {
-                const newExecuteBtn = executeCleanupBtn.cloneNode(true);
-                executeCleanupBtn.parentNode.replaceChild(newExecuteBtn, executeCleanupBtn);
-                newExecuteBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    executeCleanup();
-                });
-                console.log('✅ Execute cleanup button event added');
+            // Remove any existing event listeners first
+            if (executeBtn) executeBtn.replaceWith(executeBtn.cloneNode(true));
+            if (cancelBtn) cancelBtn.replaceWith(cancelBtn.cloneNode(true));
+            if (closeBtn) closeBtn.replaceWith(closeBtn.cloneNode(true));
+
+            // Re-get elements after cloning
+            const newExecuteBtn = document.getElementById('execute-cleanup-btn');
+            const newCancelBtn = document.getElementById('cancel-cleanup-btn');
+            const newCloseBtn = document.getElementById('close-cleanup-modal-btn');
+
+            // Add simple event listeners
+            if (newExecuteBtn) {
+                newExecuteBtn.onclick = executeCleanup;
+                console.log('✅ Execute button configured');
             }
             
-            // Cancel button
-            if (cancelCleanupBtn) {
-                const newCancelBtn = cancelCleanupBtn.cloneNode(true);
-                cancelCleanupBtn.parentNode.replaceChild(newCancelBtn, cancelCleanupBtn);
-                newCancelBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('🚫 Cancel button clicked - closing modal');
-                    closeCleanupModal();
-                });
-                console.log('✅ Cancel button event added');
+            if (newCancelBtn) {
+                newCancelBtn.onclick = closeCleanupModal;
+                console.log('✅ Cancel button configured');
             }
 
-            // Close button (X)
-            if (closeCleanupModalBtn) {
-                const newCloseBtn = closeCleanupModalBtn.cloneNode(true);
-                closeCleanupModalBtn.parentNode.replaceChild(newCloseBtn, closeCleanupModalBtn);
-                newCloseBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('❌ Close (X) button clicked - closing modal');
-                    closeCleanupModal();
-                });
-                console.log('✅ Close (X) button event added');
+            if (newCloseBtn) {
+                newCloseBtn.onclick = closeCleanupModal;
+                console.log('✅ Close button configured');
             }
 
-            // Click outside to close - use event delegation
-            if (cleanupModal) {
-                const newModal = cleanupModal.cloneNode(true);
-                cleanupModal.parentNode.replaceChild(newModal, cleanupModal);
-                newModal.addEventListener('click', function(event) {
-                    if (event.target === newModal) {
-                        console.log('🖱️ Clicked outside modal - closing');
+            // Click outside to close
+            if (modal) {
+                modal.onclick = function(event) {
+                    if (event.target === modal) {
                         closeCleanupModal();
                     }
-                });
-                console.log('✅ Click outside event added');
+                };
+                console.log('✅ Click outside configured');
             }
 
-            // ESC key to close - remove previous listeners
-            document.removeEventListener('keydown', window.cleanupModalEscHandler);
-            window.cleanupModalEscHandler = function(event) {
-                if (event.key === 'Escape') {
-                    const modal = document.getElementById('cleanup-modal');
-                    if (modal && !modal.classList.contains('hidden')) {
-                        console.log('⌨️ ESC key pressed - closing modal');
-                        closeCleanupModal();
-                    }
+            // ESC key handler
+            document.onkeydown = function(event) {
+                if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+                    closeCleanupModal();
                 }
             };
-            document.addEventListener('keydown', window.cleanupModalEscHandler);
-            console.log('✅ ESC key handler added');
+            console.log('✅ ESC key handler configured');
         }
 
         function loadConfigProfile(profile) {
@@ -707,30 +686,50 @@
 
         async function refreshDatabaseStats() {
             try {
+                console.log('🔄 Refreshing database stats...');
                 const response = await fetch('/api/v1/database/stats');
+                
                 if (response.ok) {
                     const stats = await response.json();
+                    console.log('✅ Database stats loaded:', stats);
+                    
                     document.getElementById('db-records').textContent = stats.total_records || '-';
                     document.getElementById('db-size').textContent = stats.size_mb ? `${stats.size_mb}MB` : '-';
                     document.getElementById('db-predictions').textContent = stats.predictions_count || '-';
+                    
+                    showNotification('Estadísticas de base de datos actualizadas', 'success');
+                } else {
+                    console.error('❌ Database stats request failed:', response.status);
+                    showNotification('Error al cargar estadísticas de base de datos', 'error');
                 }
             } catch (error) {
-                console.error('Error refreshing database stats:', error);
+                console.error('❌ Error refreshing database stats:', error);
+                showNotification('Error de conexión con la base de datos', 'error');
             }
         }
 
         async function loadPerformanceAnalytics() {
             try {
+                console.log('🔄 Loading performance analytics...');
                 const response = await fetch('/api/v1/analytics/performance');
+                
                 if (response.ok) {
                     const analytics = await response.json();
-                    document.getElementById('win-rate').textContent = `${analytics.win_rate}%`;
-                    document.getElementById('avg-score').textContent = analytics.avg_score.toFixed(3);
-                    document.getElementById('best-method').textContent = analytics.best_method;
-                    document.getElementById('total-predictions').textContent = analytics.total_predictions;
+                    console.log('✅ Performance analytics loaded:', analytics);
+                    
+                    document.getElementById('win-rate').textContent = `${analytics.win_rate || 0}%`;
+                    document.getElementById('avg-score').textContent = (analytics.avg_score || 0).toFixed(3);
+                    document.getElementById('best-method').textContent = analytics.best_method || 'smart_ai';
+                    document.getElementById('total-predictions').textContent = analytics.total_predictions || 0;
+                    
+                    showNotification('Analytics de rendimiento actualizadas', 'success');
+                } else {
+                    console.error('❌ Performance analytics request failed:', response.status);
+                    showNotification('Error al cargar analytics de rendimiento', 'error');
                 }
             } catch (error) {
-                console.error('Error loading performance analytics:', error);
+                console.error('❌ Error loading performance analytics:', error);
+                showNotification('Error de conexión con analytics', 'error');
             }
         }
 
@@ -818,124 +817,112 @@
 
         function showCleanupModal() {
             console.log('🔓 Opening cleanup modal...');
+            const modal = document.getElementById('cleanup-modal');
             
-            try {
-                const modal = document.getElementById('cleanup-modal');
-                if (modal) {
-                    // Reset modal state completely
-                    modal.style.display = '';
-                    modal.style.visibility = '';
-                    modal.style.opacity = '';
-                    
-                    // Reset all checkboxes first
-                    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = false;
-                    });
-                    
-                    // Show modal
-                    modal.classList.remove('hidden');
-                    
-                    console.log('✅ Cleanup modal opened successfully');
-                } else {
-                    console.error('❌ Cleanup modal element not found');
-                }
-            } catch (error) {
-                console.error('❌ Error opening cleanup modal:', error);
+            if (!modal) {
+                console.error('❌ Modal element not found');
+                return;
             }
+
+            // Reset checkboxes
+            const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = false);
+            
+            // Show modal
+            modal.classList.remove('hidden');
+            console.log('✅ Modal opened');
         }
 
         function closeCleanupModal() {
-            console.log('🔒 FORCE CLOSING cleanup modal...');
+            console.log('🔒 Closing cleanup modal...');
+            const modal = document.getElementById('cleanup-modal');
             
-            try {
-                const modal = document.getElementById('cleanup-modal');
-                if (modal) {
-                    // Force hide modal with multiple methods
-                    modal.classList.add('hidden');
-                    modal.style.display = 'none';
-                    modal.style.visibility = 'hidden';
-                    modal.style.opacity = '0';
-                    
-                    // Reset all checkboxes
-                    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-                    checkboxes.forEach(checkbox => {
-                        checkbox.checked = false;
-                    });
-                    
-                    console.log('✅ Cleanup modal FORCE CLOSED successfully');
-                    
-                    // Refresh data after a short delay
-                    setTimeout(() => {
-                        try {
-                            refreshDatabaseStats();
-                            loadPerformanceAnalytics();
-                        } catch (error) {
-                            console.warn('Warning: Could not refresh stats after modal close:', error);
-                        }
-                    }, 500);
-                } else {
-                    console.error('❌ Cleanup modal element not found for closing');
-                }
-            } catch (error) {
-                console.error('❌ Error closing cleanup modal:', error);
+            if (!modal) {
+                console.error('❌ Modal element not found');
+                return;
             }
+
+            // Hide modal
+            modal.classList.add('hidden');
+            
+            // Reset checkboxes
+            const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = false);
+            
+            console.log('✅ Modal closed');
+            
+            // Refresh data
+            setTimeout(() => {
+                refreshDatabaseStats();
+                loadPerformanceAnalytics();
+            }, 100);
         }
 
         async function executeCleanup() {
+            console.log('🧹 Starting database cleanup...');
+            
             const checkboxes = document.querySelectorAll('#cleanup-modal input[type="checkbox"]');
             const cleanupOptions = {};
             let selectedCount = 0;
 
+            // Build cleanup options object
             checkboxes.forEach(checkbox => {
+                const key = checkbox.name || checkbox.id.replace('clean-', '');
                 const isChecked = checkbox.checked;
-                cleanupOptions[checkbox.name || checkbox.id.replace('clean-', '')] = isChecked;
+                cleanupOptions[key] = isChecked;
                 if (isChecked) selectedCount++;
+                console.log(`Option ${key}: ${isChecked}`);
             });
 
             if (selectedCount === 0) {
-                showNotification('Please select at least one cleanup option', 'warning');
+                showNotification('Por favor selecciona al menos una opción de limpieza', 'warning');
                 return;
             }
 
-            // Show confirmation for dangerous operations
-            const dangerousOptions = ['complete_reset', 'models', 'predictions'];
-            const selectedDangerous = Object.keys(cleanupOptions).filter(key => 
-                cleanupOptions[key] && dangerousOptions.includes(key)
-            );
-
-            if (selectedDangerous.length > 0) {
-                const confirmMessage = `WARNING: This will permanently delete data. Selected operations: ${selectedDangerous.join(', ')}. Are you sure?`;
-                if (!confirm(confirmMessage)) {
-                    return;
-                }
+            // Show confirmation
+            const selectedOptions = Object.keys(cleanupOptions).filter(key => cleanupOptions[key]);
+            const confirmMessage = `⚠️ ADVERTENCIA: Esta operación eliminará permanentemente datos seleccionados: ${selectedOptions.join(', ')}. ¿Continuar?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
             }
 
             try {
-                showNotification('Executing database cleanup...', 'info');
+                console.log('📤 Sending cleanup request:', cleanupOptions);
+                showNotification('Ejecutando limpieza de base de datos...', 'info');
                 
                 const response = await fetch('/api/v1/database/cleanup', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
                     body: JSON.stringify(cleanupOptions)
                 });
 
+                console.log('📥 Cleanup response status:', response.status);
+
                 if (response.ok) {
                     const result = await response.json();
-                    showNotification('Database cleanup completed: ' + result.results.join(', '), 'success');
+                    console.log('✅ Cleanup result:', result);
+                    
+                    const resultText = result.results ? result.results.join(', ') : 'Operación completada';
+                    showNotification(`✅ Limpieza completada: ${resultText}`, 'success');
+                    
+                    // Close modal and refresh
                     closeCleanupModal();
-                    // Additional data refresh after successful cleanup
+                    
                     setTimeout(() => {
                         refreshDatabaseStats();
                         loadPerformanceAnalytics();
-                    }, 1000);
+                    }, 500);
                 } else {
-                    const errorText = await response.text();
-                    throw new Error(`Cleanup failed: ${response.status} - ${errorText}`);
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                    throw new Error(`HTTP ${response.status}: ${errorData.detail || errorData.error || 'Cleanup failed'}`);
                 }
             } catch (error) {
-                console.error('Cleanup error:', error);
-                showNotification('Error during cleanup: ' + error.message, 'error');
+                console.error('❌ Cleanup error:', error);
+                showNotification(`❌ Error durante la limpieza: ${error.message}`, 'error');
             }
         }
 
