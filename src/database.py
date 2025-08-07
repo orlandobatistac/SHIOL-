@@ -25,7 +25,7 @@ def get_db_path() -> str:
     # Construct the absolute path to the config file
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
-    
+
     try:
         config.read(config_path)
         # Try to get db path from paths section, with fallback
@@ -35,7 +35,7 @@ def get_db_path() -> str:
             # Fallback to default path
             db_file = "data/shiolplus.db"
             logger.warning(f"Config section 'paths' not found, using default: {db_file}")
-            
+
         db_path = os.path.join(current_dir, '..', db_file)
     except Exception as e:
         # Complete fallback
@@ -51,22 +51,22 @@ def calculate_next_drawing_date() -> str:
     """
     Calculate the next Powerball drawing date.
     Drawings are: Monday (0), Wednesday (2), Saturday (5)
-    
+
     Returns:
         str: Next drawing date in YYYY-MM-DD format
     """
     from datetime import datetime, timedelta
-    
+
     current_date = datetime.now()
     current_weekday = current_date.weekday()
-    
+
     # Drawing days: Monday=0, Wednesday=2, Saturday=5
     drawing_days = [0, 2, 5]
-    
+
     # If today is a drawing day and it's before 11 PM, the drawing is today
     if current_weekday in drawing_days and current_date.hour < 23:
         return current_date.strftime('%Y-%m-%d')
-    
+
     # Otherwise, find the next drawing day
     days_ahead = 0
     for i in range(1, 8):  # Check next 7 days
@@ -74,7 +74,7 @@ def calculate_next_drawing_date() -> str:
         if next_date.weekday() in drawing_days:
             days_ahead = i
             break
-    
+
     next_drawing_date = current_date + timedelta(days=days_ahead)
     return next_drawing_date.strftime('%Y-%m-%d')
 
@@ -140,23 +140,23 @@ def initialize_database():
             try:
                 cursor.execute("PRAGMA table_info(predictions_log)")
                 columns = [column[1] for column in cursor.fetchall()]
-                
+
                 if 'target_draw_date' not in columns:
                     logger.info("Adding target_draw_date column to existing predictions_log table...")
                     cursor.execute("ALTER TABLE predictions_log ADD COLUMN target_draw_date DATE")
-                    
+
                     # Update existing records with calculated target draw date
                     cursor.execute("""
-                        UPDATE predictions_log 
-                        SET target_draw_date = DATE(created_at) 
+                        UPDATE predictions_log
+                        SET target_draw_date = DATE(created_at)
                         WHERE target_draw_date IS NULL
                     """)
                     logger.info("target_draw_date column added and populated for existing records")
                 else:
                     # Update any NULL target_draw_date records
                     cursor.execute("""
-                        UPDATE predictions_log 
-                        SET target_draw_date = DATE(created_at) 
+                        UPDATE predictions_log
+                        SET target_draw_date = DATE(created_at)
                         WHERE target_draw_date IS NULL
                     """)
                     if cursor.rowcount > 0:
@@ -354,12 +354,12 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
     """
     try:
         logger.debug(f"Saving prediction log with data: {prediction_data}")
-        
+
         # Calculate target drawing date if not provided
         target_draw_date = prediction_data.get('target_draw_date')
         if not target_draw_date:
             target_draw_date = calculate_next_drawing_date()
-            
+
         # Insertar registro en SQLite
         with get_db_connection() as conn:
             cursor = conn.cursor()

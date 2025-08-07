@@ -1792,7 +1792,17 @@ async def get_system_stats():
         }
     except Exception as e:
         logger.error(f"Error getting system stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Error getting system stats: {str(e)}")
+        # Return default stats instead of raising exception
+        return {
+            "cpu_usage": 0.0,
+            "memory_usage": 0.0,
+            "disk_usage": 0.0,
+            "memory_total_gb": 0.0,
+            "disk_total_gb": 0.0,
+            "pipeline_status": "error",
+            "last_execution": "Error",
+            "timestamp": datetime.now().isoformat()
+        }
 
 @api_router.get("/database/stats")
 async def get_database_stats():

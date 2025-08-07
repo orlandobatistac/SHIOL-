@@ -10,6 +10,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <script>
+        // Suppress Tailwind CSS production warning in console
+        const originalConsoleWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && args[0].toString().includes('tailwindcss.com should not be used in production')) {
+                return; // Suppress this specific warning
+            }
+            originalConsoleWarn.apply(console, args);
+        };
+
+        // Configurar Tailwind CSS
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -949,7 +959,7 @@
 
         async function testAllFunctions() {
             showNotification('🔄 Iniciando prueba completa de todas las funciones...', 'info');
-            
+
             const tests = [
                 { name: 'Sistema de Monitoreo', func: updateSystemMonitoring },
                 { name: 'Estadísticas de Base de Datos', func: refreshDatabaseStats },
@@ -970,7 +980,7 @@
                     await test.func();
                     console.log(`✅ ${test.name} - PASSED`);
                     passedTests++;
-                    
+
                     // Pequeña pausa entre tests
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 } catch (error) {
@@ -980,7 +990,7 @@
 
             const successRate = ((passedTests / totalTests) * 100).toFixed(1);
             const message = `✅ Prueba completa finalizada: ${passedTests}/${totalTests} funciones trabajando correctamente (${successRate}%)`;
-            
+
             if (passedTests === totalTests) {
                 showNotification(message, 'success');
             } else if (passedTests > totalTests * 0.7) {

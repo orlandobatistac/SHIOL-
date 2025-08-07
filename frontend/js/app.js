@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Syndicate generation error:', error);
             loadingDiv.classList.add('hidden');
-            
+
             let errorMessage = 'Failed to generate syndicate predictions';
             if (error.message && error.message !== '[object Object]') {
                 errorMessage += ': ' + error.message;
@@ -554,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 errorMessage += '. Please check server logs.';
             }
-            
+
             showToast(errorMessage, 'error');
         } finally {
             // Reset button state
