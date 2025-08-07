@@ -1838,7 +1838,7 @@ async def get_performance_analytics():
     """Get performance analytics for dashboard"""
     try:
         # Get performance data from database without passing connection
-        performance_data = db.get_performance_analytics(days=30)
+        performance_data = db.get_performance_analytics(days_back=30)
 
         # Calculate key metrics
         total_predictions = performance_data.get('total_predictions', 0)
