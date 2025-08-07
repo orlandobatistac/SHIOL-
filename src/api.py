@@ -53,6 +53,30 @@ pipeline_logs = []  # Store recent pipeline logs
 # --- Scheduler and App Lifecycle ---
 scheduler = AsyncIOScheduler()
 
+async def update_data_automatically():
+    """Task to update database from source."""
+    logger.info("Running automatic data update task.")
+    try:
+        update_database_from_source()
+        logger.info("Automatic data update completed successfully.")
+    except Exception as e:
+        logger.error(f"Error during automatic data update: {e}")
+
+async def trigger_full_pipeline_automatically():
+    """Task to trigger the full pipeline automatically."""
+    logger.info("Running automatic full pipeline trigger.")
+    try:
+        if pipeline_orchestrator:
+            # Trigger the full pipeline execution
+            # We don't need to specify num_predictions here as it will use default from orchestrator config
+            await trigger_pipeline_execution(background_tasks=None, num_predictions=10) # Default to 10 predictions for automated runs
+            logger.info("Full pipeline trigger initiated successfully.")
+        else:
+            logger.warning("Pipeline orchestrator not available to trigger pipeline.")
+    except Exception as e:
+        logger.error(f"Error triggering automatic full pipeline: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global pipeline_orchestrator
@@ -67,13 +91,28 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize pipeline orchestrator: {e}")
         pipeline_orchestrator = None
 
-    # Initial data update
-    logger.info("Performing initial data update on startup.")
-    update_database_from_source()
-    # Schedule the update job
-    scheduler.add_job(update_database_from_source, 'interval', hours=12)
+    # Schedule pipeline execution optimally:
+    # 1. Full pipeline on drawing days at 11:30 PM ET (after drawing results)
+    scheduler.add_job(
+        func=trigger_full_pipeline_automatically,
+        trigger="cron",
+        day_of_week="mon,wed,sat",  # Drawing days
+        hour=23,                    # 11 PM ET
+        minute=30,                  # 30 minutes after drawing
+        id="post_drawing_pipeline",
+        name="Full Pipeline After Drawing Results"
+    )
+
+    # 2. Maintenance pipeline on non-drawing days
+    scheduler.add_job(
+        func=update_data_automatically,
+        trigger="interval",
+        hours=12,
+        id="maintenance_data_update",
+        name="Maintenance Data Update Every 12 Hours"
+    )
     scheduler.start()
-    logger.info("Scheduler started. Data will be updated every 12 hours.")
+    logger.info("Scheduler started. Scheduled jobs are active.")
     yield
     # On shutdown
     logger.info("Application shutdown...")
@@ -845,7 +884,7 @@ async def get_smart_predictions(
 
         # Get latest Smart AI predictions from database
         predictions_df = db.get_prediction_history(limit=limit)
-        
+
         # Convert DataFrame to list of dictionaries
         if not predictions_df.empty:
             predictions_list = predictions_df.to_dict('records')

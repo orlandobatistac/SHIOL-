@@ -140,44 +140,73 @@ class PipelineOrchestrator:
 
     def run_full_pipeline(self) -> Dict[str, Any]:
         """
-        Execute the complete SHIOL+ Phase 5 pipeline.
+        Execute the complete SHIOL+ Phase 5 pipeline with optimized flow.
+        
+        FLUJO OPTIMIZADO:
+        1. Data Update & Sorteo Detection
+        2. Validation of Previous Predictions (if drawing day)
+        3. Adaptive Learning from Results
+        4. Weight Optimization (if sufficient data)
+        5. Prediction Generation for Next Drawing
+        6. Performance Analysis & Insights
+        7. Reports & Next Drawing Schedule
 
         Returns:
             Dict with pipeline execution results and status
         """
         logger.info("=" * 60)
-        logger.info("STARTING SHIOL+ PHASE 5 FULL PIPELINE EXECUTION")
+        logger.info("STARTING SHIOL+ PHASE 5 OPTIMIZED PIPELINE EXECUTION")
         logger.info("=" * 60)
 
         self.execution_start_time = datetime.now()
         pipeline_results = {}
+        current_date = datetime.now()
+        
+        # Determine if today is a drawing day (Monday=0, Wednesday=2, Saturday=5)
+        is_drawing_day = current_date.weekday() in [0, 2, 5]
+        hours_after_drawing = current_date.hour >= 23  # After 11 PM ET
+        
+        logger.info(f"Pipeline execution context: Drawing day: {is_drawing_day}, After 11PM: {hours_after_drawing}")
 
         try:
-            # Step 1: Data Update
-            logger.info("STEP 1/7: Data Update")
+            # STEP 1: Data Update & Drawing Detection
+            logger.info("STEP 1/7: Data Update & Drawing Detection")
             pipeline_results['data_update'] = self._execute_step('data_update', self.step_data_update)
+            
+            # STEP 2: Historical Validation (PRIORITY on drawing days after 11 PM)
+            if is_drawing_day and hours_after_drawing:
+                logger.info("STEP 2/7: Historical Validation (Drawing Day Priority)")
+                pipeline_results['historical_validation'] = self._execute_step('historical_validation', self.step_historical_validation)
+                
+                # STEP 3: Adaptive Analysis (Enhanced learning from fresh results)
+                logger.info("STEP 3/7: Adaptive Analysis (Post-Drawing Learning)")
+                pipeline_results['adaptive_analysis'] = self._execute_step('adaptive_analysis', self.step_adaptive_analysis)
+                
+                # STEP 4: Weight Optimization (Triggered by new results)
+                logger.info("STEP 4/7: Weight Optimization (Results-Based)")
+                pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
+            else:
+                # STEP 2: Adaptive Analysis (Regular maintenance)
+                logger.info("STEP 2/7: Adaptive Analysis (Maintenance Mode)")
+                pipeline_results['adaptive_analysis'] = self._execute_step('adaptive_analysis', self.step_adaptive_analysis)
+                
+                # STEP 3: Weight Optimization (Regular optimization)
+                logger.info("STEP 3/7: Weight Optimization (Scheduled)")
+                pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
+                
+                # STEP 4: Historical Validation (Maintenance validation)
+                logger.info("STEP 4/7: Historical Validation (Maintenance)")
+                pipeline_results['historical_validation'] = self._execute_step('historical_validation', self.step_historical_validation)
 
-            # Step 2: Adaptive Analysis
-            logger.info("STEP 2/7: Adaptive Analysis")
-            pipeline_results['adaptive_analysis'] = self._execute_step('adaptive_analysis', self.step_adaptive_analysis)
-
-            # Step 3: Prediction Generation
-            logger.info("STEP 3/7: Prediction Generation")
+            # STEP 5: Prediction Generation (ALWAYS generate for next drawing)
+            logger.info("STEP 5/7: Prediction Generation (Next Drawing)")
             pipeline_results['prediction_generation'] = self._execute_step('prediction_generation', self.step_prediction_generation)
 
-            # Step 4: Weight Optimization
-            logger.info("STEP 4/7: Weight Optimization")
-            pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
-
-            # Step 5: Historical Validation
-            logger.info("STEP 5/7: Historical Validation")
-            pipeline_results['historical_validation'] = self._execute_step('historical_validation', self.step_historical_validation)
-
-            # Step 6: Performance Analysis
+            # STEP 6: Performance Analysis
             logger.info("STEP 6/7: Performance Analysis")
             pipeline_results['performance_analysis'] = self._execute_step('performance_analysis', self.step_performance_analysis)
 
-            # Step 7: Notifications & Reports
+            # STEP 7: Notifications & Reports
             logger.info("STEP 7/7: Notifications & Reports")
             pipeline_results['notifications_reports'] = self._execute_step('notifications_reports', self.step_notifications_reports)
 
@@ -218,6 +247,39 @@ class PipelineOrchestrator:
         Execute a single pipeline step with error handling.
 
         Args:
+
+
+    def _calculate_next_drawing_date(self) -> str:
+        """
+        Calcula la fecha del próximo sorteo de Powerball.
+        Los sorteos son: Lunes (0), Miércoles (2), Sábado (5)
+        
+        Returns:
+            str: Fecha del próximo sorteo en formato YYYY-MM-DD
+        """
+        from datetime import datetime, timedelta
+        
+        current_date = datetime.now()
+        current_weekday = current_date.weekday()
+        
+        # Drawing days: Monday=0, Wednesday=2, Saturday=5
+        drawing_days = [0, 2, 5]
+        
+        # If today is a drawing day and it's before 11 PM, the drawing is today
+        if current_weekday in drawing_days and current_date.hour < 23:
+            return current_date.strftime('%Y-%m-%d')
+        
+        # Otherwise, find the next drawing day
+        days_ahead = 0
+        for i in range(1, 8):  # Check next 7 days
+            next_date = current_date + timedelta(days=i)
+            if next_date.weekday() in drawing_days:
+                days_ahead = i
+                break
+        
+        next_drawing_date = current_date + timedelta(days=days_ahead)
+        return next_drawing_date.strftime('%Y-%m-%d')
+
             step_name: Name of the step
             step_function: Function to execute
 
@@ -403,10 +465,17 @@ class PipelineOrchestrator:
 
     def step_prediction_generation(self) -> Dict[str, Any]:
         """
-        Step 3: Prediction Generation - Generate 100 Smart AI predictions for next drawing.
+        Step 5: Prediction Generation - Generate 100 Smart AI predictions for next drawing.
+        
+        FUNCIONALIDAD OPTIMIZADA:
+        - Valida calidad del modelo antes de generar predicciones
+        - Ejecuta reentrenamiento automático si es necesario
+        - Calcula fecha del próximo sorteo (Lunes, Miércoles, Sábado)
+        - Genera 100 predicciones Smart AI con fecha objetivo
+        - Aplica pesos adaptativos optimizados
 
         Returns:
-            Dict with prediction generation results
+            Dict with prediction generation results including next drawing date
         """
         try:
             # NUEVA FUNCIONALIDAD: Validar modelo antes de generar predicciones
@@ -454,11 +523,15 @@ class PipelineOrchestrator:
                 model_validation = {'validation_error': str(e)}
                 retrain_results = {'retrain_executed': False, 'error': f'validation_error: {str(e)}'}
             
+            # Calculate next drawing date (Monday=0, Wednesday=2, Saturday=5)
+            next_drawing_date = self._calculate_next_drawing_date()
+            logger.info(f"Generating predictions for next drawing date: {next_drawing_date}")
+            
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
 
             # Generate 100 Smart AI predictions for the next drawing (includes saving to log)
-            logger.info("Generating 100 Smart AI predictions...")
+            logger.info("Generating 100 Smart AI predictions with optimized weights...")
             smart_predictions = predictor.predict_diverse_plays(num_plays=100, save_to_log=True)
 
             # Prepare result with all 100 plays
@@ -484,6 +557,7 @@ class PipelineOrchestrator:
                 'predictions_generated': True,
                 'method': 'smart_ai',
                 'num_plays_generated': len(smart_predictions),
+                'target_drawing_date': next_drawing_date,  # NUEVA: Fecha del próximo sorteo
                 'plays': plays_info,
                 'statistics': {
                     'average_score': avg_score,
@@ -496,7 +570,12 @@ class PipelineOrchestrator:
                 'candidates_evaluated': smart_predictions[0]['num_candidates_evaluated'],
                 'generation_method': 'smart_ai_diverse_deterministic',
                 'diversity_algorithm': 'intelligent_selection_100_plays',
-                # NUEVA FUNCIONALIDAD: Incluir resultados de validación
+                'drawing_schedule': {
+                    'next_drawing_date': next_drawing_date,
+                    'is_drawing_day': datetime.now().weekday() in [0, 2, 5],
+                    'drawing_days': ['Monday', 'Wednesday', 'Saturday']
+                },
+                # Validación y reentrenamiento automático
                 'model_validation': model_validation,
                 'retrain_executed': retrain_results.get('retrain_executed', False) if 'retrain_results' in locals() else False
             }
