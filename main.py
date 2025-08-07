@@ -247,44 +247,6 @@ class PipelineOrchestrator:
         Execute a single pipeline step with error handling.
 
         Args:
-
-
-    def _calculate_next_drawing_date(self) -> str:
-        """
-        Calculate the next Powerball drawing date.
-        Drawings are: Monday (0), Wednesday (2), Saturday (5)
-        
-        Returns:
-            str: Next drawing date in YYYY-MM-DD format
-        """
-        from datetime import datetime, timedelta
-        
-        current_date = datetime.now()
-        current_weekday = current_date.weekday()
-        
-        # Drawing days: Monday=0, Wednesday=2, Saturday=5
-        drawing_days = [0, 2, 5]
-        
-        # If today is a drawing day and it's before 11 PM, the drawing is today
-        if current_weekday in drawing_days and current_date.hour < 23:
-            return current_date.strftime('%Y-%m-%d')
-        
-        # Otherwise, find the next drawing day
-        days_ahead = 0
-        for i in range(1, 8):  # Check next 7 days
-            next_date = current_date + timedelta(days=i)
-            if next_date.weekday() in drawing_days:
-                days_ahead = i
-                break
-        
-        next_drawing_date = current_date + timedelta(days=days_ahead)
-        return next_drawing_date.strftime('%Y-%m-%d')
-
-    def _execute_step(self, step_name: str, step_function) -> Dict[str, Any]:
-        """
-        Execute a single pipeline step with error handling.
-
-        Args:
             step_name: Name of the step
             step_function: Function to execute
 
@@ -335,6 +297,37 @@ class PipelineOrchestrator:
                 'timestamp': datetime.now().isoformat(),
                 'traceback': traceback.format_exc()
             }
+
+    def _calculate_next_drawing_date(self) -> str:
+        """
+        Calculate the next Powerball drawing date.
+        Drawings are: Monday (0), Wednesday (2), Saturday (5)
+        
+        Returns:
+            str: Next drawing date in YYYY-MM-DD format
+        """
+        from datetime import datetime, timedelta
+        
+        current_date = datetime.now()
+        current_weekday = current_date.weekday()
+        
+        # Drawing days: Monday=0, Wednesday=2, Saturday=5
+        drawing_days = [0, 2, 5]
+        
+        # If today is a drawing day and it's before 11 PM, the drawing is today
+        if current_weekday in drawing_days and current_date.hour < 23:
+            return current_date.strftime('%Y-%m-%d')
+        
+        # Otherwise, find the next drawing day
+        days_ahead = 0
+        for i in range(1, 8):  # Check next 7 days
+            next_date = current_date + timedelta(days=i)
+            if next_date.weekday() in drawing_days:
+                days_ahead = i
+                break
+        
+        next_drawing_date = current_date + timedelta(days=days_ahead)
+        return next_drawing_date.strftime('%Y-%m-%d')
 
     def step_data_update(self) -> Dict[str, Any]:
         """
