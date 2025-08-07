@@ -2239,6 +2239,92 @@ async def backup_database():
         logger.info(f"Database backup created: {backup_path}")
         return {"message": "Database backup created successfully", "backup_file": backup_path}
 
+@api_router.get("/pipeline/execution-history")
+async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, description="Number of executions to return")):
+    """
+    Get pipeline execution history from reports directory.
+    Returns recent pipeline executions with status and timing information.
+    """
+    try:
+        logger.info(f"Received request for pipeline execution history (limit: {limit})")
+        
+        reports_dir = "reports"
+        if not os.path.exists(reports_dir):
+            return {
+                "executions": [],
+                "count": 0,
+                "message": "No pipeline reports found"
+            }
+        
+        # Get all pipeline report files
+        report_files = []
+        for filename in os.listdir(reports_dir):
+            if filename.startswith("pipeline_report_") and filename.endswith(".json"):
+                filepath = os.path.join(reports_dir, filename)
+                try:
+                    # Extract timestamp from filename
+                    timestamp_str = filename.replace("pipeline_report_", "").replace(".json", "")
+                    timestamp = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
+                    report_files.append((timestamp, filepath))
+                except ValueError:
+                    continue
+        
+        # Sort by timestamp descending (newest first)
+        report_files.sort(key=lambda x: x[0], reverse=True)
+        
+        # Limit results
+        report_files = report_files[:limit]
+        
+        executions = []
+        for timestamp, filepath in report_files:
+            try:
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    report_data = json.load(f)
+                
+                pipeline_execution = report_data.get('pipeline_execution', {})
+                
+                # Calculate success/failure stats
+                status_info = pipeline_execution.get('status', {})
+                successful_steps = sum(1 for step_status in status_info.values() 
+                                     if isinstance(step_status, dict) and step_status.get('status') == 'success')
+                total_steps = len(status_info)
+                failed_steps = total_steps - successful_steps
+                
+                # Determine overall status
+                overall_status = 'success' if failed_steps == 0 else 'partial' if successful_steps > 0 else 'failed'
+                
+                execution_info = {
+                    "execution_id": timestamp_str,
+                    "start_time": pipeline_execution.get('start_time'),
+                    "end_time": pipeline_execution.get('end_time'),
+                    "execution_time": pipeline_execution.get('total_execution_time'),
+                    "status": overall_status,
+                    "steps_successful": successful_steps,
+                    "steps_failed": failed_steps,
+                    "total_steps": total_steps,
+                    "success_rate": f"{(successful_steps / total_steps * 100):.1f}%" if total_steps > 0 else "0%",
+                    "report_file": filepath,
+                    "system_info": report_data.get('system_info', {}),
+                    "formatted_time": timestamp.strftime('%d %b %Y, %H:%M:%S'),
+                    "steps_detail": status_info
+                }
+                
+                executions.append(execution_info)
+                
+            except Exception as e:
+                logger.warning(f"Error reading pipeline report {filepath}: {e}")
+                continue
+        
+        return {
+            "executions": executions,
+            "count": len(executions),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error retrieving pipeline execution history: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
+
     except FileNotFoundError:
         logger.error(f"Database file not found for backup: {db_path}")
         raise HTTPException(status_code=404, detail=f"Database file not found at {db_path}")

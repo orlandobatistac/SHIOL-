@@ -768,6 +768,31 @@ class ConfigurationManager {
             logOutputElement.innerHTML = logs.map(log => `<div>${log.timestamp} - ${log.message}</div>`).join('');
         }
     }
+
+    async refreshPipelineHistory() {
+        try {
+            console.log('🔄 Refreshing pipeline execution history...');
+            
+            const response = await fetch(`${this.API_BASE_URL}/pipeline/execution-history?limit=20`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Pipeline execution history refreshed:', data);
+                
+                // Trigger the global function if it exists
+                if (typeof window.loadPipelineExecutionHistory === 'function') {
+                    window.loadPipelineExecutionHistory();
+                }
+                
+                this.showNotification(`Pipeline history updated: ${data.count} executions`, 'success');
+                return data;
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
+        } catch (error) {
+            console.error('❌ Error refreshing pipeline history:', error);
+            this.showNotification('Error refreshing pipeline history: ' + error.message, 'error');
+        }
+    }
 }
 
 // Initialize when DOM is loaded
