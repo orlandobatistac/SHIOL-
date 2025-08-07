@@ -251,11 +251,11 @@ class PipelineOrchestrator:
 
     def _calculate_next_drawing_date(self) -> str:
         """
-        Calcula la fecha del próximo sorteo de Powerball.
-        Los sorteos son: Lunes (0), Miércoles (2), Sábado (5)
+        Calculate the next Powerball drawing date.
+        Drawings are: Monday (0), Wednesday (2), Saturday (5)
         
         Returns:
-            str: Fecha del próximo sorteo en formato YYYY-MM-DD
+            str: Next drawing date in YYYY-MM-DD format
         """
         from datetime import datetime, timedelta
         
