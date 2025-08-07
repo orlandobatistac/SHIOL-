@@ -1034,12 +1034,12 @@
 
         async function executeCleanup() {
             const cleanupOptions = {
-                predictions: document.getElementById('cleanup-predictions').checked,
-                validations: document.getElementById('cleanup-validations').checked,
-                logs: document.getElementById('cleanup-logs').checked,
-                models: document.getElementById('cleanup-models').checked,
-                pipeline_logs: document.getElementById('cleanup-pipeline-logs').checked,
-                complete_reset: document.getElementById('cleanup-complete').checked
+                predictions: document.getElementById('clean-predictions')?.checked || false,
+                validations: document.getElementById('clean-validations')?.checked || false,
+                logs: document.getElementById('clean-logs')?.checked || false,
+                models: document.getElementById('cleanup-models')?.checked || false,
+                pipeline_logs: document.getElementById('cleanup-pipeline-logs')?.checked || false,
+                complete_reset: document.getElementById('cleanup-complete')?.checked || false
             };
 
             let selectedCount = 0;
