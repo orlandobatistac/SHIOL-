@@ -1,3 +1,19 @@
+// Suppress runtime.lastError warnings in development
+if (typeof chrome !== 'undefined' && chrome.runtime) {
+    const originalLastError = chrome.runtime.lastError;
+    Object.defineProperty(chrome.runtime, 'lastError', {
+        get: function() {
+            const error = originalLastError;
+            if (error && error.message && error.message.includes('message port closed')) {
+                // Suppress this specific error silently
+                return undefined;
+            }
+            return error;
+        },
+        configurable: true
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element References ---
     // Pipeline dashboard elements
