@@ -485,7 +485,6 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             initializeDashboard();
-            startSystemMonitoring();
             loadConfiguration();
             initializeProfiles();
             setupEventListeners();
@@ -645,33 +644,7 @@
             document.getElementById('prediction-count-display').textContent = value;
         }
 
-        function startSystemMonitoring() {
-            systemInterval = setInterval(updateSystemMonitoring, 30000); // Changed from 5000ms to 30000ms (30 seconds)
-            updateSystemMonitoring();
-        }
-
-        async function updateSystemMonitoring() {
-            try {
-                const response = await fetch('/api/v1/system/stats');
-                if (response.ok) {
-                    const stats = await response.json();
-
-                    document.getElementById('cpu-usage').textContent = `${stats.cpu_usage}%`;
-                    document.getElementById('cpu-progress').style.width = `${stats.cpu_usage}%`;
-
-                    document.getElementById('memory-usage').textContent = `${stats.memory_usage}%`;
-                    document.getElementById('memory-progress').style.width = `${stats.memory_usage}%`;
-
-                    document.getElementById('disk-usage').textContent = `${stats.disk_usage}%`;
-                    document.getElementById('disk-progress').style.width = `${stats.disk_usage}%`;
-
-                    document.getElementById('pipeline-status').textContent = stats.pipeline_status;
-                    document.getElementById('last-execution').textContent = `Last: ${stats.last_execution}`;
-                }
-            } catch (error) {
-                console.error('Error updating system monitoring:', error);
-            }
-        }
+        // Legacy system monitoring functions removed - now handled by config-manager.js
 
         async function refreshDatabaseStats() {
             try {
