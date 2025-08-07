@@ -2422,13 +2422,39 @@ async def reset_models():
             errors_encountered.append(f"Model file reset error: {str(e)}")
             logger.error(f"Model file reset error: {e}")
 
-        # Reset global predictor instance
+        # Reset and recreate global predictor instance
         try:
             global predictor, intelligent_generator, deterministic_generator
+            
+            # Reset instances
             predictor = None
             intelligent_generator = None
             deterministic_generator = None
             operations_completed.append("Reset in-memory model instances")
+            
+            # Force immediate recreation with proper initialization
+            try:
+                from src.loader import DataLoader
+                data_loader = DataLoader()
+                historical_data = data_loader.load_historical_data()
+                
+                if not historical_data.empty:
+                    # Recreate predictor which will auto-train if no model exists
+                    predictor = Predictor()
+                    
+                    # Recreate generators with fresh historical data
+                    intelligent_generator = IntelligentGenerator(historical_data)
+                    deterministic_generator = DeterministicGenerator(historical_data)
+                    
+                    operations_completed.append("Recreated predictor and generators with fresh model")
+                    logger.info("Predictor and generators recreated successfully after reset")
+                else:
+                    logger.warning("No historical data available for recreating predictor")
+                    operations_completed.append("Warning: Could not recreate predictor - no historical data")
+                    
+            except Exception as recreate_error:
+                errors_encountered.append(f"Predictor recreation error: {str(recreate_error)}")
+                logger.error(f"Error recreating predictor after reset: {recreate_error}")
             
         except Exception as e:
             errors_encountered.append(f"Memory reset error: {str(e)}")

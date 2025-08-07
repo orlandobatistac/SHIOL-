@@ -158,7 +158,7 @@ class ModelTrainer:
         if len(available_features) != len(feature_cols):
             missing = set(feature_cols) - set(available_features)
             logger.warning(f"Missing expected features for training: {missing}. Proceeding with available features.")
-        
+
         logger.info(f"Using features for training: {available_features}")
         return features_df[available_features]
 
@@ -178,9 +178,9 @@ class ModelTrainer:
         n_estimators = int(self.config["model_params"]["n_estimators"])
         learning_rate = float(self.config["model_params"].get("learning_rate", 0.1))
         random_state = int(self.config["model_params"]["random_state"])
-        
+
         logger.info(f"Initializing XGBoost model: n_estimators={n_estimators}, learning_rate={learning_rate}")
-        
+
         base_classifier = XGBClassifier(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
@@ -244,11 +244,11 @@ class ModelTrainer:
             self.model = model_bundle.get("model")
             self.target_columns = model_bundle.get("target_columns")
             self.feature_names = model_bundle.get("feature_names", []) # Store feature names if available
-            
+
             if self.model is None or self.target_columns is None:
                 logger.warning(f"Loaded model bundle from {self.model_path} is incomplete or corrupted. Retraining might be necessary.")
                 return None
-            
+
             logger.info(f"Model bundle loaded from {self.model_path}")
             return self.model
         except FileNotFoundError:
@@ -334,7 +334,7 @@ class ModelTrainer:
 
         # Ensure the order is correct
         ordered_features = [f for f in model_features if f in features_df.columns]
-        
+
         # Check for unexpected features in input
         unexpected_features = [f for f in features_df.columns if f not in model_features]
         if unexpected_features:
@@ -392,26 +392,31 @@ class Predictor:
             try:
                 if self.historical_data is not None and not self.historical_data.empty:
                     logger.info("🔧 Engineering features for model training...")
-                    
+
                     # Engineer features using FeatureEngineer
                     engineered_features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
-                    
+
                     if engineered_features.empty:
                         logger.error("Feature engineering failed - cannot train model")
                         return
-                    
+
                     # Combine original data with engineered features
                     combined_data = self.historical_data.merge(
-                        engineered_features, 
-                        left_index=True, 
-                        right_index=True, 
+                        engineered_features,
+                        left_index=True,
+                        right_index=True,
                         how='inner'
                     )
-                    
+
                     logger.info(f"🤖 Training model with {combined_data.shape[1]} features...")
-                    self.model_trainer.data = combined_data
-                    
-                    if self.model_trainer.train_model():
+
+                    # Create new ModelTrainer with data for training
+                    trainer = ModelTrainer(combined_data)
+                    trainer.model_path = self.config["paths"]["model_file"]
+
+                    if trainer.train_model():
+                        # Update the current trainer and load the new model
+                        self.model_trainer = trainer
                         self.model = self.model_trainer.load_model()
                         logger.info("✅ Initial model trained and loaded successfully.")
                     else:
@@ -895,7 +900,7 @@ class Predictor:
         Returns:
             A list of the top 'num_plays' predictions selected from the ensemble.
         """
-        logger.info(f"Generating ensemble syndicate predictions with multiple models for {num_plays} plays...")
+        logger.info("Generating ensemble syndicate predictions with multiple models for {num_plays} plays...")
 
         # Get base probability predictions
         wb_probs, pb_probs = self.predict_probabilities()
@@ -936,7 +941,7 @@ class Predictor:
             from src.adaptive_feedback import AdaptivePlayScorer # Assuming this exists
             adaptive_scorer = AdaptivePlayScorer(self.historical_data)
             num_adaptive = int(num_plays * 0.25)
-            
+
             # Use deterministic generator for base plays, then re-score adaptively
             deterministic_gen_for_adaptive = DeterministicGenerator(self.historical_data)
             adaptive_candidates_base = deterministic_gen_for_adaptive.generate_diverse_predictions(
@@ -957,7 +962,7 @@ class Predictor:
                 candidate['ensemble_weight'] = 0.25
                 candidate['ensemble_score'] = candidate.get('score_total', 0) * 0.25
                 adaptive_candidates.append(candidate)
-            
+
             all_candidates.extend(adaptive_candidates)
             logger.info(f"Added {len(adaptive_candidates)} candidates from adaptive scoring.")
 
@@ -971,20 +976,20 @@ class Predictor:
             from src.intelligent_generator import IntelligentGenerator # Assuming this exists
             intelligent_gen = IntelligentGenerator(self.historical_data)
             num_intelligent = int(num_plays * 0.15)
-            
+
             # Generate plays using the intelligent generator
             intelligent_candidates_raw = intelligent_gen.generate_plays(
                  wb_probs, pb_probs, num_plays=num_intelligent, num_candidates=num_intelligent*3
             )
-            
+
             # Need to convert raw output to a consistent format and score them
             intelligent_candidates = []
             # Assuming IntelligentGenerator output needs processing and scoring
             # This part heavily depends on the actual implementation of IntelligentGenerator
+            # This section is highly speculative without the actual IntelligentGenerator code
             for i, raw_play in enumerate(intelligent_candidates_raw):
                 # Placeholder: Assuming raw_play is a dict or can be converted
                 # Need to ensure numbers and powerball are correctly extracted and scored
-                # This section is highly speculative without the actual IntelligentGenerator code
                 try:
                     numbers = raw_play.get('numbers', raw_play.get('n1', [])[:5]) # Adapt based on actual output
                     powerball = raw_play.get('powerball', raw_play.get('pb', 1))
@@ -994,7 +999,7 @@ class Predictor:
                     scores = deterministic_gen_for_scoring.scorer.calculate_total_score(
                         numbers, powerball, wb_probs, pb_probs
                     )
-                    
+
                     candidate = {
                         'numbers': numbers, 'powerball': powerball,
                         'score_total': scores['total'], 'score_details': scores,
@@ -1019,7 +1024,7 @@ class Predictor:
         for candidate in all_candidates:
             # Calculate diversity bonus
             diversity_bonus = self._calculate_ensemble_diversity(candidate, all_candidates)
-            
+
             # Combine weighted score and diversity bonus
             # Adjust contribution of diversity bonus (e.g., weight it less)
             ensemble_score = candidate.get('ensemble_score', 0) + (diversity_bonus * 0.1) # Example: diversity adds up to 0.1
@@ -1097,7 +1102,7 @@ class Predictor:
             # and understanding its output format for comparison.
             from src.intelligent_generator import IntelligentGenerator
             traditional_generator = IntelligentGenerator() # Assuming default initialization
-            
+
             # Generate a single play for comparison
             # The exact parameters might need adjustment based on IntelligentGenerator's API
             traditional_play_list = traditional_generator.generate_plays(
@@ -1108,7 +1113,7 @@ class Predictor:
                 # Process the output to fit the comparison structure
                 # Assuming the output is a list of dicts or similar
                 first_traditional_play = traditional_play_list[0]
-                
+
                 comparison_results['traditional_method'] = {
                     'numbers': first_traditional_play.get('numbers', []),
                     'powerball': first_traditional_play.get('powerball', 1),
@@ -1205,17 +1210,7 @@ class Predictor:
                 logger.info("Model training completed successfully.")
                 # Update the Predictor's model trainer to use the newly trained model
                 self.model_trainer = trainer # Replace the trainer instance
-                self.load_model() # Load the newly trained model into the predictor
-                
-                # Re-initialize other components that might depend on model context if necessary
-                self.historical_data = data # Update historical data if it was also reloaded
-                self.feature_engineer = FeatureEngineer(self.historical_data)
-                self.deterministic_generator = DeterministicGenerator(self.historical_data)
-
-                # Re-initialize ensemble system if it was enabled
-                if self.use_ensemble:
-                    self._initialize_ensemble_system()
-
+                self.model = self.model_trainer.load_model()
                 logger.info("Model retraining process finished successfully. Predictor updated.")
                 return True
             else:
