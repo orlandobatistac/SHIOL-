@@ -481,9 +481,9 @@
             profiles.forEach(btn => {
                 btn.addEventListener('click', function() {
                     profiles.forEach(p => p.classList.remove('active', 'bg-slate-600', 'text-white'));
-                    profiles.forEach(p => p.classList.add('bg-slate-700', 'text-slate-300'));
+                    profiles.forEach(p => p.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300'));
 
-                    this.classList.remove('bg-slate-700', 'text-slate-300');
+                    this.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
                     this.classList.add('active', 'bg-slate-600', 'text-white');
                     loadConfigProfile(this.dataset.profile);
                 });

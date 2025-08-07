@@ -640,41 +640,41 @@ input:focus,
 
 /* Status indicators */
 .status-idle {
-    background-color: #059669; /* softer green */
+    background-color: #6b7280; /* neutral gray */
 }
 
 .status-running {
-    background-color: #2563eb; /* softer blue */
+    background-color: #6366f1; /* neutral indigo */
     animation: pulse 2s infinite;
 }
 
 .status-completed {
-    background-color: #047857; /* deeper muted green */
+    background-color: #10b981; /* muted emerald */
 }
 
 .status-failed {
-    background-color: #b91c1c; /* deeper muted red */
+    background-color: #ef4444; /* muted red */
 }
 
 .status-unknown {
-    background-color: #64748b; /* softer gray */
+    background-color: #9ca3af; /* lighter gray */
 }
 
 /* Health indicators */
 .health-healthy {
-    background-color: #059669; /* softer green */
+    background-color: #10b981; /* muted emerald */
 }
 
 .health-degraded {
-    background-color: #d97706; /* softer amber */
+    background-color: #f59e0b; /* muted amber */
 }
 
 .health-unhealthy {
-    background-color: #b91c1c; /* softer red */
+    background-color: #ef4444; /* muted red */
 }
 
 .health-unknown {
-    background-color: #64748b; /* softer gray */
+    background-color: #9ca3af; /* lighter gray */
 }
 
 /* Status badges */
@@ -689,61 +689,61 @@ input:focus,
 }
 
 .status-badge.completed {
-    background-color: #dcfce7;
-    color: #166534;
+    background-color: #f0fdf4;
+    color: #15803d;
 }
 
 .status-badge.running {
-    background-color: #dbeafe;
-    color: #1e40af;
+    background-color: #f0f9ff;
+    color: #0369a1;
 }
 
 .status-badge.failed {
-    background-color: #fee2e2;
-    color: #991b1b;
+    background-color: #fef2f2;
+    color: #dc2626;
 }
 
 .status-badge.pending {
-    background-color: #fef3c7;
-    color: #92400e;
+    background-color: #fffbeb;
+    color: #d97706;
 }
 
 /* Dark mode status badges */
 .dark .status-badge.completed {
-    background-color: #14532d;
-    color: #bbf7d0;
+    background-color: #064e3b;
+    color: #a7f3d0;
 }
 
 .dark .status-badge.running {
-    background-color: #1e3a8a;
-    color: #bfdbfe;
+    background-color: #0c4a6e;
+    color: #bae6fd;
 }
 
 .dark .status-badge.failed {
     background-color: #7f1d1d;
-    color: #fecaca;
+    color: #fca5a5;
 }
 
 .dark .status-badge.pending {
     background-color: #78350f;
-    color: #fde68a;
+    color: #fcd34d;
 }
 
 /* Toast notifications */
 .success {
-    background-color: #059669;
+    background-color: #10b981;
 }
 
 .error {
-    background-color: #dc2626;
+    background-color: #ef4444;
 }
 
 .warning {
-    background-color: #d97706;
+    background-color: #f59e0b;
 }
 
 .info {
-    background-color: #2563eb;
+    background-color: #6366f1;
 }
 
 /* Modern Dashboard Styling */
