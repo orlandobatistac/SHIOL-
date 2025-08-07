@@ -126,18 +126,31 @@ def initialize_database():
 
             # Add target_draw_date column if it doesn't exist (migration)
             try:
-                cursor.execute("SELECT target_draw_date FROM predictions_log LIMIT 1")
-            except sqlite3.OperationalError:
-                logger.info("Adding target_draw_date column to existing predictions_log table...")
-                cursor.execute("ALTER TABLE predictions_log ADD COLUMN target_draw_date DATE")
+                cursor.execute("PRAGMA table_info(predictions_log)")
+                columns = [column[1] for column in cursor.fetchall()]
                 
-                # Update existing records with calculated target draw date
-                cursor.execute("""
-                    UPDATE predictions_log 
-                    SET target_draw_date = DATE(created_at) 
-                    WHERE target_draw_date IS NULL
-                """)
-                logger.info("target_draw_date column added and populated for existing records")
+                if 'target_draw_date' not in columns:
+                    logger.info("Adding target_draw_date column to existing predictions_log table...")
+                    cursor.execute("ALTER TABLE predictions_log ADD COLUMN target_draw_date DATE")
+                    
+                    # Update existing records with calculated target draw date
+                    cursor.execute("""
+                        UPDATE predictions_log 
+                        SET target_draw_date = DATE(created_at) 
+                        WHERE target_draw_date IS NULL
+                    """)
+                    logger.info("target_draw_date column added and populated for existing records")
+                else:
+                    # Update any NULL target_draw_date records
+                    cursor.execute("""
+                        UPDATE predictions_log 
+                        SET target_draw_date = DATE(created_at) 
+                        WHERE target_draw_date IS NULL
+                    """)
+                    if cursor.rowcount > 0:
+                        logger.info(f"Updated {cursor.rowcount} existing records with target_draw_date")
+            except sqlite3.Error as e:
+                logger.error(f"Error during target_draw_date migration: {e}")
 
             # Phase 4: Adaptive Feedback System Tables
 
@@ -221,7 +234,7 @@ def initialize_database():
             # 5. Model Feedback Table
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS model_feedback (
-                    id INTEGER PRIMARYKEY AUTOINCREMENT,
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
                     feedback_type TEXT NOT NULL,
                     component_name TEXT NOT NULL,
                     original_value REAL NOT NULL,
