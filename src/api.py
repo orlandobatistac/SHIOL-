@@ -34,19 +34,33 @@ from src.config_manager import ConfigurationManager
 
 def convert_numpy_types(obj):
     """Convert numpy types to native Python types for JSON serialization."""
-    if isinstance(obj, (np.integer, np.int64, np.int32)):
+    if obj is None:
+        return None
+    elif isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
         return int(obj)
-    elif isinstance(obj, (np.floating, np.float64, np.float32)):
+    elif isinstance(obj, (np.floating, np.float64, np.float32, np.float16)):
         return float(obj)
     elif isinstance(obj, np.ndarray):
         return obj.tolist()
     elif isinstance(obj, list):
         return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(convert_numpy_types(item) for item in obj)
     elif isinstance(obj, dict):
-        return {key: convert_numpy_types(value) for key, value in obj.items()}
+        return {str(key): convert_numpy_types(value) for key, value in obj.items()}
     elif hasattr(obj, 'item'):  # Handle numpy scalar types
-        return obj.item()
-    return obj
+        try:
+            return obj.item()
+        except (AttributeError, ValueError):
+            return str(obj)
+    elif isinstance(obj, (int, float, str, bool)):
+        return obj
+    else:
+        # For any other type, try to convert to string as fallback
+        try:
+            return str(obj)
+        except:
+            return None
 
 # --- Pipeline Monitoring Global Variables ---
 # Import PipelineOrchestrator from main.py
@@ -1168,7 +1182,7 @@ async def get_pipeline_status():
             raise HTTPException(status_code=503, detail="Pipeline orchestrator not available")
 
         # Get pipeline status from orchestrator
-        orchestrator_status = pipeline_orchestrator.get_pipeline_status()
+        orchestrator_status = convert_numpy_types(pipeline_orchestrator.get_pipeline_status())
 
         # Get recent execution history from global tracking
         recent_executions = []
@@ -1203,13 +1217,24 @@ async def get_pipeline_status():
         try:
             history = db.get_prediction_history(limit=5)
             for _, row in history.iterrows():
-                recent_plays.append({
-                    "numbers": [int(row['n1']), int(row['n2']), int(row['n3']), int(row['n4']), int(row['n5'])],
-                    "powerball": int(row['powerball']),
-                    "score": float(row['score_total']),
-                    "timestamp": row['timestamp'],
-                    "dataset_hash": row['dataset_hash']
-                })
+                # Safely convert all values to ensure JSON serialization
+                try:
+                    recent_plays.append({
+                        "numbers": [
+                            convert_numpy_types(row['n1']), 
+                            convert_numpy_types(row['n2']), 
+                            convert_numpy_types(row['n3']), 
+                            convert_numpy_types(row['n4']), 
+                            convert_numpy_types(row['n5'])
+                        ],
+                        "powerball": convert_numpy_types(row['powerball']),
+                        "score": convert_numpy_types(row['score_total']),
+                        "timestamp": str(row['timestamp']) if row['timestamp'] is not None else "",
+                        "dataset_hash": str(row['dataset_hash']) if row['dataset_hash'] is not None else ""
+                    })
+                except Exception as convert_error:
+                    logger.warning(f"Error converting prediction row to JSON-safe format: {convert_error}")
+                    continue
         except Exception as e:
             logger.warning(f"Could not get recent plays: {e}")
 

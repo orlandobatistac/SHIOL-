@@ -423,89 +423,99 @@ class ConfigurationManager {
 
     // Placeholder methods for other functionalities
     async triggerPipeline() {
-        try {
-            console.log('🔄 Testing Pipeline Trigger...');
-            
-            // Show loading state
-            const triggerBtn = document.getElementById('trigger-pipeline-btn');
-            if (triggerBtn) {
-                triggerBtn.disabled = true;
-                triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Starting Pipeline...';
-            }
-            
-            const response = await fetch(`${this.API_BASE_URL}/pipeline/trigger`, { method: 'POST' });
-            if (response.ok) {
-                const result = await response.json();
-                console.log('✅ Pipeline Trigger Result:', result);
+        console.log('🔄 Testing Pipeline Trigger...');
 
-                this.showNotification(`Pipeline execution started: ${result.execution_id}`, 'success');
-                
-                // Update UI to show pipeline is running
-                if (triggerBtn) {
-                    triggerBtn.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i>Pipeline Running...';
-                    triggerBtn.disabled = true;
-                }
-                
-                const stopBtn = document.getElementById('stop-pipeline-btn');
-                if (stopBtn) {
-                    stopBtn.classList.remove('hidden');
-                }
-                
-                const progressEl = document.getElementById('pipeline-progress');
-                if (progressEl) {
-                    progressEl.classList.remove('hidden');
-                }
-                
-                // Start monitoring pipeline status
-                this.monitorPipelineExecution(result.execution_id);
-            } else {
-                const errorText = await response.text();
-                throw new Error(`Failed to trigger pipeline: ${response.status} - ${errorText}`);
+        // Update button to show working state
+        const executeButton = document.querySelector('button[onclick="configManager.triggerPipeline()"]');
+        const originalText = executeButton ? executeButton.textContent : '';
+        if (executeButton) {
+            executeButton.disabled = true;
+            executeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executing Pipeline...';
+            executeButton.classList.add('opacity-75');
+        }
+
+        const response = await fetch(`${this.API_BASE_URL}/pipeline/trigger?num_predictions=1`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+            // Reset button on error
+            if (executeButton) {
+                executeButton.disabled = false;
+                executeButton.textContent = originalText;
+                executeButton.classList.remove('opacity-75');
             }
-        } catch (error) {
-            console.error('❌ Pipeline Trigger Error:', error);
-            this.showNotification('Error triggering pipeline: ' + error.message, 'error');
-        } finally {
-            // Reset button if there was an error
-            const triggerBtn = document.getElementById('trigger-pipeline-btn');
-            if (triggerBtn && triggerBtn.innerHTML.includes('Starting Pipeline')) {
-                triggerBtn.disabled = false;
-                triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('✅ Pipeline Trigger Result:', result);
+
+        if (result.execution_id) {
+            this.monitorPipelineExecution(result.execution_id, executeButton, originalText);
+        } else {
+            console.warn('⚠️ No execution ID received from pipeline trigger');
+            // Reset button if no execution ID
+            if (executeButton) {
+                executeButton.disabled = false;
+                executeButton.textContent = originalText;
+                executeButton.classList.remove('opacity-75');
             }
         }
     }
 
-    monitorPipelineExecution(executionId) {
+    monitorPipelineExecution(executionId, executeButton = null, originalText = '') {
+        console.log(`🔍 Monitoring pipeline execution: ${executionId}`);
+
+        const resetButton = () => {
+            if (executeButton) {
+                executeButton.disabled = false;
+                executeButton.textContent = originalText || 'Execute Pipeline';
+                executeButton.classList.remove('opacity-75');
+            }
+        };
+
         const checkStatus = async () => {
             try {
                 const response = await fetch(`${this.API_BASE_URL}/pipeline/status`);
-                if (response.ok) {
-                    const status = await response.json();
-                    
-                    // Check if our execution is still running
-                    const isRunning = status.pipeline_status?.current_status === 'running';
-                    
-                    if (!isRunning) {
-                        // Pipeline finished
-                        this.resetPipelineUI();
-                        this.showNotification('Pipeline execution completed', 'success');
-                        return;
-                    }
-                    
-                    // Continue monitoring
-                    setTimeout(checkStatus, 2000);
-                } else {
+                if (!response.ok) {
                     console.warn('Pipeline status check failed');
-                    setTimeout(checkStatus, 5000); // Retry less frequently on error
+                    return;
                 }
+
+                const data = await response.json();
+                const execution = data.pipeline_status?.recent_execution_history?.find(
+                    ex => ex.execution_id === executionId
+                );
+
+                if (execution) {
+                    console.log(`📊 Execution ${executionId} status: ${execution.status}`);
+
+                    if (execution.status === 'completed') {
+                        console.log('✅ Pipeline execution completed successfully');
+                        this.showNotification('Pipeline execution completed successfully!', 'success');
+                        resetButton();
+                        return; // Stop monitoring
+                    } else if (execution.status === 'failed') {
+                        console.log('❌ Pipeline execution failed');
+                        this.showNotification('Pipeline execution failed. Check logs for details.', 'error');
+                        resetButton();
+                        return; // Stop monitoring
+                    }
+                }
+
+                // Continue monitoring if still running
+                setTimeout(checkStatus, 5000); // Check every 5 seconds
+
             } catch (error) {
-                console.error('Error monitoring pipeline:', error);
-                setTimeout(checkStatus, 5000); // Retry less frequently on error
+                console.warn('Pipeline status check failed:', error);
+                setTimeout(checkStatus, 10000); // Retry in 10 seconds on error
             }
         };
-        
-        // Start monitoring
-        setTimeout(checkStatus, 2000);
+
+        // Start monitoring immediately
+        setTimeout(checkStatus, 2000); // Initial delay of 2 seconds
     }
 
     resetPipelineUI() {
@@ -514,12 +524,12 @@ class ConfigurationManager {
             triggerBtn.disabled = false;
             triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
         }
-        
+
         const stopBtn = document.getElementById('stop-pipeline-btn');
         if (stopBtn) {
             stopBtn.classList.add('hidden');
         }
-        
+
         const progressEl = document.getElementById('pipeline-progress');
         if (progressEl) {
             progressEl.classList.add('hidden');
@@ -633,7 +643,7 @@ class ConfigurationManager {
 
         try {
             console.log('🔄 Resetting AI Models...');
-            
+
             // Show loading state
             const resetBtn = document.getElementById('reset-models-btn');
             if (resetBtn) {
@@ -642,25 +652,25 @@ class ConfigurationManager {
             }
 
             const response = await fetch(`${this.API_BASE_URL}/model/reset`, { method: 'POST' });
-            
+
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Models Reset Result:', result);
-                
+
                 // Show detailed success message
                 let message = `AI Models reset successfully!`;
                 if (result.details) {
                     const details = result.details;
                     message += ` Cleared: ${details.weights_cleared} weights, ${details.feedback_cleared} feedback records, ${details.plays_cleared} reliable plays.`;
                 }
-                
+
                 this.showNotification(message, 'success');
-                
+
                 // Optionally refresh the page after a short delay
                 setTimeout(() => {
                     window.location.reload();
                 }, 2000);
-                
+
             } else {
                 const errorText = await response.text();
                 throw new Error(`Models reset failed: ${response.status} - ${errorText}`);
