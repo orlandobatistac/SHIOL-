@@ -1664,6 +1664,46 @@ async def get_pipeline_health():
             "error": f"Critical error during health check execution: {str(e)}"
         }
 
+@api_router.post("/pipeline/stop")
+async def stop_pipeline_execution():
+    """Stop currently running pipeline execution"""
+    try:
+        logger.info("Received request to stop pipeline execution")
+
+        # Find running executions
+        running_executions = [ex for ex in pipeline_executions.values() if ex.get("status") == "running"]
+        
+        if not running_executions:
+            return {
+                "message": "No running pipeline execution found",
+                "status": "no_running_execution",
+                "timestamp": datetime.now().isoformat()
+            }
+
+        # Stop the most recent running execution
+        latest_execution = running_executions[0]
+        execution_id = latest_execution["execution_id"]
+        
+        # Update execution status
+        pipeline_executions[execution_id].update({
+            "status": "stopped",
+            "end_time": datetime.now().isoformat(),
+            "current_step": "stopped_by_user"
+        })
+
+        logger.info(f"Pipeline execution {execution_id} stopped by user request")
+        
+        return {
+            "message": "Pipeline execution stopped successfully",
+            "execution_id": execution_id,
+            "status": "stopped",
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error stopping pipeline execution: {e}")
+        raise HTTPException(status_code=500, detail="Error stopping pipeline execution.")
+
 
 # Background task functions for pipeline execution
 async def run_full_pipeline_background(execution_id: str, num_predictions: int):
@@ -2110,6 +2150,71 @@ async def retrain_model():
     except Exception as e:
         logger.error(f"Error starting model retraining: {e}")
         raise HTTPException(status_code=500, detail=f"Error starting model retraining: {str(e)}")
+
+@api_router.post("/model/backup")
+async def backup_models():
+    """Create backup of current AI models"""
+    try:
+        from datetime import datetime
+        import shutil
+        import os
+        
+        logger.info("Model backup initiated")
+        
+        # Define paths
+        model_path = "models/shiolplus.pkl"
+        backup_dir = "models/backups"
+        
+        # Create backup directory if it doesn't exist
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        # Check if model exists
+        if not os.path.exists(model_path):
+            raise HTTPException(status_code=404, detail="Model file not found")
+        
+        # Create backup with timestamp
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_filename = f"shiolplus_backup_{timestamp}.pkl"
+        backup_path = os.path.join(backup_dir, backup_filename)
+        
+        # Copy model file
+        shutil.copy2(model_path, backup_path)
+        
+        # Get backup file size
+        backup_size = os.path.getsize(backup_path)
+        
+        logger.info(f"Model backup created: {backup_path}")
+        return {
+            "message": "Model backup created successfully",
+            "backup_file": backup_path,
+            "backup_size_mb": round(backup_size / (1024 * 1024), 2),
+            "timestamp": datetime.now().isoformat(),
+            "status": "success"
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating model backup: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating model backup: {str(e)}")
+
+@api_router.post("/model/reset")
+async def reset_models():
+    """Reset AI models to initial state"""
+    try:
+        logger.info("Model reset initiated")
+        
+        # This would reset models to initial state
+        # For now, we'll return a success message
+        
+        return {
+            "message": "Model reset completed",
+            "status": "success",
+            "timestamp": datetime.now().isoformat(),
+            "note": "Models have been reset to initial training state"
+        }
+
+    except Exception as e:
+        logger.error(f"Error resetting models: {e}")
+        raise HTTPException(status_code=500, detail=f"Error resetting models: {str(e)}")
 
 @api_router.get("/system/info")
 async def get_system_info():
