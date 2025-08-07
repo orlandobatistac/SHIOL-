@@ -1750,31 +1750,6 @@ async def run_pipeline_steps_background(execution_id: str, steps: List[str], num
         logger.error(f"Critical error in background pipeline steps execution {execution_id}: {e}", exc_info=True)
 
 
-# --- Application Mounting ---
-# Mount the API router before the static files to ensure API endpoints are prioritized.
-app.include_router(api_router)
-
-# Mount new public and authentication routers
-app.include_router(public_router)
-app.include_router(auth_router)
-
-# Build an absolute path to the 'frontend' directory for robust file serving.
-# This avoids issues with the current working directory.
-# APP_ROOT = os.path.dirname(os.path.abspath(__file__)) # This might be too low level for typical deployments
-# FRONTEND_DIR = os.path.join(APP_ROOT, "..", "frontend") # Adjust path as necessary based on project structure
-
-# More robust way to find frontend directory relative to the script's location
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
-
-# Ensure the frontend directory exists before mounting
-if not os.path.exists(FRONTEND_DIR):
-    logger.warning(f"Frontend directory not found at {FRONTEND_DIR}. Static file serving may fail.")
-    # Optionally create a dummy directory or skip mounting if critical
-    # os.makedirs(FRONTEND_DIR, exist_ok=True)
-
-app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
-
 # --- SHIOL+ v6.0 Configuration Dashboard Endpoints ---
 
 @api_router.get("/system/stats")
@@ -1862,12 +1837,8 @@ async def get_database_stats():
 async def get_performance_analytics():
     """Get performance analytics for dashboard"""
     try:
-        conn = db.get_db_connection()
-
-        # Get performance data from database
-        performance_data = db.get_performance_analytics(conn, days=30)
-
-        conn.close()
+        # Get performance data from database without passing connection
+        performance_data = db.get_performance_analytics(days=30)
 
         # Calculate key metrics
         total_predictions = performance_data.get('total_predictions', 0)
@@ -2140,6 +2111,31 @@ async def get_system_info():
         "database_status": "connected",
         "model_status": "loaded" if predictor and predictor.model else "not_loaded"
     }
+
+# --- Application Mounting ---
+# Mount the API router before the static files to ensure API endpoints are prioritized.
+app.include_router(api_router)
+
+# Mount new public and authentication routers
+app.include_router(public_router)
+app.include_router(auth_router)
+
+# Build an absolute path to the 'frontend' directory for robust file serving.
+# This avoids issues with the current working directory.
+# APP_ROOT = os.path.dirname(os.path.abspath(__file__)) # This might be too low level for typical deployments
+# FRONTEND_DIR = os.path.join(APP_ROOT, "..", "frontend") # Adjust path as necessary based on project structure
+
+# More robust way to find frontend directory relative to the script's location
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
+
+# Ensure the frontend directory exists before mounting
+if not os.path.exists(FRONTEND_DIR):
+    logger.warning(f"Frontend directory not found at {FRONTEND_DIR}. Static file serving may fail.")
+    # Optionally create a dummy directory or skip mounting if critical
+    # os.makedirs(FRONTEND_DIR, exist_ok=True)
+
+app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="static")
 
 
 
