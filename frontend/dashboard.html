@@ -477,7 +477,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="js/app.js"></script>
     <script src="js/config-manager.js"></script>
     <script>
         let systemInterval;
@@ -584,44 +583,78 @@
         }
 
         function setupCleanupModalEvents() {
-            // Execute cleanup button
+            console.log('🔧 Setting up cleanup modal events...');
+            
+            // Remove any existing event listeners by cloning elements
             const executeCleanupBtn = document.getElementById('execute-cleanup-btn');
+            const cancelCleanupBtn = document.getElementById('cancel-cleanup-btn');
+            const closeCleanupModalBtn = document.getElementById('close-cleanup-modal-btn');
+            const cleanupModal = document.getElementById('cleanup-modal');
+
+            // Execute cleanup button
             if (executeCleanupBtn) {
-                executeCleanupBtn.addEventListener('click', executeCleanup);
+                const newExecuteBtn = executeCleanupBtn.cloneNode(true);
+                executeCleanupBtn.parentNode.replaceChild(newExecuteBtn, executeCleanupBtn);
+                newExecuteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    executeCleanup();
+                });
+                console.log('✅ Execute cleanup button event added');
             }
             
             // Cancel button
-            const cancelCleanupBtn = document.getElementById('cancel-cleanup-btn');
             if (cancelCleanupBtn) {
-                cancelCleanupBtn.addEventListener('click', closeCleanupModal);
+                const newCancelBtn = cancelCleanupBtn.cloneNode(true);
+                cancelCleanupBtn.parentNode.replaceChild(newCancelBtn, cancelCleanupBtn);
+                newCancelBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🚫 Cancel button clicked - closing modal');
+                    closeCleanupModal();
+                });
+                console.log('✅ Cancel button event added');
             }
 
             // Close button (X)
-            const closeCleanupModalBtn = document.getElementById('close-cleanup-modal-btn');
             if (closeCleanupModalBtn) {
-                closeCleanupModalBtn.addEventListener('click', closeCleanupModal);
+                const newCloseBtn = closeCleanupModalBtn.cloneNode(true);
+                closeCleanupModalBtn.parentNode.replaceChild(newCloseBtn, closeCleanupModalBtn);
+                newCloseBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('❌ Close (X) button clicked - closing modal');
+                    closeCleanupModal();
+                });
+                console.log('✅ Close (X) button event added');
             }
 
-            // Click outside to close
-            const cleanupModal = document.getElementById('cleanup-modal');
+            // Click outside to close - use event delegation
             if (cleanupModal) {
-                cleanupModal.addEventListener('click', function(event) {
-                    // Only close if clicking on the modal backdrop (not on the modal content)
-                    if (event.target === cleanupModal) {
+                const newModal = cleanupModal.cloneNode(true);
+                cleanupModal.parentNode.replaceChild(newModal, cleanupModal);
+                newModal.addEventListener('click', function(event) {
+                    if (event.target === newModal) {
+                        console.log('🖱️ Clicked outside modal - closing');
                         closeCleanupModal();
                     }
                 });
+                console.log('✅ Click outside event added');
             }
 
-            // ESC key to close
-            document.addEventListener('keydown', function(event) {
+            // ESC key to close - remove previous listeners
+            document.removeEventListener('keydown', window.cleanupModalEscHandler);
+            window.cleanupModalEscHandler = function(event) {
                 if (event.key === 'Escape') {
                     const modal = document.getElementById('cleanup-modal');
                     if (modal && !modal.classList.contains('hidden')) {
+                        console.log('⌨️ ESC key pressed - closing modal');
                         closeCleanupModal();
                     }
                 }
-            });
+            };
+            document.addEventListener('keydown', window.cleanupModalEscHandler);
+            console.log('✅ ESC key handler added');
         }
 
         function loadConfigProfile(profile) {
@@ -785,40 +818,67 @@
 
         function showCleanupModal() {
             console.log('🔓 Opening cleanup modal...');
-            const modal = document.getElementById('cleanup-modal');
-            if (modal) {
-                // Reset all checkboxes first
-                const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-                
-                // Show modal
-                modal.classList.remove('hidden');
-                console.log('✅ Cleanup modal opened successfully');
-            } else {
-                console.error('❌ Cleanup modal element not found');
+            
+            try {
+                const modal = document.getElementById('cleanup-modal');
+                if (modal) {
+                    // Reset modal state completely
+                    modal.style.display = '';
+                    modal.style.visibility = '';
+                    modal.style.opacity = '';
+                    
+                    // Reset all checkboxes first
+                    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    
+                    // Show modal
+                    modal.classList.remove('hidden');
+                    
+                    console.log('✅ Cleanup modal opened successfully');
+                } else {
+                    console.error('❌ Cleanup modal element not found');
+                }
+            } catch (error) {
+                console.error('❌ Error opening cleanup modal:', error);
             }
         }
 
         function closeCleanupModal() {
-            console.log('🔒 Closing cleanup modal...');
-            const modal = document.getElementById('cleanup-modal');
-            if (modal) {
-                // Hide modal immediately
-                modal.classList.add('hidden');
-                
-                // Reset all checkboxes
-                const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
-                checkboxes.forEach(checkbox => checkbox.checked = false);
-                
-                console.log('✅ Cleanup modal closed successfully');
-                
-                // Refresh data after a short delay
-                setTimeout(() => {
-                    refreshDatabaseStats();
-                    loadPerformanceAnalytics();
-                }, 500);
-            } else {
-                console.error('❌ Cleanup modal element not found for closing');
+            console.log('🔒 FORCE CLOSING cleanup modal...');
+            
+            try {
+                const modal = document.getElementById('cleanup-modal');
+                if (modal) {
+                    // Force hide modal with multiple methods
+                    modal.classList.add('hidden');
+                    modal.style.display = 'none';
+                    modal.style.visibility = 'hidden';
+                    modal.style.opacity = '0';
+                    
+                    // Reset all checkboxes
+                    const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
+                    checkboxes.forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    
+                    console.log('✅ Cleanup modal FORCE CLOSED successfully');
+                    
+                    // Refresh data after a short delay
+                    setTimeout(() => {
+                        try {
+                            refreshDatabaseStats();
+                            loadPerformanceAnalytics();
+                        } catch (error) {
+                            console.warn('Warning: Could not refresh stats after modal close:', error);
+                        }
+                    }, 500);
+                } else {
+                    console.error('❌ Cleanup modal element not found for closing');
+                }
+            } catch (error) {
+                console.error('❌ Error closing cleanup modal:', error);
             }
         }
 
