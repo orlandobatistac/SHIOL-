@@ -80,8 +80,12 @@ def initialize_model():
         
         # Train model with engineered features
         logger.info("🤖 Training model with engineered features...")
-        trainer = ModelTrainer(model_path)  # Pass the path for saving
-        trainer.data = combined_data
+        
+        # Create ModelTrainer with data for training  
+        trainer = ModelTrainer(combined_data)  # Pass data directly
+        trainer.model_path = model_path  # Set the save path
+        
+        logger.info(f"Training with data shape: {combined_data.shape}")
         
         if trainer.train_model():
             logger.info("✅ Model trained successfully!")

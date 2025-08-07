@@ -164,11 +164,16 @@ class ModelTrainer:
 
         logger.info("Starting model training with multi-label classification objective...")
 
-        X = self._get_feature_matrix(self.data)
+        # Create basic features if engineered features are missing
+        X = self._get_or_create_feature_matrix(self.data)
         y = self.create_target_variable(self.data)
         self.target_columns = y.columns.tolist()
 
         # Ensure alignment and drop rows with NaNs in either features or target
+        if X.empty:
+            logger.error("No features available for training.")
+            return False
+            
         combined = pd.concat([X, y], axis=1).dropna()
         X = combined[X.columns]
         y = combined[y.columns]
@@ -176,6 +181,8 @@ class ModelTrainer:
         if X.empty or y.empty:
             logger.error("Not enough data to train after dropping NaNs. Please check data quality.")
             return False
+
+        logger.info(f"Training with {X.shape[0]} samples and {X.shape[1]} features")
 
         X_train, X_test, y_train, y_test = self._split_train_test_data(X, y)
 
@@ -188,24 +195,70 @@ class ModelTrainer:
         self.save_model()
         return True
 
-    def _get_feature_matrix(self, features_df):
-        """Extracts and selects relevant features for the model."""
+    def _get_or_create_feature_matrix(self, features_df):
+        """Extracts and selects relevant features for the model, creating basic ones if needed."""
         # Define the feature names that the model expects
-        feature_cols = [
+        expected_features = [
             "even_count", "odd_count", "sum", "spread", "consecutive_count",
             "avg_delay", "max_delay", "min_delay",
             "dist_to_recent", "avg_dist_to_top_n", "dist_to_centroid",
             "time_weight", "increasing_trend_count", "decreasing_trend_count",
             "stable_trend_count"
         ]
-        # Filter for features that are actually present in the input DataFrame
-        available_features = [col for col in feature_cols if col in features_df.columns]
-        if len(available_features) != len(feature_cols):
-            missing = set(feature_cols) - set(available_features)
-            logger.warning(f"Missing expected features for training: {missing}. Proceeding with available features.")
-
-        logger.info(f"Using features for training: {available_features}")
-        return features_df[available_features]
+        
+        # Check which features are available
+        available_features = [col for col in expected_features if col in features_df.columns]
+        missing_features = [col for col in expected_features if col not in features_df.columns]
+        
+        if missing_features:
+            logger.warning(f"Missing expected features: {missing_features}. Creating basic features from draw data.")
+            
+            # Create basic features from draw data if missing
+            feature_df = features_df.copy()
+            
+            # Ensure we have the draw number columns
+            draw_cols = ['n1', 'n2', 'n3', 'n4', 'n5']
+            if all(col in features_df.columns for col in draw_cols):
+                logger.info("Creating basic features from draw data...")
+                
+                # Create basic statistical features
+                for idx, row in features_df.iterrows():
+                    numbers = [row[col] for col in draw_cols if pd.notna(row[col])]
+                    if len(numbers) == 5:
+                        # Basic features
+                        feature_df.loc[idx, 'even_count'] = sum(1 for n in numbers if n % 2 == 0)
+                        feature_df.loc[idx, 'odd_count'] = sum(1 for n in numbers if n % 2 == 1)
+                        feature_df.loc[idx, 'sum'] = sum(numbers)
+                        feature_df.loc[idx, 'spread'] = max(numbers) - min(numbers)
+                        
+                        # Consecutive count
+                        sorted_nums = sorted(numbers)
+                        consecutive = 0
+                        for i in range(len(sorted_nums)-1):
+                            if sorted_nums[i+1] - sorted_nums[i] == 1:
+                                consecutive += 1
+                        feature_df.loc[idx, 'consecutive_count'] = consecutive
+                        
+                        # Set default values for temporal features
+                        feature_df.loc[idx, 'avg_delay'] = 5.0
+                        feature_df.loc[idx, 'max_delay'] = 10.0
+                        feature_df.loc[idx, 'min_delay'] = 1.0
+                        feature_df.loc[idx, 'dist_to_recent'] = 0.5
+                        feature_df.loc[idx, 'avg_dist_to_top_n'] = 0.5
+                        feature_df.loc[idx, 'dist_to_centroid'] = 0.5
+                        feature_df.loc[idx, 'time_weight'] = 1.0
+                        feature_df.loc[idx, 'increasing_trend_count'] = 1.0
+                        feature_df.loc[idx, 'decreasing_trend_count'] = 1.0
+                        feature_df.loc[idx, 'stable_trend_count'] = 1.0
+                
+                # Now select all expected features
+                return feature_df[expected_features].fillna(0)
+            else:
+                logger.error("Cannot create features: missing draw number columns")
+                return pd.DataFrame()
+        else:
+            logger.info(f"Using existing features: {available_features}")
+            return features_df[available_features]
 
     def _split_train_test_data(self, X, y):
         """Splits the data into training and testing sets."""

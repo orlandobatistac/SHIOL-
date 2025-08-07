@@ -60,29 +60,41 @@ def force_create_model():
         
         # Reset indices to ensure proper alignment
         historical_data_reset = historical_data.reset_index(drop=True)
-        engineered_data_reset = engineered_data.reset_index(drop=True)
         
-        # Combine using concat instead of merge to avoid column renaming
-        combined_data = pd.concat([historical_data_reset, engineered_data_reset], axis=1)
+        # If engineering failed, use original data only
+        if engineered_data.empty:
+            logger.warning("Using original data only since feature engineering failed")
+            combined_data = historical_data_reset
+        else:
+            engineered_data_reset = engineered_data.reset_index(drop=True)
+            # Combine using concat instead of merge to avoid column renaming
+            combined_data = pd.concat([historical_data_reset, engineered_data_reset], axis=1)
         
         logger.info(f"Combined data shape: {combined_data.shape}")
-        logger.info(f"Key columns present: {['n1' in combined_data.columns, 'n2' in combined_data.columns, 'pb' in combined_data.columns]}")
         
-        # Verify we have the required columns
+        # Verify we have the required draw columns
         required_cols = ['n1', 'n2', 'n3', 'n4', 'n5', 'pb']
         missing_cols = [col for col in required_cols if col not in combined_data.columns]
         
         if missing_cols:
-            logger.error(f"Missing required columns: {missing_cols}")
+            logger.error(f"Missing required draw columns: {missing_cols}")
+            logger.info(f"Available columns: {list(combined_data.columns)}")
             return False
+            
+        logger.info(f"✅ All required draw columns present: {required_cols}")
         
         # Train model with proper data
         logger.info("🤖 Training model with combined features...")
-        trainer = ModelTrainer(model_path)
-        trainer.data = combined_data
+        
+        # Create ModelTrainer with data for training
+        trainer = ModelTrainer(combined_data)  # Pass data directly
+        trainer.model_path = model_path  # Set the save path
+        
+        logger.info(f"Training data shape: {combined_data.shape}")
+        logger.info(f"Training data columns: {list(combined_data.columns)}")
         
         if trainer.train_model():
-            logger.info("✅ Model trained and saved successfully!")
+            logger.info("✅ Model trained successfully!")
             
             # Verify model file was created
             if os.path.exists(model_path):
