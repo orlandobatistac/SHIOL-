@@ -1005,13 +1005,14 @@
             showNotification('🔄 Starting comprehensive test of all functions...', 'info');
 
             const tests = [
-                { name: 'System Monitoring', func: updateSystemMonitoring },
                 { name: 'Database Statistics', func: refreshDatabaseStats },
                 { name: 'Performance Analytics', func: loadPerformanceAnalytics },
                 { name: 'Load Configuration', func: loadConfiguration },
                 { name: 'Save Configuration', func: saveConfiguration },
                 { name: 'Pipeline Test', func: testPipeline },
-                { name: 'Database Backup', func: backupDatabase }
+                { name: 'Database Backup', func: backupDatabase },
+                { name: 'Model Retraining', func: retrainModel },
+                { name: 'Models Backup', func: backupModels }
             ];
 
             let passedTests = 0;
@@ -1026,7 +1027,7 @@
                     passedTests++;
 
                     // Pequeña pausa entre tests
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    await new Promise(resolve => setTimeout(resolve, 800));
                 } catch (error) {
                     console.error(`❌ ${test.name} - FAILED:`, error);
                 }
