@@ -124,6 +124,21 @@ def initialize_database():
                 )
             """)
 
+            # Add target_draw_date column if it doesn't exist (migration)
+            try:
+                cursor.execute("SELECT target_draw_date FROM predictions_log LIMIT 1")
+            except sqlite3.OperationalError:
+                logger.info("Adding target_draw_date column to existing predictions_log table...")
+                cursor.execute("ALTER TABLE predictions_log ADD COLUMN target_draw_date DATE")
+                
+                # Update existing records with calculated target draw date
+                cursor.execute("""
+                    UPDATE predictions_log 
+                    SET target_draw_date = DATE(created_at) 
+                    WHERE target_draw_date IS NULL
+                """)
+                logger.info("target_draw_date column added and populated for existing records")
+
             # Phase 4: Adaptive Feedback System Tables
 
             # 1. Performance Tracking Table
