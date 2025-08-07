@@ -87,11 +87,31 @@ async def trigger_full_pipeline_automatically():
     """Task to trigger the full pipeline automatically."""
     logger.info("Running automatic full pipeline trigger.")
     try:
+        # Check if pipeline is already running to prevent duplicates
+        running_executions = [ex for ex in pipeline_executions.values() if ex.get("status") == "running"]
+        if running_executions:
+            logger.warning(f"Pipeline already running (ID: {running_executions[0].get('execution_id')}), skipping automatic execution.")
+            return
+        
         if pipeline_orchestrator:
             # Trigger the full pipeline execution
-            # We don't need to specify num_predictions here as it will use default from orchestrator config
-            await trigger_pipeline_execution(background_tasks=None, num_predictions=10) # Default to 10 predictions for automated runs
-            logger.info("Full pipeline trigger initiated successfully.")
+            execution_id = str(uuid.uuid4())[:8]
+            pipeline_executions[execution_id] = {
+                "execution_id": execution_id,
+                "status": "starting",
+                "start_time": datetime.now().isoformat(),
+                "current_step": "automated_trigger",
+                "steps_completed": 0,
+                "total_steps": 7,
+                "num_predictions": 10,
+                "requested_steps": None,
+                "error": None,
+                "trigger_type": "automatic_scheduler"
+            }
+            
+            # Run the pipeline in background
+            asyncio.create_task(run_full_pipeline_background(execution_id, 10))
+            logger.info(f"Automatic pipeline execution started with ID: {execution_id}")
         else:
             logger.warning("Pipeline orchestrator not available to trigger pipeline.")
     except Exception as e:
@@ -116,26 +136,30 @@ async def lifespan(app: FastAPI):
         app.state.orchestrator = None
 
     # Schedule pipeline execution optimally:
-    # 1. Full pipeline on drawing days at 11:30 PM ET (after drawing results)
-    # NOTE: The cron trigger might need adjustment based on actual drawing times and server timezone.
-    # Using Monday, Wednesday, Saturday as standard drawing days for Powerball.
+    # 1. Full pipeline only on actual drawing days (Monday, Wednesday, Saturday)
     scheduler.add_job(
         func=trigger_full_pipeline_automatically,
         trigger="cron",
-        day_of_week="mon,tue,wed,thu,fri,sat,sun", # Run daily for testing, adjust to actual drawing days
-        hour=23,                    # 11 PM ET (adjust hour/minute based on server timezone and desired execution time)
-        minute=30,                  # 30 minutes after drawing (or desired time)
+        day_of_week="mon,wed,sat", # Only on actual Powerball drawing days
+        hour=23,                    # 11 PM ET
+        minute=30,                  # 30 minutes after drawing
         id="post_drawing_pipeline",
-        name="Full Pipeline After Drawing Results"
+        name="Full Pipeline After Drawing Results",
+        max_instances=1,           # Prevent overlapping executions
+        coalesce=True             # Merge multiple pending executions into one
     )
 
-    # 2. Maintenance pipeline on non-drawing days
+    # 2. Maintenance data update only (no full pipeline)
     scheduler.add_job(
         func=update_data_automatically,
-        trigger="interval",
-        hours=12, # Run every 12 hours for maintenance
+        trigger="cron",
+        day_of_week="tue,thu,fri,sun", # Non-drawing days only
+        hour=6,                        # 6 AM instead of every 12 hours
+        minute=0,
         id="maintenance_data_update",
-        name="Maintenance Data Update Every 12 Hours"
+        name="Maintenance Data Update on Non-Drawing Days",
+        max_instances=1,
+        coalesce=True
     )
     scheduler.start()
     logger.info("Scheduler started. Scheduled jobs are active.")
