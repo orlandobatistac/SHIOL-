@@ -2388,14 +2388,14 @@ async def reset_models():
         if predictor:
             try:
                 # Reload the predictor to reset internal state
-                from src.predictor import ModelTrainer
+                from src.predictor import Predictor
                 from src.loader import DataLoader
                 
                 loader = DataLoader()
-                historical_data = loader.get_historical_data()
+                historical_data = loader.load_historical_data()
                 
                 if not historical_data.empty:
-                    predictor = ModelTrainer(historical_data)
+                    predictor = Predictor()
                     logger.info("Predictor reset and reinitialized")
                 else:
                     logger.warning("No historical data available for predictor reset")
