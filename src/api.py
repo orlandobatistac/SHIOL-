@@ -917,26 +917,30 @@ async def get_smart_predictions(
         smart_predictions = []
         for i, pred in enumerate(predictions_list):
             # Safely convert all values to ensure JSON serialization
-            smart_pred = {
-                "rank": convert_numpy_types(i + 1),
-                "numbers": [convert_numpy_types(pred["n1"]), convert_numpy_types(pred["n2"]),
-                           convert_numpy_types(pred["n3"]), convert_numpy_types(pred["n4"]),
-                           convert_numpy_types(pred["n5"])],
-                "powerball": convert_numpy_types(pred["powerball"]),
-                "total_score": convert_numpy_types(pred["score_total"]),
-                "score_details": {
-                    "probability": convert_numpy_types(float(pred["score_total"]) * 0.4),
-                    "diversity": convert_numpy_types(float(pred["score_total"]) * 0.25),
-                    "historical": convert_numpy_types(float(pred["score_total"]) * 0.2),
-                    "risk_adjusted": convert_numpy_types(float(pred["score_total"]) * 0.15)
-                },
-                "model_version": str(pred.get("model_version", "pipeline_v1.0")),
-                "dataset_hash": str(pred.get("dataset_hash", "pipeline_generated")),
-                "prediction_id": convert_numpy_types(pred["id"]),
-                "generated_at": str(pred["timestamp"]),
-                "method": "smart_ai_pipeline"
-            }
-            smart_predictions.append(smart_pred)
+            try:
+                smart_pred = {
+                    "rank": int(i + 1),
+                    "numbers": [int(pred["n1"]), int(pred["n2"]),
+                               int(pred["n3"]), int(pred["n4"]),
+                               int(pred["n5"])],
+                    "powerball": int(pred["powerball"]),
+                    "total_score": float(pred["score_total"]),
+                    "score_details": {
+                        "probability": float(pred["score_total"]) * 0.4,
+                        "diversity": float(pred["score_total"]) * 0.25,
+                        "historical": float(pred["score_total"]) * 0.2,
+                        "risk_adjusted": float(pred["score_total"]) * 0.15
+                    },
+                    "model_version": str(pred.get("model_version", "pipeline_v1.0")),
+                    "dataset_hash": str(pred.get("dataset_hash", "pipeline_generated")),
+                    "prediction_id": int(pred["id"]),
+                    "generated_at": str(pred["timestamp"]),
+                    "method": "smart_ai_pipeline"
+                }
+                smart_predictions.append(smart_pred)
+            except (ValueError, TypeError, KeyError) as e:
+                logger.warning(f"Error converting prediction record {i}: {e}")
+                continue
 
         if not smart_predictions:
             # If no predictions in database, generate some
@@ -2069,6 +2073,58 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
         if 'conn' in locals():
             conn.close()
         raise HTTPException(status_code=500, detail=f"Error during database cleanup: {str(e)}")
+
+@api_router.get("/database/status")
+async def get_database_status():
+    """Get detailed database status and record counts"""
+    try:
+        conn = db.get_db_connection()
+        cursor = conn.cursor()
+
+        # Get counts from all main tables
+        table_counts = {}
+        
+        tables_to_check = [
+            'powerball_draws',
+            'predictions_log', 
+            'performance_tracking',
+            'adaptive_weights',
+            'pattern_analysis',
+            'reliable_plays',
+            'model_feedback',
+            'system_config'
+        ]
+        
+        for table in tables_to_check:
+            try:
+                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                count = cursor.fetchone()[0]
+                table_counts[table] = count
+            except sqlite3.Error as e:
+                table_counts[table] = f"Error: {str(e)}"
+        
+        # Check if database is "empty" (only has essential data)
+        is_empty = (
+            table_counts.get('predictions_log', 0) == 0 and
+            table_counts.get('performance_tracking', 0) == 0 and
+            table_counts.get('adaptive_weights', 0) == 0 and
+            table_counts.get('model_feedback', 0) == 0
+        )
+        
+        conn.close()
+
+        return {
+            "database_status": "empty" if is_empty else "has_data",
+            "table_counts": table_counts,
+            "total_predictions": table_counts.get('predictions_log', 0),
+            "total_validations": table_counts.get('performance_tracking', 0),
+            "has_historical_data": table_counts.get('powerball_draws', 0) > 0,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error getting database status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting database status: {str(e)}")
 
 @api_router.post("/database/backup")
 async def backup_database():
