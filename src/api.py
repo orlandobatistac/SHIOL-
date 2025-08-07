@@ -12,6 +12,7 @@ import psutil
 import shutil
 from typing import Optional, Dict, Any, List
 import configparser
+import sqlite3 # Ensure sqlite3 is imported
 
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator, DeterministicGenerator
@@ -1676,7 +1677,7 @@ async def stop_pipeline_execution():
 
         # Find running executions
         running_executions = [ex for ex in pipeline_executions.values() if ex.get("status") == "running"]
-        
+
         if not running_executions:
             return {
                 "message": "No running pipeline execution found",
@@ -1687,7 +1688,7 @@ async def stop_pipeline_execution():
         # Stop the most recent running execution
         latest_execution = running_executions[0]
         execution_id = latest_execution["execution_id"]
-        
+
         # Update execution status
         pipeline_executions[execution_id].update({
             "status": "stopped",
@@ -1696,7 +1697,7 @@ async def stop_pipeline_execution():
         })
 
         logger.info(f"Pipeline execution {execution_id} stopped by user request")
-        
+
         return {
             "message": "Pipeline execution stopped successfully",
             "execution_id": execution_id,
@@ -1873,12 +1874,17 @@ async def get_database_stats():
         validations_count = cursor.fetchone()[0]
 
         # Get database file size
-        db_path = os.path.join(os.path.dirname(__file__), "..", "db", "shiolplus.db")
+        db_path = db.get_db_path() # Use centralized configuration
         try:
             db_size_bytes = os.path.getsize(db_path)
             db_size_mb = round(db_size_bytes / (1024 * 1024), 2)
-        except:
+        except FileNotFoundError:
             db_size_mb = 0
+            logger.warning(f"Database file not found at expected path: {db_path}")
+        except Exception as e:
+            db_size_mb = 0
+            logger.error(f"Could not get database file size for {db_path}: {e}")
+
 
         conn.close()
 
@@ -2014,7 +2020,7 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
     """Clean database based on selected options"""
     try:
         logger.info(f"Starting database cleanup with options: {cleanup_options}")
-        
+
         conn = db.get_db_connection()
         cursor = conn.cursor()
         results = []
@@ -2078,13 +2084,13 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
                 # Complete database reset - clear all analysis tables but keep historical draws and config
                 tables_to_clear = [
                     "predictions_log",
-                    "performance_tracking", 
+                    "performance_tracking",
                     "adaptive_weights",
                     "pattern_analysis",
                     "reliable_plays",
                     "model_feedback"
                 ]
-                
+
                 total_deleted = 0
                 for table in tables_to_clear:
                     try:
@@ -2094,7 +2100,7 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
                         logger.info(f"Cleared {deleted} records from {table}")
                     except Exception as table_error:
                         logger.warning(f"Could not clear table {table}: {table_error}")
-                
+
                 # Also clear log files for complete reset
                 import os
                 import glob
@@ -2105,7 +2111,7 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
                             f.truncate(0)
                     except:
                         pass
-                        
+
                 results.append(f"Complete system reset: cleared {total_deleted} total records and all log files (kept historical draw data and configuration)")
                 logger.info(f"Complete system reset performed")
             except Exception as e:
@@ -2122,7 +2128,7 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
         logger.info(f"Database cleanup completed successfully: {results}")
         return {
             "success": True,
-            "message": "Database cleanup completed successfully", 
+            "message": "Database cleanup completed successfully",
             "results": results,
             "options_processed": cleanup_options
         }
@@ -2145,10 +2151,10 @@ async def get_database_status():
 
         # Get counts from all main tables
         table_counts = {}
-        
+
         tables_to_check = [
             'powerball_draws',
-            'predictions_log', 
+            'predictions_log',
             'performance_tracking',
             'adaptive_weights',
             'pattern_analysis',
@@ -2156,7 +2162,7 @@ async def get_database_status():
             'model_feedback',
             'system_config'
         ]
-        
+
         for table in tables_to_check:
             try:
                 cursor.execute(f"SELECT COUNT(*) FROM {table}")
@@ -2164,7 +2170,7 @@ async def get_database_status():
                 table_counts[table] = count
             except sqlite3.Error as e:
                 table_counts[table] = f"Error: {str(e)}"
-        
+
         # Check if database is "empty" (only has essential data)
         is_empty = (
             table_counts.get('predictions_log', 0) == 0 and
@@ -2172,7 +2178,7 @@ async def get_database_status():
             table_counts.get('adaptive_weights', 0) == 0 and
             table_counts.get('model_feedback', 0) == 0
         )
-        
+
         conn.close()
 
         return {
@@ -2195,8 +2201,8 @@ async def backup_database():
         from shutil import copy2
         from datetime import datetime
 
-        db_path = os.path.join(os.path.dirname(__file__), "..", "db", "shiolplus.db")
-        backup_dir = os.path.join(os.path.dirname(__file__), "..", "db", "backups")
+        db_path = db.get_db_path() # Use centralized configuration
+        backup_dir = os.path.join(os.path.dirname(db_path), "backups")
 
         os.makedirs(backup_dir, exist_ok=True)
 
@@ -2208,6 +2214,9 @@ async def backup_database():
         logger.info(f"Database backup created: {backup_path}")
         return {"message": "Database backup created successfully", "backup_file": backup_path}
 
+    except FileNotFoundError:
+        logger.error(f"Database file not found for backup: {db_path}")
+        raise HTTPException(status_code=404, detail=f"Database file not found at {db_path}")
     except Exception as e:
         logger.error(f"Error creating database backup: {e}")
         raise HTTPException(status_code=500, detail=f"Error creating database backup: {str(e)}")
@@ -2216,35 +2225,44 @@ async def backup_database():
 async def get_system_logs():
     """Get recent system logs"""
     try:
-        logs_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
+        log_dir = os.path.join(os.path.dirname(__file__), "..", "logs")
         log_files = []
 
-        if os.path.exists(logs_dir):
-            log_files = [f for f in os.listdir(logs_dir) if f.endswith('.log')]
+        if os.path.exists(log_dir):
+            log_files = [f for f in os.listdir(log_dir) if f.endswith('.log')]
 
         recent_logs = []
 
         # Read recent log entries (last 100 lines)
         if log_files:
-            latest_log = max(log_files, key=lambda x: os.path.getctime(os.path.join(logs_dir, x)))
-            log_path = os.path.join(logs_dir, latest_log)
+            # Find the most recently modified log file
+            latest_log_file_path = max(
+                [os.path.join(log_dir, f) for f in log_files],
+                key=os.path.getctime
+            )
 
-            with open(log_path, 'r') as f:
-                lines = f.readlines()[-100:]  # Last 100 lines
+            try:
+                with open(latest_log_file_path, 'r') as f:
+                    lines = f.readlines()[-100:]  # Last 100 lines
 
-            for line in lines:
-                if 'ERROR' in line:
-                    level = 'error'
-                elif 'WARNING' in line:
-                    level = 'warning'
-                else:
-                    level = 'info'
+                for line in lines:
+                    if 'ERROR' in line:
+                        level = 'error'
+                    elif 'WARNING' in line:
+                        level = 'warning'
+                    else:
+                        level = 'info'
 
-                recent_logs.append({
-                    'level': level,
-                    'message': line.strip(),
-                    'timestamp': datetime.now().isoformat()
-                })
+                    recent_logs.append({
+                        'level': level,
+                        'message': line.strip(),
+                        'timestamp': datetime.now().isoformat() # Use current timestamp for log entry if specific timestamp not parsed
+                    })
+            except FileNotFoundError:
+                logger.warning(f"Latest log file not found for reading: {latest_log_file_path}")
+            except Exception as e:
+                logger.error(f"Error reading log file {latest_log_file_path}: {e}")
+
 
         return recent_logs
 
@@ -2298,31 +2316,35 @@ async def backup_models():
         from datetime import datetime
         import shutil
         import os
-        
+
         logger.info("Model backup initiated")
-        
+
         # Define paths
-        model_path = "models/shiolplus.pkl"
-        backup_dir = "models/backups"
-        
+        # Assuming models are stored in a directory relative to the db backup directory
+        # Adjust this path if your model storage location differs
+        db_backup_dir = os.path.join(os.path.dirname(db.get_db_path()), "backups")
+        model_dir = os.path.join(os.path.dirname(__file__), "..", "models")
+        model_file_path = os.path.join(model_dir, "shiolplus.pkl") # Assuming the primary model file
+
         # Create backup directory if it doesn't exist
-        os.makedirs(backup_dir, exist_ok=True)
-        
+        model_backup_dir = os.path.join(model_dir, "backups")
+        os.makedirs(model_backup_dir, exist_ok=True)
+
         # Check if model exists
-        if not os.path.exists(model_path):
-            raise HTTPException(status_code=404, detail="Model file not found")
-        
+        if not os.path.exists(model_file_path):
+            raise HTTPException(status_code=404, detail=f"Model file not found at {model_file_path}")
+
         # Create backup with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_filename = f"shiolplus_backup_{timestamp}.pkl"
-        backup_path = os.path.join(backup_dir, backup_filename)
-        
+        backup_filename = f"shiolplus_model_backup_{timestamp}.pkl"
+        backup_path = os.path.join(model_backup_dir, backup_filename)
+
         # Copy model file
-        shutil.copy2(model_path, backup_path)
-        
+        shutil.copy2(model_file_path, backup_path)
+
         # Get backup file size
         backup_size = os.path.getsize(backup_path)
-        
+
         logger.info(f"Model backup created: {backup_path}")
         return {
             "message": "Model backup created successfully",
@@ -2332,6 +2354,9 @@ async def backup_models():
             "status": "success"
         }
 
+    except FileNotFoundError:
+        logger.error(f"Model file or backup directory not found.")
+        raise HTTPException(status_code=500, detail="Model file or backup directory issue encountered.")
     except Exception as e:
         logger.error(f"Error creating model backup: {e}")
         raise HTTPException(status_code=500, detail=f"Error creating model backup: {str(e)}")
@@ -2341,10 +2366,10 @@ async def reset_models():
     """Reset AI models to initial state"""
     try:
         logger.info("Model reset initiated")
-        
+
         # This would reset models to initial state
         # For now, we'll return a success message
-        
+
         return {
             "message": "Model reset completed",
             "status": "success",
@@ -2362,8 +2387,8 @@ async def get_system_info():
     return {
         "version": "6.0.0",
         "status": "operational",
-        "database_status": "connected",
-        "model_status": "loaded" if predictor and predictor.model else "not_loaded"
+        "database_status": "connected" if db.is_database_connected() else "disconnected", # Check connection status
+        "model_status": "loaded" if predictor and hasattr(predictor, 'model') and predictor.model else "not_loaded"
     }
 
 # --- Application Mounting ---
