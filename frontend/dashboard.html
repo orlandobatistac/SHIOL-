@@ -945,8 +945,38 @@
         }
 
         async function resetModels() {
-            if (confirm('Are you sure you want to reset all AI models? This will force complete retraining.')) {
-                showNotification('AI models reset initiated', 'success');
+            if (confirm('¿Estás seguro de que quieres resetear todos los modelos AI? Esta acción eliminará todo el aprendizaje adaptativo y no se puede deshacer.')) {
+                try {
+                    const resetBtn = document.getElementById('reset-models-btn');
+                    if (resetBtn) {
+                        resetBtn.disabled = true;
+                        resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Resetting...';
+                    }
+
+                    const response = await fetch('/api/v1/model/reset', { method: 'POST' });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        let message = 'AI models reset successfully!';
+                        if (result.details) {
+                            message += ` Cleared ${result.details.weights_cleared + result.details.feedback_cleared + result.details.plays_cleared} records.`;
+                        }
+                        showNotification(message, 'success');
+                        
+                        // Refresh after 2 seconds
+                        setTimeout(() => window.location.reload(), 2000);
+                    } else {
+                        throw new Error('Reset failed');
+                    }
+                } catch (error) {
+                    showNotification('Error resetting AI models: ' + error.message, 'error');
+                } finally {
+                    const resetBtn = document.getElementById('reset-models-btn');
+                    if (resetBtn) {
+                        resetBtn.disabled = false;
+                        resetBtn.innerHTML = '<i class="fas fa-redo mr-2"></i>Reset AI Models';
+                    }
+                }
             }
         }
 

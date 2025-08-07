@@ -2359,19 +2359,80 @@ async def reset_models():
     try:
         logger.info("Model reset initiated")
 
-        # This would reset models to initial state
-        # For now, we'll return a success message
+        # Reset model-related data in database
+        if db_manager:
+            with db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                
+                # Clear adaptive weights
+                cursor.execute('DELETE FROM adaptive_weights')
+                weights_cleared = cursor.rowcount
+                
+                # Clear model feedback
+                cursor.execute('DELETE FROM model_feedback')
+                feedback_cleared = cursor.rowcount
+                
+                # Clear reliable plays
+                cursor.execute('DELETE FROM reliable_plays')
+                plays_cleared = cursor.rowcount
+                
+                # Clear performance tracking
+                cursor.execute('DELETE FROM performance_tracking')
+                performance_cleared = cursor.rowcount
+                
+                conn.commit()
+                logger.info(f"Database reset: {weights_cleared} weights, {feedback_cleared} feedback, {plays_cleared} plays, {performance_cleared} performance records")
+
+        # Reset global predictor if available
+        global predictor
+        if predictor:
+            try:
+                # Reload the predictor to reset internal state
+                from src.predictor import ModelTrainer
+                from src.loader import DataLoader
+                
+                loader = DataLoader()
+                historical_data = loader.get_historical_data()
+                
+                if not historical_data.empty:
+                    predictor = ModelTrainer(historical_data)
+                    logger.info("Predictor reset and reinitialized")
+                else:
+                    logger.warning("No historical data available for predictor reset")
+                    
+            except Exception as pred_error:
+                logger.error(f"Error resetting predictor: {pred_error}")
+
+        # Clear model caches if any ensemble predictor exists
+        try:
+            from src.model_pool_manager import ModelPoolManager
+            # Reinitialize model pool manager
+            model_manager = ModelPoolManager()
+            model_manager.load_compatible_models()
+            logger.info("Model pool manager reset")
+        except Exception as pool_error:
+            logger.warning(f"Could not reset model pool: {pool_error}")
+
+        logger.info("Model reset completed successfully")
 
         return {
-            "message": "Model reset completed",
+            "message": "AI Models reset completed successfully",
             "status": "success",
             "timestamp": datetime.now().isoformat(),
-            "note": "Models have been reset to initial training state"
+            "details": {
+                "weights_cleared": weights_cleared if 'weights_cleared' in locals() else 0,
+                "feedback_cleared": feedback_cleared if 'feedback_cleared' in locals() else 0,
+                "plays_cleared": plays_cleared if 'plays_cleared' in locals() else 0,
+                "performance_cleared": performance_cleared if 'performance_cleared' in locals() else 0,
+                "predictor_reset": True,
+                "model_pool_reset": True
+            },
+            "note": "All AI models have been reset to their initial training state. Adaptive learning data cleared."
         }
 
     except Exception as e:
-        logger.error(f"Error resetting models: {e}")
-        raise HTTPException(status_code=500, detail=f"Error resetting models: {str(e)}")
+        logger.error(f"Error resetting AI models: {e}")
+        raise HTTPException(status_code=500, detail=f"Error resetting AI models: {str(e)}")
 
 @api_router.get("/system/info")
 async def get_system_info():

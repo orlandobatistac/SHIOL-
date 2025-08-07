@@ -546,20 +546,54 @@ class ConfigurationManager {
     }
 
     async resetModels() {
+        if (!confirm('¿Estás seguro de que quieres resetear todos los modelos AI? Esta acción eliminará todo el aprendizaje adaptativo y no se puede deshacer.')) {
+            return;
+        }
+
         try {
-            console.log('🔄 Testing Models Reset...');
+            console.log('🔄 Resetting AI Models...');
+            
+            // Show loading state
+            const resetBtn = document.getElementById('reset-models-btn');
+            if (resetBtn) {
+                resetBtn.disabled = true;
+                resetBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Resetting...';
+            }
+
             const response = await fetch(`${this.API_BASE_URL}/model/reset`, { method: 'POST' });
+            
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Models Reset Result:', result);
-                this.showNotification(`Models reset: ${result.status}`, 'success');
+                
+                // Show detailed success message
+                let message = `AI Models reset successfully!`;
+                if (result.details) {
+                    const details = result.details;
+                    message += ` Cleared: ${details.weights_cleared} weights, ${details.feedback_cleared} feedback records, ${details.plays_cleared} reliable plays.`;
+                }
+                
+                this.showNotification(message, 'success');
+                
+                // Optionally refresh the page after a short delay
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+                
             } else {
                 const errorText = await response.text();
                 throw new Error(`Models reset failed: ${response.status} - ${errorText}`);
             }
         } catch (error) {
             console.error('❌ Models Reset Error:', error);
-            this.showNotification('Error resetting models: ' + error.message, 'error');
+            this.showNotification('Error resetting AI models: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            const resetBtn = document.getElementById('reset-models-btn');
+            if (resetBtn) {
+                resetBtn.disabled = false;
+                resetBtn.innerHTML = '<i class="fas fa-redo mr-2"></i>Reset AI Models';
+            }
         }
     }
 
