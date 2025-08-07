@@ -919,22 +919,36 @@ async def get_smart_predictions(
         for i, pred in enumerate(predictions_list):
             # Safely convert all values to ensure JSON serialization
             try:
-                # Use convert_numpy_types helper function for safe conversion
+                # Extract and convert individual numbers safely
+                numbers = []
+                for num_key in ["n1", "n2", "n3", "n4", "n5"]:
+                    num_val = pred.get(num_key, 0)
+                    numbers.append(int(num_val) if num_val is not None else 0)
+                
+                powerball_val = pred.get("powerball", 0)
+                powerball = int(powerball_val) if powerball_val is not None else 0
+                
+                score_val = pred.get("score_total", 0.0)
+                total_score = float(score_val) if score_val is not None else 0.0
+                
+                pred_id = pred.get("id", 0)
+                prediction_id = int(pred_id) if pred_id is not None else 0
+                
                 smart_pred = {
-                    "rank": convert_numpy_types(i + 1),
-                    "numbers": convert_numpy_types([pred["n1"], pred["n2"], pred["n3"], pred["n4"], pred["n5"]]),
-                    "powerball": convert_numpy_types(pred["powerball"]),
-                    "total_score": convert_numpy_types(pred["score_total"]),
+                    "rank": i + 1,
+                    "numbers": numbers,
+                    "powerball": powerball,
+                    "total_score": total_score,
                     "score_details": {
-                        "probability": convert_numpy_types(pred["score_total"]) * 0.4,
-                        "diversity": convert_numpy_types(pred["score_total"]) * 0.25,
-                        "historical": convert_numpy_types(pred["score_total"]) * 0.2,
-                        "risk_adjusted": convert_numpy_types(pred["score_total"]) * 0.15
+                        "probability": total_score * 0.4,
+                        "diversity": total_score * 0.25,
+                        "historical": total_score * 0.2,
+                        "risk_adjusted": total_score * 0.15
                     },
                     "model_version": str(pred.get("model_version", "pipeline_v1.0")),
                     "dataset_hash": str(pred.get("dataset_hash", "pipeline_generated")),
-                    "prediction_id": convert_numpy_types(pred["id"]),
-                    "generated_at": str(pred["timestamp"]),
+                    "prediction_id": prediction_id,
+                    "generated_at": str(pred.get("timestamp", "")),
                     "method": "smart_ai_pipeline"
                 }
                 smart_predictions.append(smart_pred)
@@ -952,23 +966,37 @@ async def get_smart_predictions(
             predictions = predictor.predict_diverse_plays(num_plays=min(limit, 10), save_to_log=True)
 
             for i, pred in enumerate(predictions):
+                # Safely convert numpy types to native Python types
+                numbers = [int(x) for x in pred.get("numbers", [])]
+                powerball = int(pred.get("powerball", 0))
+                total_score = float(pred.get("score_total", 0.0))
+                
+                # Convert score_details safely
+                score_details = pred.get("score_details", {})
+                safe_score_details = {}
+                for key, value in score_details.items():
+                    if isinstance(value, (np.integer, np.floating)):
+                        safe_score_details[key] = float(value)
+                    else:
+                        safe_score_details[key] = value
+                
                 smart_pred = {
                     "rank": i + 1,
-                    "numbers": pred["numbers"],
-                    "powerball": pred["powerball"],
-                    "total_score": pred["score_total"],
-                    "score_details": pred["score_details"],
-                    "model_version": pred["model_version"],
-                    "dataset_hash": pred["dataset_hash"],
-                    "prediction_id": pred.get("log_id"),
+                    "numbers": numbers,
+                    "powerball": powerball,
+                    "total_score": total_score,
+                    "score_details": safe_score_details,
+                    "model_version": str(pred.get("model_version", "")),
+                    "dataset_hash": str(pred.get("dataset_hash", "")),
+                    "prediction_id": int(pred.get("log_id", 0)) if pred.get("log_id") else None,
                     "method": "smart_ai_realtime"
                 }
                 smart_predictions.append(smart_pred)
 
         # Calculate statistics with safe conversion
         if smart_predictions:
-            avg_score = sum(convert_numpy_types(p["total_score"]) for p in smart_predictions) / len(smart_predictions)
-            best_score = max(convert_numpy_types(p["total_score"]) for p in smart_predictions)
+            avg_score = sum(float(p["total_score"]) for p in smart_predictions) / len(smart_predictions)
+            best_score = max(float(p["total_score"]) for p in smart_predictions)
         else:
             avg_score = 0.0
             best_score = 0.0
@@ -976,14 +1004,14 @@ async def get_smart_predictions(
         return {
             "method": "smart_ai_database",
             "smart_predictions": smart_predictions,
-            "total_predictions": convert_numpy_types(len(smart_predictions)),
-            "average_score": convert_numpy_types(avg_score),
-            "best_score": convert_numpy_types(best_score),
+            "total_predictions": len(smart_predictions),
+            "average_score": float(avg_score),
+            "best_score": float(best_score),
             "data_source": "database" if smart_predictions and "pipeline" in smart_predictions[0].get("method", "") else "realtime_generation",
             "next_drawing": {
                 "date": next_drawing_date,
                 "formatted_date": next_date.strftime('%B %d, %Y'),
-                "days_until": convert_numpy_types(days_until_drawing),
+                "days_until": int(days_until_drawing),
                 "is_today": days_until_drawing == 0,
                 "is_drawing_day": is_drawing_day,
                 "drawing_schedule": {
