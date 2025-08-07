@@ -579,27 +579,49 @@
             const stopPipelineBtn = document.getElementById('stop-pipeline-btn');
             if (stopPipelineBtn) stopPipelineBtn.addEventListener('click', stopPipeline);
 
-            // Event listener for cleanup execution (with safety checks)
+            // Cleanup modal event listeners - SIMPLIFIED AND FIXED
+            setupCleanupModalEvents();
+        }
+
+        function setupCleanupModalEvents() {
+            // Execute cleanup button
             const executeCleanupBtn = document.getElementById('execute-cleanup-btn');
-            if (executeCleanupBtn) executeCleanupBtn.addEventListener('click', executeCleanup);
+            if (executeCleanupBtn) {
+                executeCleanupBtn.addEventListener('click', executeCleanup);
+            }
             
-            // Event listener for cancel cleanup button
+            // Cancel button
             const cancelCleanupBtn = document.getElementById('cancel-cleanup-btn');
-            if (cancelCleanupBtn) cancelCleanupBtn.addEventListener('click', closeCleanupModal);
+            if (cancelCleanupBtn) {
+                cancelCleanupBtn.addEventListener('click', closeCleanupModal);
+            }
 
-            // Event listener for close cleanup modal button (X button)
+            // Close button (X)
             const closeCleanupModalBtn = document.getElementById('close-cleanup-modal-btn');
-            if (closeCleanupModalBtn) closeCleanupModalBtn.addEventListener('click', closeCleanupModal);
+            if (closeCleanupModalBtn) {
+                closeCleanupModalBtn.addEventListener('click', closeCleanupModal);
+            }
 
-            // Close modal when clicking outside of it
+            // Click outside to close
             const cleanupModal = document.getElementById('cleanup-modal');
             if (cleanupModal) {
                 cleanupModal.addEventListener('click', function(event) {
+                    // Only close if clicking on the modal backdrop (not on the modal content)
                     if (event.target === cleanupModal) {
                         closeCleanupModal();
                     }
                 });
             }
+
+            // ESC key to close
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    const modal = document.getElementById('cleanup-modal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        closeCleanupModal();
+                    }
+                }
+            });
         }
 
         function loadConfigProfile(profile) {
@@ -762,26 +784,41 @@
         }
 
         function showCleanupModal() {
+            console.log('🔓 Opening cleanup modal...');
             const modal = document.getElementById('cleanup-modal');
             if (modal) {
-                modal.classList.remove('hidden');
-                // Reset all checkboxes
+                // Reset all checkboxes first
                 const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
+                
+                // Show modal
+                modal.classList.remove('hidden');
+                console.log('✅ Cleanup modal opened successfully');
+            } else {
+                console.error('❌ Cleanup modal element not found');
             }
         }
 
         function closeCleanupModal() {
+            console.log('🔒 Closing cleanup modal...');
             const modal = document.getElementById('cleanup-modal');
             if (modal) {
+                // Hide modal immediately
                 modal.classList.add('hidden');
-                // Reset all checkboxes when closing
+                
+                // Reset all checkboxes
                 const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
                 checkboxes.forEach(checkbox => checkbox.checked = false);
                 
-                // Refresh data after closing modal
-                refreshDatabaseStats();
-                loadPerformanceAnalytics();
+                console.log('✅ Cleanup modal closed successfully');
+                
+                // Refresh data after a short delay
+                setTimeout(() => {
+                    refreshDatabaseStats();
+                    loadPerformanceAnalytics();
+                }, 500);
+            } else {
+                console.error('❌ Cleanup modal element not found for closing');
             }
         }
 
