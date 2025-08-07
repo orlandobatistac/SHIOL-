@@ -76,14 +76,15 @@ class ModelTrainer:
         else:
             raise TypeError("model_path_or_data must be a file path (str) or a pandas DataFrame.")
 
-        self.white_ball_columns = [f"n{i}" for i in range(1, 6)] # Assuming n1 to n5 for white balls
-        self.pb_column = "pb" # Assuming 'pb' for powerball
+        # Handle both original and merged column names
+        self.white_ball_columns = [f"n{i}" for i in range(1, 6)] # Original column names
+        self.pb_column = "pb" # Original powerball column
         logger.info("ModelTrainer initialized.")
 
     def create_target_variable(self, features_df):
         """
         Creates a multi-label target variable for white balls and powerball.
-        Assumes features_df contains the drawn numbers in columns like 'n1'...'n5' and 'pb'.
+        Handles both original and merged column names from pandas merge operations.
         """
         logger.info("Creating multi-label target variable 'y'...")
 
@@ -98,15 +99,50 @@ class ModelTrainer:
         # Initialize target DataFrame with zeros
         y = pd.DataFrame(0, index=features_df.index, columns=wb_cols + pb_cols)
 
-        # Populate white ball targets
-        for i in white_ball_range:
-            # Check if number 'i' is present in any of the white ball columns for a given row
-            y[f"wb_{i}"] = features_df[self.white_ball_columns].eq(i).any(axis=1).astype(int)
+        # Detect actual column names (handle merged columns)
+        available_cols = features_df.columns.tolist()
+        logger.debug(f"Available columns: {available_cols}")
+        
+        # Find white ball columns (try original first, then _x, then _y suffixes)
+        wb_columns_to_use = []
+        pb_column_to_use = None
+        
+        for i in range(1, 6):
+            col_found = False
+            for suffix in ['', '_x', '_y']:
+                col_name = f"n{i}{suffix}"
+                if col_name in available_cols:
+                    wb_columns_to_use.append(col_name)
+                    col_found = True
+                    break
+            if not col_found:
+                logger.error(f"Could not find column n{i} with any suffix")
+                
+        # Find powerball column
+        for suffix in ['', '_x', '_y']:
+            col_name = f"pb{suffix}"
+            if col_name in available_cols:
+                pb_column_to_use = col_name
+                break
+                
+        if not pb_column_to_use:
+            logger.error("Could not find powerball column with any suffix")
+            
+        logger.info(f"Using white ball columns: {wb_columns_to_use}")
+        logger.info(f"Using powerball column: {pb_column_to_use}")
 
-        # Populate powerball targets
-        for i in pb_range:
-            # Check if the powerball column matches number 'i'
-            y[f"pb_{i}"] = (features_df[self.pb_column] == i).astype(int)
+        if len(wb_columns_to_use) == 5 and pb_column_to_use:
+            # Populate white ball targets
+            for i in white_ball_range:
+                # Check if number 'i' is present in any of the white ball columns for a given row
+                y[f"wb_{i}"] = features_df[wb_columns_to_use].eq(i).any(axis=1).astype(int)
+
+            # Populate powerball targets
+            for i in pb_range:
+                # Check if the powerball column matches number 'i'
+                y[f"pb_{i}"] = (features_df[pb_column_to_use] == i).astype(int)
+        else:
+            logger.error("Could not find all required draw number columns. Creating empty targets.")
 
         logger.info(f"Target variable 'y' created with shape: {y.shape}")
         return y

@@ -1,10 +1,17 @@
 
 #!/usr/bin/env python3
+"""
+Force Model Creation Utility for SHIOL+ v6.0
+============================================
+
+Utility to force creation of the model file when automatic training fails.
+This addresses column naming conflicts and ensures proper model initialization.
+"""
 
 import os
 import sys
 import pandas as pd
-from pathlib import Path
+from loguru import logger
 
 # Add src to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -12,12 +19,12 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from predictor import ModelTrainer
 from loader import DataLoader
 from database import initialize_database
-from loguru import logger
+from intelligent_generator import FeatureEngineer
 
-def initialize_model():
-    """Initialize and train the model if it doesn't exist."""
+def force_create_model():
+    """Force creation of the model with proper column handling."""
     try:
-        logger.info("🚀 Initializing SHIOL+ model with feature engineering...")
+        logger.info("🚀 Force creating SHIOL+ model...")
         
         # Initialize database
         initialize_database()
@@ -32,72 +39,72 @@ def initialize_model():
         
         logger.info(f"Loaded {len(historical_data)} historical records")
         
-        # Check if model exists
-        model_path = "models/shiolplus.pkl"
-        if os.path.exists(model_path):
-            logger.info(f"Model already exists at {model_path}")
-            return True
-        
         # Create models directory
         os.makedirs("models", exist_ok=True)
+        model_path = "models/shiolplus.pkl"
         
-        # CRITICAL: Engineer features BEFORE training
+        # Engineer features
         logger.info("🔧 Engineering features for model training...")
-        from intelligent_generator import FeatureEngineer
-        
         feature_engineer = FeatureEngineer(historical_data)
         engineered_data = feature_engineer.engineer_features(use_temporal_analysis=True)
         
         if engineered_data.empty:
-            logger.error("Feature engineering failed - no engineered features generated")
+            logger.error("Feature engineering failed")
             return False
         
-        logger.info(f"✅ Feature engineering complete: {engineered_data.shape[1]} features generated")
+        logger.info(f"✅ Feature engineering complete: {engineered_data.shape[1]} features")
         
-        # FIXED: Use concat instead of merge to avoid column renaming
-        logger.info("🔗 Properly combining data to avoid column conflicts...")
+        # CRITICAL: Properly combine data to avoid column conflicts
+        logger.info("🔗 Combining original data with engineered features...")
         
-        # Reset indices to ensure alignment
+        # Reset indices to ensure proper alignment
         historical_data_reset = historical_data.reset_index(drop=True)
         engineered_data_reset = engineered_data.reset_index(drop=True)
         
-        # Use concat instead of merge to preserve original column names
+        # Combine using concat instead of merge to avoid column renaming
         combined_data = pd.concat([historical_data_reset, engineered_data_reset], axis=1)
         
         logger.info(f"Combined data shape: {combined_data.shape}")
-        logger.info(f"Available columns: {list(combined_data.columns)}")
+        logger.info(f"Key columns present: {['n1' in combined_data.columns, 'n2' in combined_data.columns, 'pb' in combined_data.columns]}")
         
-        # Verify required columns exist
+        # Verify we have the required columns
         required_cols = ['n1', 'n2', 'n3', 'n4', 'n5', 'pb']
-        present_cols = [col for col in required_cols if col in combined_data.columns]
         missing_cols = [col for col in required_cols if col not in combined_data.columns]
         
-        logger.info(f"Present required columns: {present_cols}")
         if missing_cols:
             logger.error(f"Missing required columns: {missing_cols}")
             return False
         
-        # Train model with engineered features
-        logger.info("🤖 Training model with engineered features...")
-        trainer = ModelTrainer(model_path)  # Pass the path for saving
+        # Train model with proper data
+        logger.info("🤖 Training model with combined features...")
+        trainer = ModelTrainer(model_path)
         trainer.data = combined_data
         
         if trainer.train_model():
-            logger.info("✅ Model trained successfully!")
-            return True
+            logger.info("✅ Model trained and saved successfully!")
+            
+            # Verify model file was created
+            if os.path.exists(model_path):
+                file_size = os.path.getsize(model_path) / (1024 * 1024)  # MB
+                logger.info(f"✅ Model file created: {model_path} ({file_size:.2f} MB)")
+                return True
+            else:
+                logger.error("❌ Model file was not created")
+                return False
         else:
             logger.error("❌ Model training failed")
             return False
             
     except Exception as e:
-        logger.error(f"❌ Error during model initialization: {e}")
+        logger.error(f"❌ Error during forced model creation: {e}")
         logger.exception("Full traceback:")
         return False
 
 if __name__ == "__main__":
-    success = initialize_model()
+    success = force_create_model()
     if success:
-        print("✅ Model initialization completed successfully")
+        print("✅ Model creation completed successfully")
+        print("You can now use the regular prediction functions")
     else:
-        print("❌ Model initialization failed")
+        print("❌ Model creation failed")
         sys.exit(1)
