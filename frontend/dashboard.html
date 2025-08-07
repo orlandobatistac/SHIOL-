@@ -546,35 +546,30 @@
             document.getElementById('cleanup-db-btn').onclick = showCleanupModal;
 
             // Event listeners for model management (with safety checks)
-            const retrainBtn = document.getElementById('retrain-model-btn');
-            if (retrainBtn) retrainBtn.addEventListener('click', retrainModel);
-            
-            const backupModelsBtn = document.getElementById('backup-models-btn');
-            if (backupModelsBtn) backupModelsBtn.addEventListener('click', backupModels);
-            
-            const resetModelsBtn = document.getElementById('reset-models-btn');
-            if (resetModelsBtn) resetModelsBtn.addEventListener('click', resetModels);
+            document.getElementById('retrain-model-btn').addEventListener('click', retrainModel);
+            document.getElementById('backup-models-btn').addEventListener('click', backupModels);
+            // Reset models is handled by ConfigurationManager
 
             // Event listeners for configuration management (with safety checks)
             const saveConfigBtn = document.getElementById('save-config-btn');
             if (saveConfigBtn) saveConfigBtn.addEventListener('click', saveConfiguration);
-            
+
             const exportConfigBtn = document.getElementById('export-config-btn');
             if (exportConfigBtn) exportConfigBtn.addEventListener('click', exportConfiguration);
-            
+
             const importConfigBtn = document.getElementById('import-config-btn');
             if (importConfigBtn) importConfigBtn.addEventListener('click', importConfiguration);
-            
+
             const testPipelineBtn = document.getElementById('test-pipeline-btn');
             if (testPipelineBtn) testPipelineBtn.addEventListener('click', testPipeline);
-            
+
             const testAllFunctionsBtn = document.getElementById('test-all-functions-btn');
             if (testAllFunctionsBtn) testAllFunctionsBtn.addEventListener('click', testAllFunctions);
 
             // Event listeners for pipeline controls (with safety checks)
             const triggerPipelineBtn = document.getElementById('trigger-pipeline-btn');
             if (triggerPipelineBtn) triggerPipelineBtn.addEventListener('click', triggerPipeline);
-            
+
             const stopPipelineBtn = document.getElementById('stop-pipeline-btn');
             if (stopPipelineBtn) stopPipelineBtn.addEventListener('click', stopPipeline);
 
@@ -638,15 +633,15 @@
             try {
                 console.log('🔄 Refreshing database stats...');
                 const response = await fetch('/api/v1/database/stats');
-                
+
                 if (response.ok) {
                     const stats = await response.json();
                     console.log('✅ Database stats loaded:', stats);
-                    
+
                     document.getElementById('db-records').textContent = stats.total_records || '-';
                     document.getElementById('db-size').textContent = stats.size_mb ? `${stats.size_mb}MB` : '-';
                     document.getElementById('db-predictions').textContent = stats.predictions_count || '-';
-                    
+
                     showNotification('Database statistics updated', 'success');
                 } else {
                     console.error('❌ Database stats request failed:', response.status);
@@ -662,16 +657,16 @@
             try {
                 console.log('🔄 Loading performance analytics...');
                 const response = await fetch('/api/v1/analytics/performance');
-                
+
                 if (response.ok) {
                     const analytics = await response.json();
                     console.log('✅ Performance analytics loaded:', analytics);
-                    
+
                     document.getElementById('win-rate').textContent = `${analytics.win_rate || 0}%`;
                     document.getElementById('avg-score').textContent = (analytics.avg_score || 0).toFixed(3);
                     document.getElementById('best-method').textContent = analytics.best_method || 'smart_ai';
                     document.getElementById('total-predictions').textContent = analytics.total_predictions || 0;
-                    
+
                     showNotification('Performance analytics updated', 'success');
                 } else {
                     console.error('❌ Performance analytics request failed:', response.status);
@@ -945,7 +940,7 @@
         }
 
         async function resetModels() {
-            if (confirm('¿Estás seguro de que quieres resetear todos los modelos AI? Esta acción eliminará todo el aprendizaje adaptativo y no se puede deshacer.')) {
+            if (confirm('Are you sure you want to reset all AI models? This action will delete all adaptive learning and cannot be undone.')) {
                 try {
                     const resetBtn = document.getElementById('reset-models-btn');
                     if (resetBtn) {
@@ -954,7 +949,7 @@
                     }
 
                     const response = await fetch('/api/v1/model/reset', { method: 'POST' });
-                    
+
                     if (response.ok) {
                         const result = await response.json();
                         let message = 'AI models reset successfully!';
@@ -962,7 +957,7 @@
                             message += ` Cleared ${result.details.weights_cleared + result.details.feedback_cleared + result.details.plays_cleared} records.`;
                         }
                         showNotification(message, 'success');
-                        
+
                         // Refresh after 2 seconds
                         setTimeout(() => window.location.reload(), 2000);
                     } else {

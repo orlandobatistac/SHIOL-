@@ -546,7 +546,7 @@ class ConfigurationManager {
     }
 
     async resetModels() {
-        if (!confirm('¿Estás seguro de que quieres resetear todos los modelos AI? Esta acción eliminará todo el aprendizaje adaptativo y no se puede deshacer.')) {
+        if (!confirm('Are you sure you want to reset all AI models? This action will remove all adaptive learning data and cannot be undone.')) {
             return;
         }
 
