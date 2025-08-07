@@ -4,19 +4,41 @@ body {
     font-family: 'Poppins', sans-serif;
 }
 
-/* Custom style for the generated number balls for a bit of depth */
+/* Enhanced color theme variables */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --card-shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+.dark {
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    --card-shadow-hover: 0 8px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Enhanced number balls with modern styling */
 #result-area > div > div > div,
 .prediction-item div > div,
 .method-card div > div,
 .history-item div > div {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: var(--card-shadow);
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dark #result-area > div > div > div,
 .dark .prediction-item div > div,
 .dark .method-card div > div,
 .dark .history-item div > div {
-     box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    background: linear-gradient(145deg, #374151, #4b5563);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: var(--card-shadow);
 }
 
 /* Special style for the Powerball to make it pop */
@@ -51,16 +73,29 @@ body {
     transition: width 0.8s ease-in-out;
 }
 
-/* Method comparison cards */
+/* Enhanced method comparison cards */
 .method-card {
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(15px);
 }
 
 .method-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: var(--card-shadow-hover);
+    background: linear-gradient(145deg, #ffffff, #f1f5f9);
+}
+
+.dark .method-card {
+    background: linear-gradient(145deg, #1f2937, #374151);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .method-card:hover {
+    background: linear-gradient(145deg, #374151, #4b5563);
 }
 
 .method-card::before {
@@ -131,20 +166,59 @@ body {
     }
 }
 
-/* Button hover effects */
+/* Enhanced button styling */
 .deterministic-feature button {
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
+    background: var(--primary-gradient);
+    border: none;
+    color: white;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+}
+
+.deterministic-feature button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
 }
 
 .deterministic-feature button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
+    filter: brightness(1.1);
+}
+
+.deterministic-feature button:hover::before {
+    left: 100%;
 }
 
 .deterministic-feature button:active {
-    transform: translateY(0);
+    transform: translateY(-1px);
+}
+
+/* Success button variant */
+.bg-emerald-600 {
+    background: var(--success-gradient) !important;
+}
+
+.bg-emerald-600:hover {
+    box-shadow: 0 8px 30px rgba(17, 153, 142, 0.4) !important;
+}
+
+/* Warning button variant */
+.bg-amber-600 {
+    background: var(--warning-gradient) !important;
+}
+
+.bg-amber-600:hover {
+    box-shadow: 0 8px 30px rgba(240, 147, 251, 0.4) !important;
 }
 
 /* Method badge styling */
@@ -563,13 +637,33 @@ input:focus,
     }
 }
 
-/* Pipeline dashboard gradient background */
+/* Enhanced pipeline dashboard background */
 .pipeline-dashboard-bg {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--primary-gradient);
+    position: relative;
+}
+
+.pipeline-dashboard-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+    pointer-events: none;
 }
 
 .dark .pipeline-dashboard-bg {
-    background: linear-gradient(135deg, #4c1d95 0%, #581c87 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+}
+
+.dark .pipeline-dashboard-bg::before {
+    background: radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
 }
 
 /* Loading states for pipeline components */
