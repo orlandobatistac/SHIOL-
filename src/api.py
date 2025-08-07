@@ -786,6 +786,52 @@ async def get_prediction_history_public(
         logger.error(f"Error retrieving public prediction history: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve prediction history")
 
+@api_router.get("/prediction-history-grouped")
+async def get_prediction_history_grouped(
+    limit_dates: int = Query(25, ge=1, le=50, description="Number of recent dates to return")
+):
+    """
+    Get prediction history grouped by date for enhanced display.
+    Returns predictions organized by generation date with statistics.
+    """
+    try:
+        logger.info(f"Received request for grouped prediction history ({limit_dates} dates)")
+
+        # Get grouped predictions from database
+        grouped_data = db.get_predictions_grouped_by_date(limit_dates=limit_dates)
+
+        if not grouped_data:
+            return {
+                "grouped_dates": [],
+                "total_dates": 0,
+                "total_predictions": 0,
+                "message": "No prediction history available"
+            }
+
+        # Calculate summary statistics
+        total_predictions = sum(group['total_plays'] for group in grouped_data)
+        total_winning_predictions = sum(group['winning_plays'] for group in grouped_data)
+        overall_win_rate = (total_winning_predictions / total_predictions * 100) if total_predictions > 0 else 0.0
+
+        return {
+            "grouped_dates": grouped_data,
+            "total_dates": len(grouped_data),
+            "total_predictions": total_predictions,
+            "total_winning_predictions": total_winning_predictions,
+            "overall_win_rate": f"{overall_win_rate:.1f}%",
+            "summary": {
+                "best_single_prize": max((group['best_prize_amount'] for group in grouped_data), default=0),
+                "total_prize_won": sum(group['total_prize_amount'] for group in grouped_data),
+                "dates_with_winners": len([g for g in grouped_data if g['winning_plays'] > 0]),
+                "average_plays_per_date": total_predictions / len(grouped_data) if grouped_data else 0
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error retrieving grouped prediction history: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve grouped prediction history")
+
 @api_router.get("/predict/smart")
 async def get_smart_predictions(
     limit: int = Query(100, ge=1, le=100, description="Number of Smart AI predictions to retrieve from database")

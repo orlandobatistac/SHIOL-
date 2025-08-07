@@ -140,14 +140,55 @@
                     </div>
                 </section>
 
-                <!-- Prediction History Section -->
-                <section id="prediction-history-section" class="prediction-history-section">
-                    <div class="container">
-                        <div id="prediction-history" class="prediction-history-container">
-                            <!-- Prediction history will be loaded here -->
-                        </div>
+                <!-- Grouped Prediction History Section -->
+                <section id="grouped-prediction-history-section" class="mb-12">
+                    <div class="text-center mb-8">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                            <i class="fas fa-calendar-alt mr-2 text-green-600"></i>
+                            Previous Predictions by Date
+                        </h2>
+                        <p class="text-gray-600 dark:text-gray-400">
+                            Historical predictions grouped by date showing wins and statistics
+                        </p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="grouped-history-loading" class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-3xl text-green-600 mb-4"></i>
+                        <p class="text-gray-600 dark:text-gray-400">Loading prediction history...</p>
+                    </div>
+
+                    <!-- Grouped History Container -->
+                    <div id="grouped-history-container" class="hidden">
+                        <!-- Grouped history will be loaded here -->
+                    </div>
+
+                    <!-- Error State -->
+                    <div id="grouped-history-error" class="hidden text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                        <p class="text-red-600 dark:text-red-400">Unable to load prediction history. Please try again later.</p>
                     </div>
                 </section>
+
+                <!-- Detail Modal -->
+                <div id="date-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg max-w-4xl max-h-[90vh] w-full mx-4 shadow-2xl overflow-hidden">
+                        <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+                            <h3 id="modal-title" class="text-lg font-semibold text-gray-900 dark:text-white">Predictions Details</h3>
+                            <button id="close-date-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        <div id="modal-content" class="p-6 overflow-y-auto max-h-[70vh]">
+                            <!-- Modal content will be loaded here -->
+                        </div>
+                        <div class="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700">
+                            <button id="close-modal-btn" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-md transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Footer -->
                 <footer class="footer"

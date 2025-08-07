@@ -80,10 +80,32 @@ class PublicInterface {
             loginForm.addEventListener('submit', (e) => this.handleLogin(e));
         }
 
+        // Date details modal events
+        const dateModal = document.getElementById('date-details-modal');
+        const closeDateModal = document.getElementById('close-date-modal');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        if (closeDateModal) {
+            closeDateModal.addEventListener('click', () => this.hideDateDetailsModal());
+        }
+
+        if (closeModalBtn) {
+            closeModalBtn.addEventListener('click', () => this.hideDateDetailsModal());
+        }
+
+        if (dateModal) {
+            dateModal.addEventListener('click', (e) => {
+                if (e.target === dateModal) {
+                    this.hideDateDetailsModal();
+                }
+            });
+        }
+
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 this.hideLoginModal();
+                this.hideDateDetailsModal();
             }
         });
     }
@@ -100,7 +122,7 @@ class PublicInterface {
      */
     async loadInitialData() {
         await this.loadNextDrawingInfo();
-        await this.loadPredictionHistory();
+        await this.loadGroupedPredictionHistory();
     }
 
     /**
@@ -682,6 +704,355 @@ class PublicInterface {
      */
     showError(message) {
         PowerballUtils.showToast(message, 'error');
+    }
+
+    /**
+     * Load grouped prediction history by date
+     */
+    async loadGroupedPredictionHistory() {
+        try {
+            console.log('Loading grouped prediction history...');
+
+            // Show loading state
+            this.showGroupedHistoryLoadingState();
+
+            const response = await fetch('/api/v1/prediction-history-grouped?limit_dates=25');
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Grouped prediction history loaded:', data);
+
+            this.displayGroupedPredictionHistory(data);
+
+        } catch (error) {
+            console.error('Error loading grouped prediction history:', error);
+            this.showGroupedHistoryErrorState();
+        }
+    }
+
+    /**
+     * Display grouped prediction history
+     */
+    displayGroupedPredictionHistory(data) {
+        const container = document.getElementById('grouped-history-container');
+        if (!container) return;
+
+        this.hideGroupedHistoryLoadingState();
+
+        if (!data.grouped_dates || data.grouped_dates.length === 0) {
+            this.showGroupedHistoryEmptyState();
+            return;
+        }
+
+        const groupedDates = data.grouped_dates;
+
+        let historyHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                <!-- Header with Summary -->
+                <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 p-6 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                                <i class="fas fa-calendar-alt mr-2 text-green-600"></i>
+                                Prediction History by Date
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                Last ${data.total_dates} dates with ${data.total_predictions} total predictions
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">${data.overall_win_rate}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Overall Win Rate</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Summary Statistics -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                            <div class="font-bold text-lg text-gray-900 dark:text-white">${data.total_predictions}</div>
+                            <div class="text-gray-600 dark:text-gray-400">Total Plays</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                            <div class="font-bold text-lg text-green-600">${data.total_winning_predictions}</div>
+                            <div class="text-gray-600 dark:text-gray-400">Winners</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                            <div class="font-bold text-lg text-blue-600">${data.summary.dates_with_winners}</div>
+                            <div class="text-gray-600 dark:text-gray-400">Winning Dates</div>
+                        </div>
+                        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 text-center">
+                            <div class="font-bold text-lg text-purple-600">${data.summary.average_plays_per_date.toFixed(1)}</div>
+                            <div class="text-gray-600 dark:text-gray-400">Avg per Date</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grouped Dates Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                        <thead class="bg-gray-50 dark:bg-gray-900">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plays Generated</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Winning Plays</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Best Prize</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+        `;
+
+        groupedDates.forEach((dateGroup, index) => {
+            const winRateClass = parseFloat(dateGroup.win_rate_percentage) > 0 ? 'text-green-600' : 'text-gray-600';
+            const rowClass = dateGroup.winning_plays > 0 ? 'bg-green-50 dark:bg-green-900/20' : '';
+
+            historyHTML += `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 ${rowClass}">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex flex-col">
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">${dateGroup.formatted_date}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">${dateGroup.date}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold text-gray-900 dark:text-white">${dateGroup.total_plays}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">predictions</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="text-sm font-bold ${winRateClass}">${dateGroup.winning_plays}</div>
+                            <div class="ml-2 text-xs ${winRateClass}">(${dateGroup.win_rate_percentage})</div>
+                        </div>
+                        ${dateGroup.winning_plays > 0 ? `<div class="text-xs text-green-600">🏆 Winners found!</div>` : `<div class="text-xs text-gray-500">No matches</div>`}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">${dateGroup.best_prize}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">${dateGroup.total_prize_display}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="publicInterface.showDateDetailsModal('${dateGroup.date}')" 
+                                class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            <i class="fas fa-eye mr-1"></i>
+                            View Details
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        historyHTML += `
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 dark:bg-gray-900 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600 dark:text-gray-400">
+                            Showing ${data.total_dates} most recent dates
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                            Last updated: ${new Date().toLocaleString('es-ES')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = historyHTML;
+        container.classList.remove('hidden');
+    }
+
+    /**
+     * Show date details modal
+     */
+    async showDateDetailsModal(date) {
+        try {
+            console.log('Loading details for date:', date);
+
+            const modal = document.getElementById('date-details-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalContent = document.getElementById('modal-content');
+
+            if (!modal || !modalContent) return;
+
+            // Show modal with loading state
+            modalTitle.textContent = `Predictions for ${date}`;
+            modalContent.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                    <p class="text-gray-600">Loading prediction details...</p>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+
+            // Get grouped data again to find the specific date
+            const response = await fetch('/api/v1/prediction-history-grouped?limit_dates=25');
+            const data = await response.json();
+
+            const dateGroup = data.grouped_dates.find(group => group.date === date);
+            if (!dateGroup) {
+                modalContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                        <p class="text-red-600">No data found for this date.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            this.displayDateDetails(dateGroup, modalContent);
+
+        } catch (error) {
+            console.error('Error loading date details:', error);
+            const modalContent = document.getElementById('modal-content');
+            if (modalContent) {
+                modalContent.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                        <p class="text-red-600">Error loading prediction details.</p>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    /**
+     * Display date details in modal
+     */
+    displayDateDetails(dateGroup, modalContent) {
+        const predictions = dateGroup.predictions || [];
+
+        let detailsHTML = `
+            <!-- Header Stats -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg p-4 mb-6">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                    <div>
+                        <div class="text-2xl font-bold text-blue-600">${dateGroup.total_plays}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Total Plays</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-green-600">${dateGroup.winning_plays}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Winners</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-purple-600">${dateGroup.win_rate_percentage}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Win Rate</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-orange-600">${dateGroup.total_prize_display}</div>
+                        <div class="text-xs text-gray-600 dark:text-gray-400">Total Prizes</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predictions List -->
+            <div class="space-y-3">
+        `;
+
+        predictions.forEach((prediction, index) => {
+            const hasWin = prediction.has_prize;
+            const cardClass = hasWin ? 'border-green-200 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 bg-white dark:bg-gray-800';
+
+            detailsHTML += `
+                <div class="border ${cardClass} rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full ${hasWin ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'} text-sm font-bold">
+                                ${index + 1}
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                ${prediction.numbers.map(num => `
+                                    <span class="inline-flex items-center justify-center w-8 h-8 bg-white text-gray-900 rounded-full text-sm font-bold border-2 border-gray-300">${num}</span>
+                                `).join('')}
+                                <span class="text-red-500 text-lg font-bold mx-2">•</span>
+                                <span class="inline-flex items-center justify-center w-8 h-8 bg-red-600 text-white rounded-full text-sm font-bold">${prediction.powerball}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            ${hasWin ? `
+                                <div class="text-green-600 font-bold">${prediction.prize_description}</div>
+                                <div class="text-sm text-green-500">$${prediction.prize_amount}</div>
+                                <div class="text-xs text-gray-500">${prediction.matches_main} matches ${prediction.powerball_match ? '+ PB' : ''}</div>
+                            ` : `
+                                <div class="text-gray-500">No matches</div>
+                                <div class="text-xs text-gray-400">${prediction.matches_main} matches ${prediction.powerball_match ? '+ PB' : ''}</div>
+                            `}
+                            <div class="text-xs text-gray-400 mt-1">Score: ${(prediction.score * 100).toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        detailsHTML += '</div>';
+
+        modalContent.innerHTML = detailsHTML;
+    }
+
+    /**
+     * Hide date details modal
+     */
+    hideDateDetailsModal() {
+        const modal = document.getElementById('date-details-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    /**
+     * Show loading state for grouped history
+     */
+    showGroupedHistoryLoadingState() {
+        const loading = document.getElementById('grouped-history-loading');
+        const container = document.getElementById('grouped-history-container');
+        const error = document.getElementById('grouped-history-error');
+
+        if (loading) loading.classList.remove('hidden');
+        if (container) container.classList.add('hidden');
+        if (error) error.classList.add('hidden');
+    }
+
+    /**
+     * Hide loading state for grouped history
+     */
+    hideGroupedHistoryLoadingState() {
+        const loading = document.getElementById('grouped-history-loading');
+        if (loading) loading.classList.add('hidden');
+    }
+
+    /**
+     * Show error state for grouped history
+     */
+    showGroupedHistoryErrorState() {
+        const loading = document.getElementById('grouped-history-loading');
+        const container = document.getElementById('grouped-history-container');
+        const error = document.getElementById('grouped-history-error');
+
+        if (loading) loading.classList.add('hidden');
+        if (container) container.classList.add('hidden');
+        if (error) error.classList.remove('hidden');
+    }
+
+    /**
+     * Show empty state for grouped history
+     */
+    showGroupedHistoryEmptyState() {
+        const container = document.getElementById('grouped-history-container');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
+                <i class="fas fa-calendar-times text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">No History Available</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-500">No previous predictions found grouped by date.</p>
+            </div>
+        `;
+        container.classList.remove('hidden');
+        this.hideGroupedHistoryLoadingState();
     }
 
     /**

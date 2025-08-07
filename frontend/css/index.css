@@ -320,6 +320,118 @@
     color: #adb5bd;
 }
 
+/* Grouped Prediction History Styles */
+#grouped-prediction-history-section {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.grouped-history-row:hover {
+    transform: translateX(2px);
+    transition: all 0.3s ease;
+}
+
+.grouped-history-date {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Modal Styles */
+#date-details-modal .modal-content {
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* Prize indicators */
+.prize-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.prize-indicator.winning {
+    color: #059669;
+}
+
+.prize-indicator.no-win {
+    color: #6b7280;
+}
+
+/* Win rate badges */
+.win-rate-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.win-rate-badge.high {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.win-rate-badge.medium {
+    background-color: #fef3c7;
+    color: #92400e;
+}
+
+.win-rate-badge.low {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.win-rate-badge.zero {
+    background-color: #f3f4f6;
+    color: #6b7280;
+}
+
+/* Date group cards */
+.date-group-card {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+}
+
+.date-group-card:hover {
+    border-left-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.date-group-card.has-winners {
+    border-left-color: #059669;
+    background-color: #ecfdf5;
+}
+
+.dark .date-group-card.has-winners {
+    background-color: #064e3b;
+}
+
+/* Statistics cards in summary */
+.stat-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.dark .stat-card {
+    background: rgba(55, 65, 81, 0.8);
+    border: 1px solid rgba(55, 65, 81, 0.2);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .ai-prediction-item {
@@ -379,5 +491,27 @@
     .loading-spinner {
         width: 24px;
         height: 24px;
+    }
+
+    /* Grouped History Mobile Styles */
+    #date-details-modal .bg-white {
+        max-width: 95vw;
+        max-height: 95vh;
+    }
+
+    #date-details-modal .overflow-y-auto {
+        max-height: 60vh;
+    }
+
+    .stat-card {
+        padding: 12px;
+    }
+
+    .grouped-history-row {
+        font-size: 0.9rem;
+    }
+
+    .grouped-history-row td {
+        padding: 8px 4px;
     }
 }

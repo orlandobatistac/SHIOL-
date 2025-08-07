@@ -797,6 +797,175 @@ def get_predictions_by_dataset_hash(dataset_hash: str) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
+    """
+    Obtiene predicciones agrupadas por fecha de generación para mostrar historial.
+    
+    Args:
+        limit_dates: Número máximo de fechas a retornar (default: 25)
+    
+    Returns:
+        Lista de diccionarios con estructura:
+        - date: fecha de generación
+        - formatted_date: fecha formateada en español
+        - total_plays: total de predicciones generadas ese día
+        - winning_plays: número de predicciones que ganaron algún premio
+        - best_prize: mejor premio obtenido
+        - total_prize_amount: suma total de premios
+        - predictions: lista de predicciones detalladas
+    """
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Get unique dates with prediction counts
+            cursor.execute("""
+                SELECT 
+                    DATE(created_at) as prediction_date,
+                    COUNT(*) as total_predictions
+                FROM predictions_log
+                WHERE created_at IS NOT NULL
+                GROUP BY DATE(created_at)
+                ORDER BY prediction_date DESC
+                LIMIT ?
+            """, (limit_dates,))
+            
+            date_groups = cursor.fetchall()
+            
+            grouped_results = []
+            
+            # Spanish month names for formatting
+            spanish_months = {
+                1: 'Ene', 2: 'Feb', 3: 'Mar', 4: 'Abr', 5: 'May', 6: 'Jun',
+                7: 'Jul', 8: 'Ago', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dic'
+            }
+            
+            for date_row in date_groups:
+                prediction_date = date_row[0]
+                total_predictions = date_row[1]
+                
+                # Get all predictions for this date
+                cursor.execute("""
+                    SELECT 
+                        id, timestamp, n1, n2, n3, n4, n5, powerball,
+                        score_total, model_version, dataset_hash
+                    FROM predictions_log
+                    WHERE DATE(created_at) = ?
+                    ORDER BY score_total DESC
+                """, (prediction_date,))
+                
+                predictions_data = cursor.fetchall()
+                
+                # Process predictions and calculate statistics
+                predictions = []
+                total_prize = 0.0
+                winning_predictions = 0
+                best_prize_amount = 0.0
+                best_prize_description = "No matches"
+                
+                for pred_row in predictions_data:
+                    prediction_numbers = [pred_row[2], pred_row[3], pred_row[4], pred_row[5], pred_row[6]]
+                    prediction_pb = pred_row[7]
+                    
+                    # Try to find matching official result for this prediction date
+                    cursor.execute("""
+                        SELECT n1, n2, n3, n4, n5, pb
+                        FROM powerball_draws
+                        WHERE draw_date = ?
+                    """, (prediction_date,))
+                    
+                    official_result = cursor.fetchone()
+                    
+                    # Calculate matches and prizes
+                    matches_main = 0
+                    powerball_match = False
+                    prize_amount = 0.0
+                    prize_description = "No matches"
+                    
+                    if official_result:
+                        winning_numbers = [official_result[0], official_result[1], official_result[2], 
+                                         official_result[3], official_result[4]]
+                        winning_pb = official_result[5]
+                        
+                        # Count main number matches
+                        matches_main = len(set(prediction_numbers) & set(winning_numbers))
+                        powerball_match = prediction_pb == winning_pb
+                        
+                        # Calculate prize
+                        prize_amount, prize_description = calculate_prize_amount(matches_main, powerball_match)
+                    
+                    # Update statistics
+                    total_prize += prize_amount
+                    if prize_amount > 0:
+                        winning_predictions += 1
+                    
+                    if prize_amount > best_prize_amount:
+                        best_prize_amount = prize_amount
+                        best_prize_description = prize_description
+                    
+                    # Add prediction to list
+                    prediction_detail = {
+                        "prediction_id": pred_row[0],
+                        "timestamp": pred_row[1],
+                        "numbers": prediction_numbers,
+                        "powerball": prediction_pb,
+                        "score": float(pred_row[8]),
+                        "model_version": pred_row[9],
+                        "dataset_hash": pred_row[10],
+                        "matches_main": matches_main,
+                        "powerball_match": powerball_match,
+                        "prize_amount": prize_amount,
+                        "prize_description": prize_description,
+                        "has_prize": prize_amount > 0
+                    }
+                    
+                    predictions.append(prediction_detail)
+                
+                # Format date in Spanish
+                try:
+                    date_obj = datetime.strptime(prediction_date, '%Y-%m-%d')
+                    formatted_date = f"{date_obj.day} {spanish_months[date_obj.month]} {date_obj.year}"
+                except:
+                    formatted_date = prediction_date
+                
+                # Format total prize display
+                if best_prize_amount >= 100000000:
+                    total_prize_display = "JACKPOT!"
+                elif total_prize >= 1000000:
+                    total_prize_display = f"${total_prize/1000000:.1f}M"
+                elif total_prize >= 1000:
+                    total_prize_display = f"${total_prize/1000:.0f}K"
+                elif total_prize > 0:
+                    total_prize_display = f"${total_prize:.0f}"
+                else:
+                    total_prize_display = "$0"
+                
+                # Calculate win rate
+                win_rate = (winning_predictions / total_predictions * 100) if total_predictions > 0 else 0.0
+                
+                grouped_result = {
+                    "date": prediction_date,
+                    "formatted_date": formatted_date,
+                    "total_plays": total_predictions,
+                    "winning_plays": winning_predictions,
+                    "win_rate_percentage": f"{win_rate:.1f}%",
+                    "best_prize": best_prize_description,
+                    "best_prize_amount": best_prize_amount,
+                    "total_prize_amount": total_prize,
+                    "total_prize_display": total_prize_display,
+                    "predictions": predictions
+                }
+                
+                grouped_results.append(grouped_result)
+            
+            logger.info(f"Retrieved {len(grouped_results)} grouped prediction dates with {sum(g['total_plays'] for g in grouped_results)} total predictions")
+            return grouped_results
+        
+    except Exception as e:
+        logger.error(f"Error retrieving grouped predictions by date: {e}")
+        return []
+
+
 def calculate_prize_amount(main_matches: int, powerball_match: bool, jackpot_amount: float = 100000000) -> tuple:
     """
     Calcula el premio basado en coincidencias según las reglas oficiales de Powerball.
