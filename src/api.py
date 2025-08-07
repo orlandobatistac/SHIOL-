@@ -2265,7 +2265,7 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
                     # Extract timestamp from filename
                     timestamp_str = filename.replace("pipeline_report_", "").replace(".json", "")
                     timestamp = datetime.strptime(timestamp_str, "%Y%m%d_%H%M%S")
-                    report_files.append((timestamp, filepath))
+                    report_files.append((timestamp, filepath, timestamp_str))
                 except ValueError:
                     continue
         
@@ -2276,7 +2276,7 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
         report_files = report_files[:limit]
         
         executions = []
-        for timestamp, filepath in report_files:
+        for timestamp, filepath, timestamp_str in report_files:
             try:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     report_data = json.load(f)
@@ -2321,10 +2321,6 @@ async def get_pipeline_execution_history(limit: int = Query(20, ge=1, le=100, de
             "timestamp": datetime.now().isoformat()
         }
         
-    except Exception as e:
-        logger.error(f"Error retrieving pipeline execution history: {e}")
-        raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
-
     except Exception as e:
         logger.error(f"Error retrieving pipeline execution history: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving pipeline execution history.")
