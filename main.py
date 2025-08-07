@@ -969,6 +969,7 @@ Examples:
   python main.py --step prediction  # Run prediction generation only
   python main.py --status           # Check pipeline status
   python main.py --server           # Start API server for VPN access
+  python main.py --pipeline-server  # Run pipeline THEN start server (recommended)
   python main.py --api --port 8080  # Start API server on custom port
   python main.py --help             # Show this help message
 
@@ -1032,9 +1033,38 @@ Server mode:
         help='Port to bind server to (default: 8000)'
     )
 
+    parser.add_argument(
+        '--pipeline-server',
+        action='store_true',
+        help='Run full pipeline first, then start server (recommended for production)'
+    )
+
     args = parser.parse_args()
 
     try:
+        # Handle pipeline-then-server mode
+        if args.pipeline_server:
+            print("🚀 SHIOL+ Pipeline + Server Mode")
+            print("=" * 50)
+            print("Step 1: Running full pipeline to initialize system...")
+            
+            # Run full pipeline first
+            orchestrator = PipelineOrchestrator(config_path=args.config)
+            result = orchestrator.run_full_pipeline()
+            
+            if result.get('status') == 'success':
+                print(f"✅ Pipeline completed successfully in {result.get('execution_time', 'unknown')}")
+                print("Step 2: Starting API server...")
+                print("=" * 50)
+                
+                # Start server after successful pipeline
+                start_api_server(host=args.host, port=args.port, auto_detect_ip=True)
+            else:
+                print(f"❌ Pipeline failed: {result.get('error', 'unknown error')}")
+                print("Server will not start due to pipeline failure.")
+                sys.exit(1)
+            return
+
         # Handle server mode
         if args.server or args.api:
             start_api_server(host=args.host, port=args.port, auto_detect_ip=True)
