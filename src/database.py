@@ -25,10 +25,22 @@ def get_db_path() -> str:
     # Construct the absolute path to the config file
     current_dir = os.path.dirname(os.path.abspath(__file__))
     config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
-    config.read(config_path)
-    # Construct the absolute path for the db file
-    db_file = config["paths"]["db_file"]
-    db_path = os.path.join(current_dir, '..', db_file)
+    
+    try:
+        config.read(config_path)
+        # Try to get db path from paths section, with fallback
+        if config.has_section('paths') and config.has_option('paths', 'db_file'):
+            db_file = config["paths"]["db_file"]
+        else:
+            # Fallback to default path
+            db_file = "data/shiolplus.db"
+            logger.warning(f"Config section 'paths' not found, using default: {db_file}")
+            
+        db_path = os.path.join(current_dir, '..', db_file)
+    except Exception as e:
+        # Complete fallback
+        logger.error(f"Error reading config file: {e}. Using default database path.")
+        db_path = os.path.join(current_dir, '..', 'data', 'shiolplus.db')
 
     # Ensure the directory for the database exists
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
