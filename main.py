@@ -888,18 +888,12 @@ def start_api_server(host: str = "0.0.0.0", port: int = 8000, auto_detect_ip: bo
         print("   Make sure to run this script from the project root directory")
         sys.exit(1)
 
-    # Check if virtual environment is activated (improved detection)
-    in_venv = (
-        hasattr(sys, 'real_prefix') or 
-        (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix) or
-        os.environ.get('VIRTUAL_ENV') is not None or
-        os.environ.get('CONDA_DEFAULT_ENV') is not None
-    )
-    
-    if not in_venv:
+    # Check if virtual environment is activated
+    if not hasattr(sys, 'real_prefix') and not (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
         print("⚠️  Warning: No virtual environment detected")
-        print("   Running in system Python environment")
-        print("   For Replit: This is normal and expected")
+        print("   It's recommended to activate the virtual environment first:")
+        print("   source venv/bin/activate  # Linux/Mac")
+        print("   .\\venv\\Scripts\\activate  # Windows")
         print()
 
     # Server configuration
@@ -969,7 +963,6 @@ Examples:
   python main.py --step prediction  # Run prediction generation only
   python main.py --status           # Check pipeline status
   python main.py --server           # Start API server for VPN access
-  python main.py --pipeline-server  # Run pipeline THEN start server (recommended)
   python main.py --api --port 8080  # Start API server on custom port
   python main.py --help             # Show this help message
 
@@ -1033,38 +1026,9 @@ Server mode:
         help='Port to bind server to (default: 8000)'
     )
 
-    parser.add_argument(
-        '--pipeline-server',
-        action='store_true',
-        help='Run full pipeline first, then start server (recommended for production)'
-    )
-
     args = parser.parse_args()
 
     try:
-        # Handle pipeline-then-server mode
-        if args.pipeline_server:
-            print("🚀 SHIOL+ Pipeline + Server Mode")
-            print("=" * 50)
-            print("Step 1: Running full pipeline to initialize system...")
-            
-            # Run full pipeline first
-            orchestrator = PipelineOrchestrator(config_path=args.config)
-            result = orchestrator.run_full_pipeline()
-            
-            if result.get('status') == 'success':
-                print(f"✅ Pipeline completed successfully in {result.get('execution_time', 'unknown')}")
-                print("Step 2: Starting API server...")
-                print("=" * 50)
-                
-                # Start server after successful pipeline
-                start_api_server(host=args.host, port=args.port, auto_detect_ip=True)
-            else:
-                print(f"❌ Pipeline failed: {result.get('error', 'unknown error')}")
-                print("Server will not start due to pipeline failure.")
-                sys.exit(1)
-            return
-
         # Handle server mode
         if args.server or args.api:
             start_api_server(host=args.host, port=args.port, auto_detect_ip=True)

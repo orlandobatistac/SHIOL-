@@ -76,15 +76,14 @@ class ModelTrainer:
         else:
             raise TypeError("model_path_or_data must be a file path (str) or a pandas DataFrame.")
 
-        # Handle both original and merged column names
-        self.white_ball_columns = [f"n{i}" for i in range(1, 6)] # Original column names
-        self.pb_column = "pb" # Original powerball column
+        self.white_ball_columns = [f"n{i}" for i in range(1, 6)] # Assuming n1 to n5 for white balls
+        self.pb_column = "pb" # Assuming 'pb' for powerball
         logger.info("ModelTrainer initialized.")
 
     def create_target_variable(self, features_df):
         """
         Creates a multi-label target variable for white balls and powerball.
-        Handles both original and merged column names from pandas merge operations.
+        Assumes features_df contains the drawn numbers in columns like 'n1'...'n5' and 'pb'.
         """
         logger.info("Creating multi-label target variable 'y'...")
 
@@ -99,59 +98,15 @@ class ModelTrainer:
         # Initialize target DataFrame with zeros
         y = pd.DataFrame(0, index=features_df.index, columns=wb_cols + pb_cols)
 
-        # Detect actual column names (handle merged columns)
-        available_cols = features_df.columns.tolist()
-        logger.debug(f"Available columns: {available_cols}")
-        
-        # Find white ball columns (try original first, then _x, then _y suffixes)
-        wb_columns_to_use = []
-        pb_column_to_use = None
-        
-        for i in range(1, 6):
-            col_found = False
-            for suffix in ['', '_x', '_y']:
-                col_name = f"n{i}{suffix}"
-                if col_name in available_cols:
-                    wb_columns_to_use.append(col_name)
-                    col_found = True
-                    break
-            if not col_found:
-                logger.error(f"Could not find column n{i} with any suffix")
-                
-        # Find powerball column
-        for suffix in ['', '_x', '_y']:
-            col_name = f"pb{suffix}"
-            if col_name in available_cols:
-                pb_column_to_use = col_name
-                break
-                
-        if not pb_column_to_use:
-            logger.error("Could not find powerball column with any suffix")
-            
-        logger.info(f"Using white ball columns: {wb_columns_to_use}")
-        logger.info(f"Using powerball column: {pb_column_to_use}")
+        # Populate white ball targets
+        for i in white_ball_range:
+            # Check if number 'i' is present in any of the white ball columns for a given row
+            y[f"wb_{i}"] = features_df[self.white_ball_columns].eq(i).any(axis=1).astype(int)
 
-        if len(wb_columns_to_use) == 5 and pb_column_to_use:
-            try:
-                # Populate white ball targets
-                for i in white_ball_range:
-                    # Check if number 'i' is present in any of the white ball columns for a given row
-                    y[f"wb_{i}"] = features_df[wb_columns_to_use].eq(i).any(axis=1).astype(int)
-
-                # Populate powerball targets
-                for i in pb_range:
-                    # Check if the powerball column matches number 'i'
-                    y[f"pb_{i}"] = (features_df[pb_column_to_use] == i).astype(int)
-            except Exception as e:
-                logger.error(f"Error creating target variables: {e}")
-                logger.info("Available columns in features_df:")
-                logger.info(list(features_df.columns))
-                raise
-        else:
-            logger.error("Could not find all required draw number columns. Creating empty targets.")
-            logger.info(f"Found wb columns: {wb_columns_to_use}")
-            logger.info(f"Found pb column: {pb_column_to_use}")
-            logger.info(f"Available columns: {available_cols}")
+        # Populate powerball targets
+        for i in pb_range:
+            # Check if the powerball column matches number 'i'
+            y[f"pb_{i}"] = (features_df[self.pb_column] == i).astype(int)
 
         logger.info(f"Target variable 'y' created with shape: {y.shape}")
         return y
@@ -164,16 +119,11 @@ class ModelTrainer:
 
         logger.info("Starting model training with multi-label classification objective...")
 
-        # Create basic features if engineered features are missing
-        X = self._get_or_create_feature_matrix(self.data)
+        X = self._get_feature_matrix(self.data)
         y = self.create_target_variable(self.data)
         self.target_columns = y.columns.tolist()
 
         # Ensure alignment and drop rows with NaNs in either features or target
-        if X.empty:
-            logger.error("No features available for training.")
-            return False
-            
         combined = pd.concat([X, y], axis=1).dropna()
         X = combined[X.columns]
         y = combined[y.columns]
@@ -181,8 +131,6 @@ class ModelTrainer:
         if X.empty or y.empty:
             logger.error("Not enough data to train after dropping NaNs. Please check data quality.")
             return False
-
-        logger.info(f"Training with {X.shape[0]} samples and {X.shape[1]} features")
 
         X_train, X_test, y_train, y_test = self._split_train_test_data(X, y)
 
@@ -195,70 +143,24 @@ class ModelTrainer:
         self.save_model()
         return True
 
-    def _get_or_create_feature_matrix(self, features_df):
-        """Extracts and selects relevant features for the model, creating basic ones if needed."""
+    def _get_feature_matrix(self, features_df):
+        """Extracts and selects relevant features for the model."""
         # Define the feature names that the model expects
-        expected_features = [
+        feature_cols = [
             "even_count", "odd_count", "sum", "spread", "consecutive_count",
             "avg_delay", "max_delay", "min_delay",
             "dist_to_recent", "avg_dist_to_top_n", "dist_to_centroid",
             "time_weight", "increasing_trend_count", "decreasing_trend_count",
             "stable_trend_count"
         ]
+        # Filter for features that are actually present in the input DataFrame
+        available_features = [col for col in feature_cols if col in features_df.columns]
+        if len(available_features) != len(feature_cols):
+            missing = set(feature_cols) - set(available_features)
+            logger.warning(f"Missing expected features for training: {missing}. Proceeding with available features.")
         
-        # Check which features are available
-        available_features = [col for col in expected_features if col in features_df.columns]
-        missing_features = [col for col in expected_features if col not in features_df.columns]
-        
-        if missing_features:
-            logger.warning(f"Missing expected features: {missing_features}. Creating basic features from draw data.")
-            
-            # Create basic features from draw data if missing
-            feature_df = features_df.copy()
-            
-            # Ensure we have the draw number columns
-            draw_cols = ['n1', 'n2', 'n3', 'n4', 'n5']
-            if all(col in features_df.columns for col in draw_cols):
-                logger.info("Creating basic features from draw data...")
-                
-                # Create basic statistical features
-                for idx, row in features_df.iterrows():
-                    numbers = [row[col] for col in draw_cols if pd.notna(row[col])]
-                    if len(numbers) == 5:
-                        # Basic features
-                        feature_df.loc[idx, 'even_count'] = sum(1 for n in numbers if n % 2 == 0)
-                        feature_df.loc[idx, 'odd_count'] = sum(1 for n in numbers if n % 2 == 1)
-                        feature_df.loc[idx, 'sum'] = sum(numbers)
-                        feature_df.loc[idx, 'spread'] = max(numbers) - min(numbers)
-                        
-                        # Consecutive count
-                        sorted_nums = sorted(numbers)
-                        consecutive = 0
-                        for i in range(len(sorted_nums)-1):
-                            if sorted_nums[i+1] - sorted_nums[i] == 1:
-                                consecutive += 1
-                        feature_df.loc[idx, 'consecutive_count'] = consecutive
-                        
-                        # Set default values for temporal features
-                        feature_df.loc[idx, 'avg_delay'] = 5.0
-                        feature_df.loc[idx, 'max_delay'] = 10.0
-                        feature_df.loc[idx, 'min_delay'] = 1.0
-                        feature_df.loc[idx, 'dist_to_recent'] = 0.5
-                        feature_df.loc[idx, 'avg_dist_to_top_n'] = 0.5
-                        feature_df.loc[idx, 'dist_to_centroid'] = 0.5
-                        feature_df.loc[idx, 'time_weight'] = 1.0
-                        feature_df.loc[idx, 'increasing_trend_count'] = 1.0
-                        feature_df.loc[idx, 'decreasing_trend_count'] = 1.0
-                        feature_df.loc[idx, 'stable_trend_count'] = 1.0
-                
-                # Now select all expected features
-                return feature_df[expected_features].fillna(0)
-            else:
-                logger.error("Cannot create features: missing draw number columns")
-                return pd.DataFrame()
-        else:
-            logger.info(f"Using existing features: {available_features}")
-            return features_df[available_features]
+        logger.info(f"Using features for training: {available_features}")
+        return features_df[available_features]
 
     def _split_train_test_data(self, X, y):
         """Splits the data into training and testing sets."""
@@ -276,9 +178,9 @@ class ModelTrainer:
         n_estimators = int(self.config["model_params"]["n_estimators"])
         learning_rate = float(self.config["model_params"].get("learning_rate", 0.1))
         random_state = int(self.config["model_params"]["random_state"])
-
+        
         logger.info(f"Initializing XGBoost model: n_estimators={n_estimators}, learning_rate={learning_rate}")
-
+        
         base_classifier = XGBClassifier(
             n_estimators=n_estimators,
             learning_rate=learning_rate,
@@ -342,11 +244,11 @@ class ModelTrainer:
             self.model = model_bundle.get("model")
             self.target_columns = model_bundle.get("target_columns")
             self.feature_names = model_bundle.get("feature_names", []) # Store feature names if available
-
+            
             if self.model is None or self.target_columns is None:
                 logger.warning(f"Loaded model bundle from {self.model_path} is incomplete or corrupted. Retraining might be necessary.")
                 return None
-
+            
             logger.info(f"Model bundle loaded from {self.model_path}")
             return self.model
         except FileNotFoundError:
@@ -432,7 +334,7 @@ class ModelTrainer:
 
         # Ensure the order is correct
         ordered_features = [f for f in model_features if f in features_df.columns]
-
+        
         # Check for unexpected features in input
         unexpected_features = [f for f in features_df.columns if f not in model_features]
         if unexpected_features:
@@ -485,48 +387,11 @@ class Predictor:
         """Load the trained model from the specified path."""
         self.model = self.model_trainer.load_model()
         if self.model is None:
-            logger.info("No pre-trained model found. Training initial model with feature engineering...")
-            # Try to train a model automatically if we have data
-            try:
-                if self.historical_data is not None and not self.historical_data.empty:
-                    logger.info("🔧 Engineering features for model training...")
-
-                    # Engineer features using FeatureEngineer
-                    engineered_features = self.feature_engineer.engineer_features(use_temporal_analysis=True)
-
-                    if engineered_features.empty:
-                        logger.error("Feature engineering failed - cannot train model")
-                        return
-
-                    # Combine original data with engineered features
-                    combined_data = self.historical_data.merge(
-                        engineered_features,
-                        left_index=True,
-                        right_index=True,
-                        how='inner'
-                    )
-
-                    logger.info(f"🤖 Training model with {combined_data.shape[1]} features...")
-
-                    # Create new ModelTrainer with data for training
-                    trainer = ModelTrainer(combined_data)
-                    trainer.model_path = self.config["paths"]["model_file"]
-
-                    if trainer.train_model():
-                        # Update the current trainer and load the new model
-                        self.model_trainer = trainer
-                        self.model = self.model_trainer.load_model()
-                        logger.info("✅ Initial model trained and loaded successfully.")
-                    else:
-                        logger.warning("❌ Initial model training failed.")
-                else:
-                    logger.warning("No historical data available for initial model training.")
-            except Exception as e:
-                logger.error(f"Error during automatic model training: {e}")
-                logger.exception("Full traceback:")
-                logger.warning("Model will be trained on first prediction request.")
+            logger.warning("No pre-trained model found or loaded successfully. Model will be trained on first run if data is available.")
         else:
-            logger.info("✅ Model loaded successfully.")
+            logger.info("Model loaded successfully.")
+            # Optionally load metadata related to the model here if available
+            # self.model_metadata = self.model_trainer.load_model_metadata()
 
     def _initialize_ensemble_system(self) -> None:
         """Initialize the enhanced ensemble prediction system"""
@@ -998,7 +863,7 @@ class Predictor:
         Returns:
             A list of the top 'num_plays' predictions selected from the ensemble.
         """
-        logger.info("Generating ensemble syndicate predictions with multiple models for {num_plays} plays...")
+        logger.info(f"Generating ensemble syndicate predictions with multiple models for {num_plays} plays...")
 
         # Get base probability predictions
         wb_probs, pb_probs = self.predict_probabilities()
@@ -1039,7 +904,7 @@ class Predictor:
             from src.adaptive_feedback import AdaptivePlayScorer # Assuming this exists
             adaptive_scorer = AdaptivePlayScorer(self.historical_data)
             num_adaptive = int(num_plays * 0.25)
-
+            
             # Use deterministic generator for base plays, then re-score adaptively
             deterministic_gen_for_adaptive = DeterministicGenerator(self.historical_data)
             adaptive_candidates_base = deterministic_gen_for_adaptive.generate_diverse_predictions(
@@ -1060,7 +925,7 @@ class Predictor:
                 candidate['ensemble_weight'] = 0.25
                 candidate['ensemble_score'] = candidate.get('score_total', 0) * 0.25
                 adaptive_candidates.append(candidate)
-
+            
             all_candidates.extend(adaptive_candidates)
             logger.info(f"Added {len(adaptive_candidates)} candidates from adaptive scoring.")
 
@@ -1074,20 +939,20 @@ class Predictor:
             from src.intelligent_generator import IntelligentGenerator # Assuming this exists
             intelligent_gen = IntelligentGenerator(self.historical_data)
             num_intelligent = int(num_plays * 0.15)
-
+            
             # Generate plays using the intelligent generator
             intelligent_candidates_raw = intelligent_gen.generate_plays(
                  wb_probs, pb_probs, num_plays=num_intelligent, num_candidates=num_intelligent*3
             )
-
+            
             # Need to convert raw output to a consistent format and score them
             intelligent_candidates = []
             # Assuming IntelligentGenerator output needs processing and scoring
             # This part heavily depends on the actual implementation of IntelligentGenerator
-            # This section is highly speculative without the actual IntelligentGenerator code
             for i, raw_play in enumerate(intelligent_candidates_raw):
                 # Placeholder: Assuming raw_play is a dict or can be converted
                 # Need to ensure numbers and powerball are correctly extracted and scored
+                # This section is highly speculative without the actual IntelligentGenerator code
                 try:
                     numbers = raw_play.get('numbers', raw_play.get('n1', [])[:5]) # Adapt based on actual output
                     powerball = raw_play.get('powerball', raw_play.get('pb', 1))
@@ -1097,7 +962,7 @@ class Predictor:
                     scores = deterministic_gen_for_scoring.scorer.calculate_total_score(
                         numbers, powerball, wb_probs, pb_probs
                     )
-
+                    
                     candidate = {
                         'numbers': numbers, 'powerball': powerball,
                         'score_total': scores['total'], 'score_details': scores,
@@ -1122,7 +987,7 @@ class Predictor:
         for candidate in all_candidates:
             # Calculate diversity bonus
             diversity_bonus = self._calculate_ensemble_diversity(candidate, all_candidates)
-
+            
             # Combine weighted score and diversity bonus
             # Adjust contribution of diversity bonus (e.g., weight it less)
             ensemble_score = candidate.get('ensemble_score', 0) + (diversity_bonus * 0.1) # Example: diversity adds up to 0.1
@@ -1200,7 +1065,7 @@ class Predictor:
             # and understanding its output format for comparison.
             from src.intelligent_generator import IntelligentGenerator
             traditional_generator = IntelligentGenerator() # Assuming default initialization
-
+            
             # Generate a single play for comparison
             # The exact parameters might need adjustment based on IntelligentGenerator's API
             traditional_play_list = traditional_generator.generate_plays(
@@ -1211,7 +1076,7 @@ class Predictor:
                 # Process the output to fit the comparison structure
                 # Assuming the output is a list of dicts or similar
                 first_traditional_play = traditional_play_list[0]
-
+                
                 comparison_results['traditional_method'] = {
                     'numbers': first_traditional_play.get('numbers', []),
                     'powerball': first_traditional_play.get('powerball', 1),
@@ -1308,7 +1173,17 @@ class Predictor:
                 logger.info("Model training completed successfully.")
                 # Update the Predictor's model trainer to use the newly trained model
                 self.model_trainer = trainer # Replace the trainer instance
-                self.model = self.model_trainer.load_model()
+                self.load_model() # Load the newly trained model into the predictor
+                
+                # Re-initialize other components that might depend on model context if necessary
+                self.historical_data = data # Update historical data if it was also reloaded
+                self.feature_engineer = FeatureEngineer(self.historical_data)
+                self.deterministic_generator = DeterministicGenerator(self.historical_data)
+
+                # Re-initialize ensemble system if it was enabled
+                if self.use_ensemble:
+                    self._initialize_ensemble_system()
+
                 logger.info("Model retraining process finished successfully. Predictor updated.")
                 return True
             else:

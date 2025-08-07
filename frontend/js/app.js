@@ -1,45 +1,32 @@
 // Suppress Chrome extension errors
-(function() {
-    'use strict';
-    
-    try {
-        // Check if we're in a browser environment
-        if (typeof window !== 'undefined' && typeof chrome !== 'undefined') {
-            // Override console.error to filter chrome extension errors
-            const originalConsoleError = console.error;
-            console.error = function(...args) {
-                const message = args.join(' ');
-                if (message.includes('Unchecked runtime.lastError') || 
-                    message.includes('message port closed') ||
-                    message.includes('Extension context invalidated') ||
-                    message.includes('runtime.lastError')) {
-                    // Suppress these specific chrome extension errors
-                    return;
-                }
-                originalConsoleError.apply(console, args);
-            };
+try {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+        // Override console.error to filter chrome extension errors
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            const message = args.join(' ');
+            if (message.includes('Unchecked runtime.lastError') || 
+                message.includes('message port closed') ||
+                message.includes('Extension context invalidated')) {
+                // Suppress these specific chrome extension errors
+                return;
+            }
+            originalConsoleError.apply(console, args);
+        };
 
-            // Handle runtime errors at window level
-            window.addEventListener('error', function(event) {
-                if (event.message && (
-                    event.message.includes('runtime.lastError') ||
-                    event.message.includes('message port closed')
-                )) {
-                    event.preventDefault();
-                    return true;
-                }
-            });
-
-            // Clear any existing runtime errors
-            if (chrome.runtime && chrome.runtime.lastError) {
+        // Also handle the runtime.lastError directly
+        if (chrome.runtime.lastError) {
+            // Clear the error silently
+            const error = chrome.runtime.lastError;
+            if (error.message && error.message.includes('message port closed')) {
+                // Acknowledge the error to clear it
                 void chrome.runtime.lastError;
             }
         }
-    } catch (e) {
-        // Silently fail if chrome object manipulation fails
-        console.debug('Chrome extension error suppression setup failed:', e);
     }
-})();
+} catch (e) {
+    // If chrome object manipulation fails, just continue
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- DOM Element References ---

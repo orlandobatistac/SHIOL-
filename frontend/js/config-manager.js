@@ -546,43 +546,16 @@ class ConfigurationManager {
     }
 
     async resetModels() {
-        if (!confirm('Are you sure you want to reset all AI models? This will:\n\n• Delete all adaptive weights\n• Clear model feedback data\n• Remove reliable plays\n• Force complete model retraining\n\nThis action cannot be undone.')) {
-            return;
-        }
-
         try {
             console.log('🔄 Testing Models Reset...');
             const response = await fetch(`${this.API_BASE_URL}/model/reset`, { method: 'POST' });
-            
             if (response.ok) {
                 const result = await response.json();
                 console.log('✅ Models Reset Result:', result);
-                
-                // Show detailed results
-                const operations = result.operations_completed || [];
-                const errors = result.errors_encountered || [];
-                
-                let message = `Models reset ${result.status}: ${operations.length} operations completed`;
-                if (errors.length > 0) {
-                    message += `, ${errors.length} errors encountered`;
-                }
-                
-                this.showNotification(message, result.status === 'success' ? 'success' : 'warning');
-                
-                // Refresh relevant stats
-                this.refreshDatabaseStats();
-                
+                this.showNotification(`Models reset: ${result.status}`, 'success');
             } else {
                 const errorText = await response.text();
-                console.error('❌ Models Reset HTTP Error:', response.status, errorText);
-                
-                // Try to parse error details if it's JSON
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    throw new Error(`Models reset failed: ${errorJson.detail || errorText}`);
-                } catch (parseError) {
-                    throw new Error(`Models reset failed: ${response.status} - Server error`);
-                }
+                throw new Error(`Models reset failed: ${response.status} - ${errorText}`);
             }
         } catch (error) {
             console.error('❌ Models Reset Error:', error);
