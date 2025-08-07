@@ -132,17 +132,26 @@ class ModelTrainer:
         logger.info(f"Using powerball column: {pb_column_to_use}")
 
         if len(wb_columns_to_use) == 5 and pb_column_to_use:
-            # Populate white ball targets
-            for i in white_ball_range:
-                # Check if number 'i' is present in any of the white ball columns for a given row
-                y[f"wb_{i}"] = features_df[wb_columns_to_use].eq(i).any(axis=1).astype(int)
+            try:
+                # Populate white ball targets
+                for i in white_ball_range:
+                    # Check if number 'i' is present in any of the white ball columns for a given row
+                    y[f"wb_{i}"] = features_df[wb_columns_to_use].eq(i).any(axis=1).astype(int)
 
-            # Populate powerball targets
-            for i in pb_range:
-                # Check if the powerball column matches number 'i'
-                y[f"pb_{i}"] = (features_df[pb_column_to_use] == i).astype(int)
+                # Populate powerball targets
+                for i in pb_range:
+                    # Check if the powerball column matches number 'i'
+                    y[f"pb_{i}"] = (features_df[pb_column_to_use] == i).astype(int)
+            except Exception as e:
+                logger.error(f"Error creating target variables: {e}")
+                logger.info("Available columns in features_df:")
+                logger.info(list(features_df.columns))
+                raise
         else:
             logger.error("Could not find all required draw number columns. Creating empty targets.")
+            logger.info(f"Found wb columns: {wb_columns_to_use}")
+            logger.info(f"Found pb column: {pb_column_to_use}")
+            logger.info(f"Available columns: {available_cols}")
 
         logger.info(f"Target variable 'y' created with shape: {y.shape}")
         return y

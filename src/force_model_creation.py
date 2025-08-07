@@ -13,13 +13,14 @@ import sys
 import pandas as pd
 from loguru import logger
 
-# Add src to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add project root to path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
-from predictor import ModelTrainer
-from loader import DataLoader
-from database import initialize_database
-from intelligent_generator import FeatureEngineer
+from src.predictor import ModelTrainer
+from src.loader import DataLoader
+from src.database import initialize_database
+from src.intelligent_generator import FeatureEngineer
 
 def force_create_model():
     """Force creation of the model with proper column handling."""

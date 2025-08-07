@@ -6,12 +6,13 @@ import sys
 import pandas as pd
 from pathlib import Path
 
-# Add src to path
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# Add project root to path
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
-from predictor import ModelTrainer
-from loader import DataLoader
-from database import initialize_database
+from src.predictor import ModelTrainer
+from src.loader import DataLoader
+from src.database import initialize_database
 from loguru import logger
 
 def initialize_model():
@@ -43,7 +44,7 @@ def initialize_model():
         
         # CRITICAL: Engineer features BEFORE training
         logger.info("🔧 Engineering features for model training...")
-        from intelligent_generator import FeatureEngineer
+        from src.intelligent_generator import FeatureEngineer
         
         feature_engineer = FeatureEngineer(historical_data)
         engineered_data = feature_engineer.engineer_features(use_temporal_analysis=True)
