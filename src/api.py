@@ -2016,36 +2016,58 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
 
         if cleanup_options.get("predictions", False):
             cursor.execute("DELETE FROM predictions_log")
-            results.append(f"Deleted {cursor.rowcount} predictions")
+            deleted_predictions = cursor.rowcount
+            results.append(f"Deleted {deleted_predictions} predictions")
 
         if cleanup_options.get("validations", False):
-            cursor.execute("DELETE FROM validation_results")
-            results.append(f"Deleted {cursor.rowcount} validations")
+            # Use correct table names from the schema
+            cursor.execute("DELETE FROM performance_tracking")
+            deleted_performance = cursor.rowcount
+            results.append(f"Deleted {deleted_performance} performance tracking records")
 
         if cleanup_options.get("logs", False):
-            # Clear application logs if needed
-            results.append("Logs cleared")
+            # Clear system logs from file system
+            import os
+            import glob
+            log_files = glob.glob("logs/*.log")
+            cleared_files = 0
+            for log_file in log_files:
+                try:
+                    open(log_file, 'w').close()  # Clear file content
+                    cleared_files += 1
+                except:
+                    pass
+            results.append(f"Cleared {cleared_files} log files")
 
         if cleanup_options.get("models", False):
-            # Reset model training data if needed
-            results.append("Models reset")
+            # Reset adaptive system tables
+            cursor.execute("DELETE FROM adaptive_weights")
+            deleted_weights = cursor.rowcount
+            cursor.execute("DELETE FROM model_feedback")
+            deleted_feedback = cursor.rowcount
+            results.append(f"Reset models: deleted {deleted_weights} weight sets and {deleted_feedback} feedback records")
 
         if cleanup_options.get("complete_reset", False):
-            # Complete database reset
+            # Complete database reset using correct table names
             cursor.execute("DELETE FROM predictions_log")
-            cursor.execute("DELETE FROM prediction_validations")
+            cursor.execute("DELETE FROM performance_tracking")
             cursor.execute("DELETE FROM adaptive_weights")
-            cursor.execute("DELETE FROM adaptive_performance")
-            results.append("Complete database reset performed")
+            cursor.execute("DELETE FROM pattern_analysis")
+            cursor.execute("DELETE FROM reliable_plays")
+            cursor.execute("DELETE FROM model_feedback")
+            # Keep powerball_draws and system_config tables
+            results.append("Complete database reset performed (kept draw data and configuration)")
 
         conn.commit()
         conn.close()
 
         logger.info(f"Database cleanup completed: {results}")
-        return {"message": "Database cleanup completed", "results": results}
+        return {"message": "Database cleanup completed successfully", "results": results}
 
     except Exception as e:
         logger.error(f"Error during database cleanup: {e}")
+        if 'conn' in locals():
+            conn.close()
         raise HTTPException(status_code=500, detail=f"Error during database cleanup: {str(e)}")
 
 @api_router.post("/database/backup")
