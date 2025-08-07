@@ -1,0 +1,62 @@
+config-manager.js:427 🔄 Testing Pipeline Trigger...
+config-manager.js:431 ✅ Pipeline Trigger Result: {execution_id: 'b1ee49cd', status: 'started', message: 'Pipeline execution started in background', parameters: {…}, tracking_url: '/api/v1/pipeline/status', …}
+config-manager.js:443 ❌ Pipeline Trigger Error: TypeError: this.startPipelineMonitoring is not a function
+    at ConfigurationManager.triggerPipeline (config-manager.js:437:22)
+triggerPipeline @ config-manager.js:443
+await in triggerPipeline
+(anonymous) @ config-manager.js:40
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
+dashboard.html:839  GET https://ca2ad072-fb07-4d65-b794-85eb3cda7ebc-00-30p6md69d9t1.kirk.replit.dev/api/v1/pipeline/status 500 (Internal Server Error)
+(anonymous) @ dashboard.html:839
+setInterval
+startPipelineMonitoring @ dashboard.html:837
+triggerPipeline @ dashboard.html:823
