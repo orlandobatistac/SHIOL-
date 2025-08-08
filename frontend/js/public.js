@@ -338,51 +338,33 @@ class PublicInterface {
             return scoreB - scoreA; // Descending order (best to worst)
         });
 
-        // Format next drawing information with clean, simplified design
+        // Format next drawing information with simple, clean design
         const drawingInfo = this.nextDrawingInfo || {};
         const nextDrawingInfoHtml = drawingInfo.date ? `
-            <div class="next-drawing-compact">
-                <div class="drawing-compact-header">
-                    <div class="drawing-compact-title">
-                        <i class="fas fa-calendar-alt mr-2"></i>
-                        Next Drawing
+            <div class="next-drawing-simple">
+                <div class="drawing-info">
+                    <div class="drawing-title">
+                        <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
+                        Next Powerball Drawing
                     </div>
-                    <div class="drawing-status-compact">
-                        <span class="status-dot live"></span>
-                        <span class="status-text">Live</span>
-                    </div>
-                </div>
-                
-                <div class="drawing-compact-content">
-                    <div class="drawing-time-info">
-                        <div class="primary-time">${drawingInfo.exact_drawing_time || `${drawingInfo.date} at ${drawingInfo.time || '10:59 PM'} ${drawingInfo.timezone || 'ET'}`}</div>
-                        <div class="countdown-compact">
-                            <i class="fas fa-hourglass-half mr-2"></i>
-                            <span id="smart-predictions-countdown">Loading...</span>
-                        </div>
+                    <div class="drawing-time">${drawingInfo.exact_drawing_time || `${drawingInfo.date} at ${drawingInfo.time || '10:59 PM'} ${drawingInfo.timezone || 'ET'}`}</div>
+                    <div class="countdown-display">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="smart-predictions-countdown">Loading...</span>
                     </div>
                 </div>
             </div>
         ` : `
-            <div class="next-drawing-compact">
-                <div class="drawing-compact-header">
-                    <div class="drawing-compact-title">
-                        <i class="fas fa-calendar-alt mr-2"></i>
-                        Next Drawing
+            <div class="next-drawing-simple">
+                <div class="drawing-info">
+                    <div class="drawing-title">
+                        <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
+                        Next Powerball Drawing
                     </div>
-                    <div class="drawing-status-compact">
-                        <span class="status-dot loading"></span>
-                        <span class="status-text">Loading</span>
-                    </div>
-                </div>
-                
-                <div class="drawing-compact-content">
-                    <div class="drawing-time-info">
-                        <div class="primary-time">Loading drawing information...</div>
-                        <div class="countdown-compact">
-                            <i class="fas fa-hourglass-half mr-2"></i>
-                            <span id="smart-predictions-countdown">Loading...</span>
-                        </div>
+                    <div class="drawing-time">Loading drawing information...</div>
+                    <div class="countdown-display">
+                        <i class="fas fa-clock mr-2"></i>
+                        <span id="smart-predictions-countdown">Loading...</span>
                     </div>
                 </div>
             </div>
