@@ -49,37 +49,16 @@ def get_db_path() -> str:
 
 def calculate_next_drawing_date() -> str:
     """
-    Calculate the next Powerball drawing date.
+    Calculate the next Powerball drawing date using centralized DateManager.
     Drawings are: Monday (0), Wednesday (2), Saturday (5) at 11 PM ET
 
     Returns:
         str: Next drawing date in YYYY-MM-DD format
     """
-    from datetime import datetime, timedelta
-    import pytz
-
-    # Use Eastern Time for Powerball drawings
-    et_tz = pytz.timezone('America/New_York')
-    current_date_et = datetime.now(et_tz)
-    current_weekday = current_date_et.weekday()
-
-    # Drawing days: Monday=0, Wednesday=2, Saturday=5
-    drawing_days = [0, 2, 5]
-
-    # If today is a drawing day and it's before 11 PM ET, the drawing is today
-    if current_weekday in drawing_days and current_date_et.hour < 23:
-        return current_date_et.strftime('%Y-%m-%d')
-
-    # Otherwise, find the next drawing day
-    days_ahead = 0
-    for i in range(1, 8):  # Check next 7 days
-        next_date = current_date_et + timedelta(days=i)
-        if next_date.weekday() in drawing_days:
-            days_ahead = i
-            break
-
-    next_drawing_date = current_date_et + timedelta(days=days_ahead)
-    return next_drawing_date.strftime('%Y-%m-%d')
+    from src.date_utils import DateManager
+    
+    logger.debug("Calculating next drawing date using centralized DateManager")
+    return DateManager.calculate_next_drawing_date()
 
 def get_db_connection() -> sqlite3.Connection:
     """
@@ -1791,7 +1770,7 @@ def is_config_initialized() -> bool:
 
 def _validate_target_draw_date(date_str: str) -> bool:
     """
-    Valida que target_draw_date tenga el formato correcto YYYY-MM-DD.
+    Valida que target_draw_date tenga el formato correcto usando DateManager centralizado.
 
     Args:
         date_str: String de fecha a validar
@@ -1799,36 +1778,15 @@ def _validate_target_draw_date(date_str: str) -> bool:
     Returns:
         True si la fecha es válida
     """
-    if not isinstance(date_str, str):
-        return False
-
-    if len(date_str) != 10:
-        return False
-
-    if not date_str.count('-') == 2:
-        return False
-
-    try:
-        # Verificar que sea una fecha válida
-        datetime.strptime(date_str, '%Y-%m-%d')
-
-        # Verificar que no sea una fecha muy antigua o muy futura
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-        current_year = datetime.now().year
-
-        if date_obj.year < (current_year - 1) or date_obj.year > (current_year + 2):
-            logger.warning(f"Date {date_str} is outside reasonable range")
-            return False
-
-        return True
-
-    except ValueError:
-        return False
+    from src.date_utils import DateManager
+    
+    logger.debug(f"Validating target draw date using centralized DateManager: {date_str}")
+    return DateManager.validate_date_format(date_str)
 
 
 def _is_valid_drawing_date(date_str: str) -> bool:
     """
-    Verifica que una fecha corresponda a un día de sorteo de Powerball.
+    Verifica que una fecha corresponda a un día de sorteo usando DateManager centralizado.
     Los sorteos son: Lunes (0), Miércoles (2), Sábado (5)
 
     Args:
@@ -1837,14 +1795,10 @@ def _is_valid_drawing_date(date_str: str) -> bool:
     Returns:
         True si es un día de sorteo válido
     """
-    try:
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-        # Lunes=0, Miércoles=2, Sábado=5
-        drawing_days = [0, 2, 5]
-        return date_obj.weekday() in drawing_days
-
-    except ValueError:
-        return False
+    from src.date_utils import DateManager
+    
+    logger.debug(f"Validating drawing date using centralized DateManager: {date_str}")
+    return DateManager.is_valid_drawing_date(date_str)
 
 
 def _sanitize_prediction_data(prediction_data: Dict[str, Any]) -> Dict[str, Any]:

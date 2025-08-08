@@ -203,7 +203,7 @@ class DataMigrationManager:
     
     def _calculate_next_drawing_from_date(self, reference_date: datetime) -> str:
         """
-        Calcula la próxima fecha de sorteo desde una fecha de referencia.
+        Calcula la próxima fecha de sorteo usando DateManager centralizado.
         
         Args:
             reference_date: Fecha de referencia (con timezone)
@@ -211,22 +211,10 @@ class DataMigrationManager:
         Returns:
             Fecha del próximo sorteo en formato YYYY-MM-DD
         """
-        # Días de sorteo: Lunes=0, Miércoles=2, Sábado=5
-        drawing_days = [0, 2, 5]
-        current_weekday = reference_date.weekday()
+        from src.date_utils import DateManager
         
-        # Si es día de sorteo y es antes de las 11 PM ET, el sorteo es ese día
-        if current_weekday in drawing_days and reference_date.hour < 23:
-            return reference_date.strftime('%Y-%m-%d')
-        
-        # Encontrar el próximo día de sorteo
-        for i in range(1, 8):
-            next_date = reference_date + timedelta(days=i)
-            if next_date.weekday() in drawing_days:
-                return next_date.strftime('%Y-%m-%d')
-        
-        # Fallback (no debería ocurrir)
-        return (reference_date + timedelta(days=1)).strftime('%Y-%m-%d')
+        logger.debug(f"Calculating next drawing date from reference: {reference_date}")
+        return DateManager.calculate_next_drawing_date(reference_date)
     
     def _apply_date_corrections(self, corrected_records: List[Dict]) -> Dict[str, int]:
         """
@@ -283,7 +271,7 @@ class DataMigrationManager:
     
     def _validate_date_format(self, date_str: str) -> bool:
         """
-        Valida que una fecha tenga el formato correcto YYYY-MM-DD.
+        Valida que una fecha tenga el formato correcto usando DateManager centralizado.
         
         Args:
             date_str: String de fecha a validar
@@ -291,14 +279,10 @@ class DataMigrationManager:
         Returns:
             True si la fecha es válida
         """
-        if not isinstance(date_str, str) or len(date_str) != 10:
-            return False
+        from src.date_utils import DateManager
         
-        try:
-            datetime.strptime(date_str, '%Y-%m-%d')
-            return True
-        except ValueError:
-            return False
+        logger.debug(f"Validating date format using centralized DateManager: {date_str}")
+        return DateManager.validate_date_format(date_str)
     
     def _validate_date_integrity(self) -> Dict[str, Any]:
         """
