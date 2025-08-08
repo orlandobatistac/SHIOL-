@@ -145,6 +145,11 @@ class PublicInterface {
                     setTimeout(() => this.loadNextDrawingInfo(), 5 * 60 * 1000);
                 } else {
                     this.updateCountdownDisplay(remainingSeconds);
+                    // Also update the smart predictions countdown if it exists
+                    const smartCountdown = document.getElementById('smart-predictions-countdown');
+                    if (smartCountdown) {
+                        smartCountdown.textContent = PowerballUtils.formatCountdown(remainingSeconds);
+                    }
                 }
             }, 1000);
 
@@ -189,24 +194,15 @@ class PublicInterface {
             }
         }
 
-        // Update the main drawing date display with dynamic text
-        if (drawingDateElement && this.nextDrawingInfo) {
-            const days = Math.floor(seconds / (24 * 3600));
-            const hours = Math.floor((seconds % (24 * 3600)) / 3600);
-            const minutes = Math.floor((seconds % 3600) / 60);
-
-            let displayText;
-            if (seconds <= 3600) { // Less than 1 hour
-                displayText = `Drawing in ${minutes + 1} minute${minutes === 0 ? '' : 's'}`;
-            } else if (days === 0) { // Same day
-                displayText = `Drawing in ${hours} hour${hours === 1 ? '' : 's'}`;
-            } else if (days === 1) {
-                displayText = 'Drawing tomorrow';
+        // Update the main drawing date display with countdown format
+        if (drawingDateElement) {
+            const formattedCountdown = PowerballUtils.formatCountdown(seconds);
+            
+            if (seconds <= 60) {
+                drawingDateElement.textContent = `Drawing in ${seconds} second${seconds === 1 ? '' : 's'}`;
             } else {
-                displayText = `Drawing in ${days} days`;
+                drawingDateElement.textContent = `Drawing in ${formattedCountdown}`;
             }
-
-            drawingDateElement.textContent = displayText;
         }
     }
 
@@ -327,14 +323,13 @@ class PublicInterface {
             return scoreB - scoreA; // Descending order (best to worst)
         });
 
-        // Format next drawing information
+        // Format next drawing information with countdown
         const nextDrawingInfoHtml = nextDrawing ? `
             <div class="next-drawing-info">
                 <div class="drawing-date">
                     <span class="date-label">Next Drawing:</span>
                     <span class="date-value">${nextDrawing.formatted_date}</span>
-                    ${nextDrawing.is_today ? '<span class="today-badge">TODAY</span>' : ''}
-                    ${nextDrawing.days_until > 0 ? `<span class="days-until">in ${nextDrawing.days_until} day${nextDrawing.days_until > 1 ? 's' : ''}</span>` : ''}
+                    <span class="countdown-display" id="smart-predictions-countdown">Loading...</span>
                 </div>
             </div>
         ` : '';
@@ -1199,25 +1194,33 @@ class PublicInterface {
             const response = await PowerballUtils.apiRequest('/public/next-drawing');
             const data = response.next_drawing;
 
+            console.log('Next drawing data received:', data);
+
             // Store drawing info for countdown updates
             this.nextDrawingInfo = data;
 
-            // Update next drawing display
+            // Update next drawing display elements
             const drawingDateElement = document.getElementById('next-drawing-date');
             const drawingTimeElement = document.getElementById('next-drawing-time');
 
             if (drawingDateElement) {
-                drawingDateElement.textContent = PowerballUtils.formatNextDrawingDate(data);
+                // Show the countdown instead of TODAY
+                if (data.countdown_seconds > 0) {
+                    const formattedCountdown = PowerballUtils.formatCountdown(data.countdown_seconds);
+                    drawingDateElement.textContent = `Drawing in ${formattedCountdown}`;
+                } else {
+                    drawingDateElement.textContent = data.display_text || 'Drawing in progress';
+                }
             }
 
             if (drawingTimeElement) {
-                drawingTimeElement.textContent = data.exact_drawing_time || `${data.time} ${data.timezone}`;
+                drawingTimeElement.textContent = data.exact_drawing_time || `${data.date} at ${data.time} ${data.timezone}`;
             }
 
-            // Initialize countdown timer
+            // Initialize countdown timer with real-time updates
             this.initializeCountdown(data);
 
-            console.log('Next drawing info loaded successfully');
+            console.log('Next drawing info loaded successfully with countdown:', data.countdown_seconds, 'seconds');
         } catch (error) {
             console.error('Error loading next drawing info:', error);
 
