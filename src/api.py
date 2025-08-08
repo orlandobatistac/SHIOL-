@@ -1071,7 +1071,7 @@ async def get_smart_predictions(
             avg_score = 0.0
             best_score = 0.0
 
-        return {
+        response_data = {
             "method": "smart_ai_database",
             "smart_predictions": smart_predictions,
             "total_predictions": len(smart_predictions),
@@ -1104,6 +1104,8 @@ async def get_smart_predictions(
             },
             "timestamp": datetime.now().isoformat()
         }
+
+        return response_data
 
     except HTTPException:
         raise
