@@ -331,32 +331,33 @@ class PublicInterface {
             return scoreB - scoreA; // Descending order (best to worst)
         });
 
-        // Format next drawing information with countdown
-        const nextDrawingInfoHtml = nextDrawing ? `
+        // Format next drawing information with countdown - usar siempre this.nextDrawingInfo que viene del API
+        const drawingInfo = this.nextDrawingInfo || {};
+        const nextDrawingInfoHtml = drawingInfo.date ? `
             <div class="next-drawing-info">
                 <div class="drawing-date">
                     <span class="date-label">Next Drawing:</span>
-                    <span class="date-value">${nextDrawing.formatted_date || nextDrawing.date}</span>
+                    <span class="date-value">${drawingInfo.date}</span>
                     <span class="countdown-display" id="smart-predictions-countdown">Loading...</span>
                 </div>
                 <div class="drawing-time text-sm text-gray-600 dark:text-gray-400 mt-1">
                     <i class="fas fa-clock mr-1"></i>
-                    ${nextDrawing.exact_drawing_time || `${nextDrawing.date} at ${nextDrawing.time} ${nextDrawing.timezone}`}
+                    ${drawingInfo.exact_drawing_time || `${drawingInfo.date} at ${drawingInfo.time || '10:59 PM'} ${drawingInfo.timezone || 'ET'}`}
                 </div>
             </div>
-        ` : (this.nextDrawingInfo ? `
+        ` : `
             <div class="next-drawing-info">
                 <div class="drawing-date">
                     <span class="date-label">Next Drawing:</span>
-                    <span class="date-value">${this.nextDrawingInfo.date}</span>
+                    <span class="date-value">Loading...</span>
                     <span class="countdown-display" id="smart-predictions-countdown">Loading...</span>
                 </div>
                 <div class="drawing-time text-sm text-gray-600 dark:text-gray-400 mt-1">
                     <i class="fas fa-clock mr-1"></i>
-                    ${this.nextDrawingInfo.exact_drawing_time}
+                    Loading drawing time...
                 </div>
             </div>
-        ` : '');
+        `;
 
 
         const predictionsHtml = `
@@ -508,6 +509,14 @@ class PublicInterface {
 
         // Ensure loading is hidden
         loading.classList.add('hidden');
+
+        // Initialize countdown for smart predictions if we have drawing info
+        if (this.nextDrawingInfo && this.nextDrawingInfo.countdown_seconds > 0) {
+            const smartCountdown = document.getElementById('smart-predictions-countdown');
+            if (smartCountdown) {
+                smartCountdown.textContent = PowerballUtils.formatCountdown(this.nextDrawingInfo.countdown_seconds);
+            }
+        }
     }
 
     /**
