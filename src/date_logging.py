@@ -35,10 +35,13 @@ class DateOperationLogger:
             additional_context: Additional context information
             level: Log level (info, debug, warning, error)
         """
+        # Use Eastern Time for all timestamps
+        current_et = DateManager.get_current_et_time()
         log_data = {
             "operation": operation_name,
-            "timestamp": datetime.now().isoformat(),
-            "current_et_time": DateManager.get_current_et_time().isoformat()
+            "timestamp": current_et.isoformat(),
+            "current_et_time": current_et.isoformat(),
+            "server_timezone": "America/New_York"
         }
         
         if input_date:
@@ -86,7 +89,8 @@ class DateOperationLogger:
             "date_string": date_str,
             "validation_type": validation_type,
             "is_valid": is_valid,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": DateManager.get_current_et_time().isoformat(),
+            "server_timezone": "America/New_York"
         }
         
         if error_details:
@@ -119,7 +123,8 @@ class DateOperationLogger:
             "converted_value": converted_dt.isoformat(),
             "target_timezone": target_timezone,
             "original_timezone": str(original_dt.tzinfo) if hasattr(original_dt, 'tzinfo') and original_dt.tzinfo else "unknown",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": DateManager.get_current_et_time().isoformat(),
+            "server_timezone": "America/New_York"
         }
         
         message = f"Timezone Conversion: {original_dt} -> {converted_dt.isoformat()} ({target_timezone})"

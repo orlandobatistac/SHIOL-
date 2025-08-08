@@ -46,7 +46,13 @@ class DateManager:
             datetime: Fecha y hora actual en ET con timezone
         """
         current_time = datetime.now(cls.POWERBALL_TIMEZONE)
+        
+        # Verify system time vs ET time for debugging
+        system_utc = datetime.now(pytz.UTC)
+        logger.debug(f"System UTC: {system_utc.isoformat()}")
         logger.debug(f"Current ET time: {current_time.isoformat()}")
+        logger.debug(f"Date confirmation: {current_time.strftime('%Y-%m-%d')} ({current_time.strftime('%A')})")
+        
         return current_time
     
     @classmethod

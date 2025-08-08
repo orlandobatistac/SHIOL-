@@ -96,38 +96,30 @@ class PipelineOrchestrator:
             sys.exit(1)
 
     def _setup_logging(self):
-        """Setup logging configuration."""
-        try:
-            # Remove default logger
-            logger.remove()
+        """Configure enhanced logging with proper formatting and Eastern Time timezone."""
+        import pytz
 
-            # Get log file path from config
-            log_file = self.config.get("paths", "log_file", fallback="logs/shiolplus.log")
+        # Remove default handler
+        logger.remove()
 
-            # Ensure log directory exists
-            os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        # Eastern Time timezone for consistent logging
+        et_timezone = pytz.timezone('America/New_York')
 
-            # Add console logger
-            logger.add(
-                sys.stdout,
-                format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-                level="INFO"
-            )
+        # Add console handler with Eastern Time formatting
+        logger.add(
+            sys.stdout,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> ET | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            level="INFO",
+            colorize=True,
+            # Configure loguru to use Eastern Time
+            enqueue=True,
+            serialize=False,
+            catch=True,
+            # Custom time function to use ET
+            filter=lambda record: record.update(time=record["time"].astimezone(et_timezone))
+        )
 
-            # Add file logger
-            logger.add(
-                log_file,
-                format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {name}:{function}:{line} - {message}",
-                level="DEBUG",
-                rotation="10 MB",
-                retention="30 days"
-            )
-
-            logger.info("Logging system initialized")
-
-        except Exception as e:
-            print(f"ERROR: Failed to setup logging: {e}")
-            sys.exit(1)
+        logger.info("Logging system initialized")
 
     def _initialize_database(self):
         """Initialize database and ensure all tables exist."""
@@ -308,7 +300,7 @@ class PipelineOrchestrator:
             str: Next drawing date in YYYY-MM-DD format
         """
         from src.date_utils import DateManager
-        
+
         logger.debug("Calculating next drawing date using centralized DateManager")
         return DateManager.calculate_next_drawing_date()
 
@@ -1085,24 +1077,24 @@ Server mode:
             print("\n" + "=" * 60)
             print("EJECUTANDO MIGRACIÓN DE CORRECCIÓN DE FECHAS - FASE 2")
             print("=" * 60)
-            
+
             try:
                 from src.data_migration import run_date_correction_migration
                 results = run_date_correction_migration()
-                
+
                 print(f"\nResultados de la migración:")
                 print(f"Estado: {results.get('status', 'unknown')}")
                 print(f"Registros corruptos encontrados: {results.get('corrupted_records_found', 0)}")
                 print(f"Registros corregidos: {results.get('records_corrected', 0)}")
                 print(f"Errores de validación: {results.get('validation_failures', 0)}")
-                
+
                 if results.get('final_validation'):
                     validation = results['final_validation']
                     print(f"\nValidación final:")
                     print(f"Total de registros: {validation.get('total_records', 0)}")
                     print(f"Fechas válidas: {validation.get('valid_target_dates', 0)}")
                     print(f"Tasa de éxito: {validation.get('success_rate', '0%')}")
-                
+
                 if results.get('status') == 'completed':
                     print("\n✓ Migración completada exitosamente")
                 elif results.get('status') == 'no_action_needed':
@@ -1112,11 +1104,11 @@ Server mode:
                     if results.get('errors'):
                         for error in results['errors']:
                             print(f"  Error: {error}")
-                            
+
             except Exception as e:
                 print(f"\n✗ Error ejecutando migración: {e}")
                 sys.exit(1)
-            
+
             print("=" * 60)
             return
 
