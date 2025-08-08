@@ -1097,7 +1097,7 @@ async def get_smart_predictions(
                 "current_day": datetime.now().day,
                 "drawing_schedule": {
                     "monday": "Drawing Day",
-                    "wednesday": "Drawing Day", 
+                    "wednesday": "Drawing Day",
                     "saturday": "Drawing Day",
                     "other_days": "No Drawing"
                 }
@@ -1909,9 +1909,9 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
         steps_completed = 0
         if result.get("results"):
             # Count successful steps
-            steps_completed = sum(1 for step_result in result["results"].values() 
+            steps_completed = sum(1 for step_result in result["results"].values()
                                 if step_result.get("status") == "success")
-        
+
         # Determine final status
         final_status = result.get("status", "unknown")
         if final_status == "success" and steps_completed != 7:
