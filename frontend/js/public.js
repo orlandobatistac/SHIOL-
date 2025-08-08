@@ -385,6 +385,16 @@ class PublicInterface {
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 ${sortedPredictions.length} predictions ordered from highest to lowest AI confidence score
                             </p>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 flex items-center">
+                                <i class="fas fa-clock mr-1"></i>
+                                Generated: ${sortedPredictions.length > 0 && sortedPredictions[0].generated_at ? new Date(sortedPredictions[0].generated_at).toLocaleString('es-ES', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                }) : 'Recently'}
+                            </div>
                         </div>
                         <div class="text-right">
                             <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">${sortedPredictions.length}</div>
