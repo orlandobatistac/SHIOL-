@@ -335,3 +335,53 @@ class AuthManager:
 
 # Global auth manager instance
 auth_manager = AuthManager()
+
+# FastAPI dependency functions
+from fastapi import Depends, HTTPException, status, Cookie
+from typing import Optional
+
+async def get_current_user(session_token: Optional[str] = Cookie(None, alias="session_token")) -> User:
+    """
+    FastAPI dependency to get current authenticated user from session cookie.
+    
+    Args:
+        session_token: Session token from cookie
+        
+    Returns:
+        User object if authenticated
+        
+    Raises:
+        HTTPException: If not authenticated
+    """
+    if not session_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated - no session token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    user = auth_manager.verify_session(session_token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired session",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return user
+
+async def get_optional_user(session_token: Optional[str] = Cookie(None, alias="session_token")) -> Optional[User]:
+    """
+    FastAPI dependency to get current user if authenticated, None otherwise.
+    This is for optional authentication.
+    
+    Args:
+        session_token: Session token from cookie
+        
+    Returns:
+        User object if authenticated, None otherwise
+    """
+    if not session_token:
+        return None
+    
+    return auth_manager.verify_session(session_token)

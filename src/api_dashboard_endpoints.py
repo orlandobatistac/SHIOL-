@@ -18,7 +18,17 @@ from pathlib import Path
 
 from src.auth import get_current_user, User
 from src.api_utils import convert_numpy_types
-from src.database import get_all_draws, get_prediction_history, get_system_stats
+try:
+    from src.database import get_all_draws, get_prediction_history, get_system_stats
+except ImportError:
+    # Fallback if database functions are not available
+    logger.warning("Database functions not available, using fallback implementations")
+    def get_all_draws():
+        return []
+    def get_prediction_history(limit=100):
+        return []
+    def get_system_stats():
+        return {}
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator, DeterministicGenerator
 
