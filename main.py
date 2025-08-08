@@ -96,32 +96,22 @@ class PipelineOrchestrator:
             sys.exit(1)
 
     def _setup_logging(self):
-        """Configure enhanced logging with proper formatting and Eastern Time timezone."""
-        import pytz
-        from src.date_utils import DateManager
-
+        """Configure standard logging without date corrections."""
         # Remove default handler
         logger.remove()
 
-        # Use DateManager for consistent timezone handling
-        def format_et_time(record):
-            # Use DateManager to get consistent ET time with drift correction
-            corrected_et = DateManager.get_current_et_time()
-            record["time"] = corrected_et
-            return True
-
+        # Add standard console handler
         logger.add(
             sys.stdout,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> ET | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
+            format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
             level="INFO",
             colorize=True,
             enqueue=True,
             serialize=False,
-            catch=True,
-            filter=format_et_time
+            catch=True
         )
 
-        logger.info("Logging system initialized with DateManager time correction")
+        logger.info("Standard logging system initialized")
 
     def _initialize_database(self):
         """Initialize database and ensure all tables exist."""
