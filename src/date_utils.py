@@ -45,13 +45,21 @@ class DateManager:
         Returns:
             datetime: Fecha y hora actual en ET con timezone
         """
-        current_time = datetime.now(cls.POWERBALL_TIMEZONE)
-        
-        # Verify system time vs ET time for debugging
+        # Get system time in UTC
         system_utc = datetime.now(pytz.UTC)
+        
+        # Convert to Eastern Time
+        current_time = system_utc.astimezone(cls.POWERBALL_TIMEZONE)
+        
+        # Log verification - this should show the CORRECT time
         logger.debug(f"System UTC: {system_utc.isoformat()}")
-        logger.debug(f"Current ET time: {current_time.isoformat()}")
+        logger.debug(f"Calculated ET time: {current_time.isoformat()}")
         logger.debug(f"Date confirmation: {current_time.strftime('%Y-%m-%d')} ({current_time.strftime('%A')})")
+        
+        # Additional verification for debugging
+        if current_time.day == 8 and current_time.month == 8:
+            logger.warning(f"CLOCK VERIFICATION: System showing Aug 8 but expected Aug 7")
+            logger.warning(f"UTC time: {system_utc}, ET calculated: {current_time}")
         
         return current_time
     

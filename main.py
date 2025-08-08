@@ -105,18 +105,21 @@ class PipelineOrchestrator:
         # Eastern Time timezone for consistent logging
         et_timezone = pytz.timezone('America/New_York')
 
-        # Add console handler with Eastern Time formatting
+        # Add console handler with correct Eastern Time formatting
+        def format_et_time(record):
+            # Convert UTC time to Eastern Time properly
+            record["time"] = record["time"].astimezone(et_timezone)
+            return True
+
         logger.add(
             sys.stdout,
             format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> ET | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
             level="INFO",
             colorize=True,
-            # Configure loguru to use Eastern Time
             enqueue=True,
             serialize=False,
             catch=True,
-            # Custom time function to use ET
-            filter=lambda record: record.update(time=record["time"].astimezone(et_timezone))
+            filter=format_et_time
         )
 
         logger.info("Logging system initialized")
