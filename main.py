@@ -5,7 +5,7 @@ SHIOL+ Phase 5 Pipeline Orchestrator
 
 Main pipeline orchestrator that coordinates all 7 pipeline steps:
 1. Data Update
-2. Adaptive Analysis  
+2. Adaptive Analysis
 3. Prediction Generation
 4. Weight Optimization
 5. Historical Validation
@@ -37,7 +37,7 @@ import pandas as pd
 # Import SHIOL+ modules
 from src.loader import update_database_from_source, get_data_loader
 from src.adaptive_feedback import (
-    run_adaptive_analysis, 
+    run_adaptive_analysis,
     initialize_adaptive_system,
     WeightOptimizer,
     AdaptiveValidator
@@ -138,21 +138,15 @@ class PipelineOrchestrator:
             logger.error(f"Database initialization failed: {e}")
             raise
 
-    def run_full_pipeline(self) -> Dict[str, Any]:
+    def run_full_pipeline(self, num_predictions=10, requested_steps=None, execution_source="scheduled_pipeline", trigger_details=None) -> Dict[str, Any]:
         """
-        Execute the complete SHIOL+ Phase 5 pipeline with optimized flow.
-        
-        FLUJO OPTIMIZADO:
-        1. Data Update & Sorteo Detection
-        2. Validation of Previous Predictions (if drawing day)
-        3. Adaptive Learning from Results
-        4. Weight Optimization (if sufficient data)
-        5. Prediction Generation for Next Drawing
-        6. Performance Analysis & Insights
-        7. Reports & Next Drawing Schedule
+        Execute the complete pipeline with all steps, enhanced logging, and metadata tracking.
 
-        Returns:
-            Dict with pipeline execution results and status
+        Args:
+            num_predictions (int): Number of predictions to generate
+            requested_steps (list): Specific steps to run, or None for all steps
+            execution_source (str): Source of execution ('scheduled_pipeline', 'manual_dashboard', etc.)
+            trigger_details (dict): Additional trigger metadata
         """
         logger.info("=" * 60)
         logger.info("STARTING SHIOL+ PHASE 5 OPTIMIZED PIPELINE EXECUTION")
@@ -161,27 +155,27 @@ class PipelineOrchestrator:
         self.execution_start_time = datetime.now()
         pipeline_results = {}
         current_date = datetime.now()
-        
+
         # Determine if today is a drawing day (Monday=0, Wednesday=2, Saturday=5)
         is_drawing_day = current_date.weekday() in [0, 2, 5]
         hours_after_drawing = current_date.hour >= 23  # After 11 PM ET
-        
+
         logger.info(f"Pipeline execution context: Drawing day: {is_drawing_day}, After 11PM: {hours_after_drawing}")
 
         try:
             # STEP 1: Data Update & Drawing Detection
             logger.info("STEP 1/7: Data Update & Drawing Detection")
             pipeline_results['data_update'] = self._execute_step('data_update', self.step_data_update)
-            
+
             # STEP 2: Historical Validation (PRIORITY on drawing days after 11 PM)
             if is_drawing_day and hours_after_drawing:
                 logger.info("STEP 2/7: Historical Validation (Drawing Day Priority)")
                 pipeline_results['historical_validation'] = self._execute_step('historical_validation', self.step_historical_validation)
-                
+
                 # STEP 3: Adaptive Analysis (Enhanced learning from fresh results)
                 logger.info("STEP 3/7: Adaptive Analysis (Post-Drawing Learning)")
                 pipeline_results['adaptive_analysis'] = self._execute_step('adaptive_analysis', self.step_adaptive_analysis)
-                
+
                 # STEP 4: Weight Optimization (Triggered by new results)
                 logger.info("STEP 4/7: Weight Optimization (Results-Based)")
                 pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
@@ -189,11 +183,11 @@ class PipelineOrchestrator:
                 # STEP 2: Adaptive Analysis (Regular maintenance)
                 logger.info("STEP 2/7: Adaptive Analysis (Maintenance Mode)")
                 pipeline_results['adaptive_analysis'] = self._execute_step('adaptive_analysis', self.step_adaptive_analysis)
-                
+
                 # STEP 3: Weight Optimization (Regular optimization)
                 logger.info("STEP 3/7: Weight Optimization (Scheduled)")
                 pipeline_results['weight_optimization'] = self._execute_step('weight_optimization', self.step_weight_optimization)
-                
+
                 # STEP 4: Historical Validation (Maintenance validation)
                 logger.info("STEP 4/7: Historical Validation (Maintenance)")
                 pipeline_results['historical_validation'] = self._execute_step('historical_validation', self.step_historical_validation)
@@ -302,22 +296,22 @@ class PipelineOrchestrator:
         """
         Calculate the next Powerball drawing date.
         Drawings are: Monday (0), Wednesday (2), Saturday (5)
-        
+
         Returns:
             str: Next drawing date in YYYY-MM-DD format
         """
         from datetime import datetime, timedelta
-        
+
         current_date = datetime.now()
         current_weekday = current_date.weekday()
-        
+
         # Drawing days: Monday=0, Wednesday=2, Saturday=5
         drawing_days = [0, 2, 5]
-        
+
         # If today is a drawing day and it's before 11 PM, the drawing is today
         if current_weekday in drawing_days and current_date.hour < 23:
             return current_date.strftime('%Y-%m-%d')
-        
+
         # Otherwise, find the next drawing day
         days_ahead = 0
         for i in range(1, 8):  # Check next 7 days
@@ -325,7 +319,7 @@ class PipelineOrchestrator:
             if next_date.weekday() in drawing_days:
                 days_ahead = i
                 break
-        
+
         next_drawing_date = current_date + timedelta(days=days_ahead)
         return next_drawing_date.strftime('%Y-%m-%d')
 
@@ -402,7 +396,7 @@ class PipelineOrchestrator:
 
             # Check if we have enough data for optimization
             total_predictions = performance_data.get('total_predictions', 0)
-            
+
             # If we just generated predictions in step 3, check the database directly
             if total_predictions < 10:
                 try:
@@ -412,7 +406,7 @@ class PipelineOrchestrator:
                     logger.info(f"Found {total_predictions} total predictions in database for optimization")
                 except Exception as e:
                     logger.warning(f"Could not check recent predictions: {e}")
-            
+
             if total_predictions < 5:  # Reduced threshold since we just generated predictions
                 logger.warning(f"Still insufficient data for weight optimization (have {total_predictions}, need at least 5)")
                 return {
@@ -421,7 +415,7 @@ class PipelineOrchestrator:
                     'predictions_available': total_predictions,
                     'minimum_required': 5
                 }
-            
+
             logger.info(f"Proceeding with weight optimization using {total_predictions} predictions")
 
             # Get weight optimizer
@@ -464,7 +458,7 @@ class PipelineOrchestrator:
     def step_prediction_generation(self) -> Dict[str, Any]:
         """
         Step 5: Prediction Generation - Generate 100 Smart AI predictions for next drawing.
-        
+
         FUNCIONALIDAD OPTIMIZADA:
         - Valida calidad del modelo antes de generar predicciones
         - Ejecuta reentrenamiento automático si es necesario
@@ -480,14 +474,14 @@ class PipelineOrchestrator:
             try:
                 from src.model_validator import validate_model_before_prediction, is_model_ready_for_prediction
                 from src.auto_retrainer import execute_automatic_retrain_if_needed
-                
+
                 logger.info("Validating model quality before prediction generation...")
                 model_validation = validate_model_before_prediction()
-                
+
                 # Check for specific issues that require retraining
                 needs_retrain = False
                 retrain_reason = "model_quality_acceptable"
-                
+
                 # Check recent performance metrics for feature mismatch
                 if isinstance(model_validation.get('validation_metrics'), dict):
                     recent_perf = model_validation['validation_metrics'].get('recent_performance', {})
@@ -495,23 +489,23 @@ class PipelineOrchestrator:
                         logger.warning("Feature shape mismatch detected - forcing model retrain...")
                         needs_retrain = True
                         retrain_reason = "feature_compatibility_issue"
-                
+
                 # Check overall model readiness
                 if not needs_retrain and not is_model_ready_for_prediction():
                     logger.warning("Model quality below acceptable threshold - attempting automatic retrain...")
                     needs_retrain = True
                     retrain_reason = "quality_below_threshold"
-                
+
                 if needs_retrain:
                     retrain_results = execute_automatic_retrain_if_needed()
-                    
+
                     if retrain_results.get('retrain_executed', False):
                         logger.info(f"Model successfully retrained due to: {retrain_reason}")
                     else:
                         logger.warning(f"Model retrain not executed despite {retrain_reason} - proceeding with caution")
                 else:
                     retrain_results = {'retrain_executed': False, 'reason': retrain_reason}
-                    
+
             except ImportError as e:
                 logger.warning(f"Model validation not available: {e}")
                 model_validation = {'validation_available': False}
@@ -520,18 +514,18 @@ class PipelineOrchestrator:
                 logger.error(f"Error during model validation: {e}")
                 model_validation = {'validation_error': str(e)}
                 retrain_results = {'retrain_executed': False, 'error': f'validation_error: {str(e)}'}
-            
+
             # Calculate next drawing date (Monday=0, Wednesday=2, Saturday=5)
             next_drawing_date = self._calculate_next_drawing_date()
             logger.info(f"Generating predictions for next drawing date: {next_drawing_date}")
-            
+
             # Initialize predictor (it loads data internally)
             predictor = Predictor()
 
             # Generate 100 Smart AI predictions for the next drawing with target date
             logger.info("Generating 100 Smart AI predictions with optimized weights...")
             smart_predictions = predictor.predict_diverse_plays(
-                num_plays=100, 
+                num_plays=100,
                 save_to_log=True,
                 target_draw_date=next_drawing_date
             )
@@ -732,57 +726,67 @@ class PipelineOrchestrator:
         current_time = datetime.now()
         current_day = current_time.strftime('%A').lower()
         current_time_str = current_time.strftime('%H:%M')
-        
+
         # Get scheduler configuration
         expected_days = ['monday', 'wednesday', 'saturday']
         expected_time = '23:30'
         timezone = 'America/New_York'
-        
+
         # Check if execution matches expected schedule
         matches_schedule = (
-            current_day in expected_days and 
+            current_day in expected_days and
             abs((current_time.hour * 60 + current_time.minute) - (23 * 60 + 30)) <= 30  # 30 minute tolerance for reports
         )
-        
-        return {
-            'pipeline_execution': {
-                'start_time': self.execution_start_time.isoformat() if self.execution_start_time else None,
-                'end_time': current_time.isoformat(),
-                'total_execution_time': str(current_time - self.execution_start_time) if self.execution_start_time else None,
-                'status': self.pipeline_status,
-                'execution_source': 'scheduled_pipeline',
-                'trigger_details': {
-                    'type': 'scheduled',
-                    'scheduled_config': {
-                        'days': expected_days,
-                        'time': expected_time,
-                        'timezone': timezone
-                    },
-                    'actual_execution': {
-                        'day': current_day,
-                        'time': current_time_str,
-                        'matches_schedule': matches_schedule
-                    },
-                    'triggered_by': 'pipeline_orchestrator'
-                }
+
+        # Use provided trigger_details or create default ones
+        if not hasattr(self, 'trigger_details') or self.trigger_details is None: # Check if trigger_details is set in the instance
+            trigger_details = {
+                "type": "scheduled" if current_day in expected_days else "manual", # Infer type based on day if not provided
+                "scheduled_config": {
+                    "days": expected_days,
+                    "time": expected_time,
+                    "timezone": timezone
+                },
+                "actual_execution": {
+                    "day": current_day,
+                    "time": current_time_str,
+                    "matches_schedule": matches_schedule
+                },
+                "triggered_by": "automatic_scheduler" if current_day in expected_days else "user_dashboard" # Infer trigger if not provided
+            }
+        else:
+            trigger_details = self.trigger_details # Use the provided trigger_details
+
+        # Create comprehensive execution report
+        report_data = {
+            "pipeline_execution": {
+                "start_time": self.execution_start_time.isoformat() if self.execution_start_time else None,
+                "end_time": current_time.isoformat(),
+                "total_execution_time": str(current_time - self.execution_start_time) if self.execution_start_time else None,
+                "status": self.pipeline_status,
+                "execution_source": "scheduled_pipeline" if current_day in expected_days else "manual_dashboard", # Simplified source based on day
+                "trigger_details": trigger_details,
             },
-            'system_info': {
-                'config_file': self.config_path,
-                'historical_data_records': len(self.historical_data) if self.historical_data is not None else 0,
-                'adaptive_system_initialized': self.adaptive_system is not None,
-                'execution_context': {
-                    'is_drawing_day': current_day in expected_days,
-                    'expected_vs_actual': {
-                        'expected_days': expected_days,
-                        'actual_day': current_day,
-                        'expected_time': expected_time,
-                        'actual_time': current_time_str,
-                        'schedule_compliance': matches_schedule
+            "system_info": {
+                "config_file": self.config_path,
+                "historical_data_records": len(self.historical_data) if self.historical_data is not None else 0,
+                "adaptive_system_initialized": self.adaptive_system is not None,
+                "execution_context": {
+                    "is_drawing_day": current_day in expected_days,
+                    "expected_vs_actual": {
+                        "expected_days": expected_days,
+                        "actual_day": current_day,
+                        "expected_time": expected_time,
+                        "actual_time": current_time_str,
+                        "schedule_compliance": matches_schedule
                     }
                 }
             },
-            'generated_at': current_time.isoformat()
+            "generated_at": current_time.isoformat()
         }
+
+        return report_data
+
 
     def _generate_pipeline_summary(self, pipeline_results: Dict[str, Any], execution_time) -> Dict[str, Any]:
         """Generate pipeline execution summary."""
@@ -1116,7 +1120,26 @@ Server mode:
             return
 
         # Run full pipeline
-        result = orchestrator.run_full_pipeline()
+        # Set trigger_details for dashboard execution if available, otherwise use defaults
+        if args.server or args.api: # If server is started, it might be triggered by dashboard/external call
+            # In a real scenario, 'trigger_details' would be passed from the API handler
+            # For this example, we'll simulate it based on the presence of server args.
+            # If triggered via the CLI with --server, we can infer it's not a scheduled run.
+            simulated_trigger_details = {
+                "type": "manual",
+                "scheduled_config": None, # Not applicable for manual trigger
+                "actual_execution": {
+                    "day": datetime.now().strftime('%A').lower(),
+                    "time": datetime.now().strftime('%H:%M'),
+                    "matches_schedule": False # Assume no match if manually triggered
+                },
+                "triggered_by": "user_dashboard"
+            }
+            result = orchestrator.run_full_pipeline(execution_source="manual_dashboard", trigger_details=simulated_trigger_details)
+        else:
+            # Default to scheduled pipeline if not running in server mode
+            result = orchestrator.run_full_pipeline(execution_source="scheduled_pipeline")
+
 
         # Print results summary
         print("\n" + "=" * 60)
