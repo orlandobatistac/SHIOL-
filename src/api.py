@@ -3,17 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 import os
-import numpy as np
 from datetime import datetime, timedelta
 import asyncio
 import uuid
 import json
-import psutil
-import shutil
 from typing import Optional, Dict, Any, List
 import configparser
-import sqlite3
-from pathlib import Path # Import Path
+from pathlib import Path
 
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator, DeterministicGenerator
@@ -27,40 +23,11 @@ from src.adaptive_feedback import (
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from contextlib import asynccontextmanager
 
-# Import new public API and authentication
+# Import new modular API components
+from src.api_utils import convert_numpy_types
+from src.api_prediction_endpoints import prediction_router, set_prediction_components
+from src.api_system_endpoints import system_router
 from src.public_api import public_router, auth_router
-# Import ConfigurationManager for the hybrid system
-from src.config_manager import ConfigurationManager
-
-def convert_numpy_types(obj):
-    """Convert numpy types to native Python types for JSON serialization."""
-    if obj is None:
-        return None
-    elif isinstance(obj, (np.integer, np.int64, np.int32, np.int16, np.int8)):
-        return int(obj)
-    elif isinstance(obj, (np.floating, np.float64, np.float32, np.float16)):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, list):
-        return [convert_numpy_types(item) for item in obj]
-    elif isinstance(obj, tuple):
-        return tuple(convert_numpy_types(item) for item in obj)
-    elif isinstance(obj, dict):
-        return {str(key): convert_numpy_types(value) for key, value in obj.items()}
-    elif hasattr(obj, 'item'):  # Handle numpy scalar types
-        try:
-            return obj.item()
-        except (AttributeError, ValueError):
-            return str(obj)
-    elif isinstance(obj, (int, float, str, bool)):
-        return obj
-    else:
-        # For any other type, try to convert to string as fallback
-        try:
-            return str(obj)
-        except:
-            return None
 
 # --- Pipeline Monitoring Global Variables ---
 # Import PipelineOrchestrator from main.py
@@ -233,6 +200,10 @@ try:
     deterministic_generator = DeterministicGenerator(historical_data)
 
     logger.info("Model and generators loaded successfully.")
+    
+    # Set up prediction components for modular endpoints
+    set_prediction_components(predictor, intelligent_generator, deterministic_generator)
+    
 except Exception as e:
     logger.critical(f"Fatal error during startup: Failed to load model. Error: {e}")
     predictor = None
@@ -241,84 +212,6 @@ except Exception as e:
 
 # --- API Router ---
 api_router = APIRouter(prefix="/api/v1")
-
-@api_router.get("/predict")
-async def get_prediction(deterministic: bool = Query(False, description="Use deterministic method")):
-    """
-    Generates and returns a single Powerball prediction.
-
-    - **deterministic**: If true, uses deterministic method; otherwise uses traditional method
-    """
-    if not predictor or not intelligent_generator:
-        logger.error("Endpoint /predict called, but model is not available.")
-        raise HTTPException(
-            status_code=500, detail="Model is not available. Please check server logs."
-        )
-
-    if deterministic and not deterministic_generator:
-        logger.error("Deterministic generator not available.")
-        raise HTTPException(
-            status_code=500, detail="Deterministic generator is not available."
-        )
-
-    try:
-        logger.info(f"Received request for {'deterministic' if deterministic else 'traditional'} prediction.")
-        wb_probs, pb_probs = predictor.predict_probabilities()
-
-        if deterministic:
-            # Use deterministic method
-            result = deterministic_generator.generate_top_prediction(wb_probs, pb_probs)
-            prediction = result['numbers'] + [result['powerball']]
-
-            # Save to database
-            save_prediction_log(result)
-
-            return {
-                "prediction": convert_numpy_types(prediction),
-                "method": "deterministic",
-                "score_total": convert_numpy_types(result['score_total']),
-                "dataset_hash": result['dataset_hash']
-            }
-        else:
-            # Use traditional method
-            play_df = intelligent_generator.generate_plays(
-                wb_probs, pb_probs, num_plays=1
-            )
-            prediction = play_df.iloc[0].astype(int).tolist()
-
-            return {
-                "prediction": convert_numpy_types(prediction),
-                "method": "traditional"
-            }
-
-    except Exception as e:
-        logger.error(f"An error occurred during prediction: {e}")
-        raise HTTPException(status_code=500, detail="Model prediction failed.")
-
-@api_router.get("/predict-multiple")
-async def get_multiple_predictions(count: int = Query(1, ge=1, le=10)):
-    """
-    Generates and returns a specified number of Powerball predictions.
-
-    - **count**: Number of plays to generate (default: 1, min: 1, max: 10).
-    """
-    if not predictor or not intelligent_generator:
-        logger.error("Endpoint /predict-multiple called, but model is not available.")
-        raise HTTPException(
-            status_code=500, detail="Model is not available. Please check server logs."
-        )
-    try:
-        logger.info(f"Received request for {count} predictions.")
-        wb_probs, pb_probs = predictor.predict_probabilities()
-        plays_df = intelligent_generator.generate_plays(
-            wb_probs, pb_probs, num_plays=count
-        )
-        predictions = plays_df.astype(int).values.tolist()
-        logger.info(f"Generated {len(predictions)} predictions.")
-        return {"predictions": convert_numpy_types(predictions)}
-    except Exception as e:
-        logger.error(f"An error occurred during multiple prediction generation: {e}")
-        raise HTTPException(status_code=500, detail="Model prediction failed.")
 
 @api_router.get("/predict-deterministic")
 async def get_deterministic_prediction():
@@ -2801,10 +2694,10 @@ async def get_system_info():
     }
 
 # --- Application Mounting ---
-# Mount the API router before the static files to ensure API endpoints are prioritized.
+# Mount all API routers before static files
 app.include_router(api_router)
-
-# Mount new public and authentication routers
+app.include_router(prediction_router)
+app.include_router(system_router)
 app.include_router(public_router)
 app.include_router(auth_router)
 
