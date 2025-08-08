@@ -122,7 +122,7 @@
 
                     <div>
                         <label for="execution-time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Execution Time</label>
-                        <input type="time" id="execution-time" value="02:00" 
+                        <input type="time" id="execution-time" value="02:00"
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
                     </div>
 
@@ -157,7 +157,7 @@
                 <div class="p-6 space-y-6">
                     <div>
                         <label for="prediction-count" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Number of Predictions</label>
-                        <input type="range" id="prediction-count" min="10" max="1000" value="100" 
+                        <input type="range" id="prediction-count" min="10" max="1000" value="100"
                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
                                oninput="updatePredictionCount(this.value)">
                         <div class="text-center mt-2">
@@ -657,7 +657,7 @@
 
             // Event listeners for pipeline controls (with safety checks)
             const triggerPipelineBtn = document.getElementById('trigger-pipeline-btn');
-            if (triggerPipelineBtn) triggerPipelineBtn.addEventListener('click', triggerPipeline);
+            if (triggerPipelineBtn) triggerPipelineBtn.addEventListener('click', executePipeline); // Changed from triggerPipeline to executePipeline
 
             const stopPipelineBtn = document.getElementById('stop-pipeline-btn');
             if (stopPipelineBtn) stopPipelineBtn.addEventListener('click', stopPipeline);
@@ -1116,43 +1116,75 @@
             }
         }
 
-        async function triggerPipeline() {
+        async function executePipeline() {
             try {
-                // Show loading state
                 const triggerBtn = document.getElementById('trigger-pipeline-btn');
-                if (triggerBtn) {
-                    triggerBtn.disabled = true;
-                    triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Starting Pipeline...';
+
+                // Immediately disable button to prevent double clicks
+                if (triggerBtn.disabled) {
+                    console.log('⚠️ Pipeline execution already in progress, ignoring click');
+                    return;
                 }
 
-                const response = await fetch('/api/v1/pipeline/trigger', { method: 'POST' });
+                triggerBtn.disabled = true;
+                triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Starting...';
+
+                console.log('🔄 Initiating pipeline execution...');
+
+                const stopBtn = document.getElementById('stop-pipeline-btn');
+                const progressContainer = document.getElementById('pipeline-progress');
+                const statusText = document.getElementById('pipeline-status-text');
+
+                // Show progress
+                progressContainer.classList.remove('hidden');
+                statusText.textContent = 'Starting pipeline execution...';
+
+                // Switch buttons
+                triggerBtn.classList.add('hidden');
+                stopBtn.classList.remove('hidden');
+
+                const response = await fetch('/api/v1/pipeline/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        execution_source: 'manual_dashboard',
+                        triggered_by: 'user_dashboard'
+                    })
+                });
+
                 if (response.ok) {
                     const result = await response.json();
                     showNotification(`Pipeline execution started: ${result.execution_id}`, 'success');
-
-                    // Update button to show running state
-                    if (triggerBtn) {
-                        triggerBtn.innerHTML = '<i class="fas fa-cog fa-spin mr-2"></i>Pipeline Running...';
-                        triggerBtn.disabled = true;
-                    }
-
-                    document.getElementById('stop-pipeline-btn').classList.remove('hidden');
-                    document.getElementById('pipeline-progress').classList.remove('hidden');
                     startPipelineMonitoring();
                 } else {
                     const errorText = await response.text();
-                    throw new Error(`Failed to trigger pipeline: ${response.status} - ${errorText}`);
+                    throw new Error(`Failed to execute pipeline: ${response.status} - ${errorText}`);
                 }
             } catch (error) {
-                console.error('Pipeline trigger error:', error);
-                showNotification('Error triggering pipeline: ' + error.message, 'error');
+                console.error('❌ Error executing pipeline:', error);
 
                 // Reset button on error
                 const triggerBtn = document.getElementById('trigger-pipeline-btn');
+                const stopBtn = document.getElementById('stop-pipeline-btn');
+                const progressContainer = document.getElementById('pipeline-progress');
+
                 if (triggerBtn) {
                     triggerBtn.disabled = false;
                     triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+                    triggerBtn.classList.remove('hidden');
                 }
+
+                if (stopBtn) {
+                    stopBtn.classList.add('hidden');
+                }
+
+                if (progressContainer) {
+                    progressContainer.classList.add('hidden');
+                }
+
+                showToast('Error executing pipeline', 'error');
             }
         }
 
@@ -1204,19 +1236,22 @@
 
         function resetPipelineButtons() {
             const triggerBtn = document.getElementById('trigger-pipeline-btn');
+            const stopBtn = document.getElementById('stop-pipeline-btn');
+            const progressContainer = document.getElementById('pipeline-progress');
+
             if (triggerBtn) {
                 triggerBtn.disabled = false;
                 triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
                 triggerBtn.classList.remove('hidden');
             }
 
-            document.getElementById('stop-pipeline-btn').classList.add('hidden');
-            document.getElementById('pipeline-progress').classList.add('hidden');
+            if (stopBtn) {
+                stopBtn.classList.add('hidden');
+            }
 
-            // Refresh execution history after pipeline completion
-            setTimeout(() => {
-                loadPipelineExecutionHistory();
-            }, 2000);
+            if (progressContainer) {
+                progressContainer.classList.add('hidden');
+            }
         }
 
         function exportConfiguration() {
