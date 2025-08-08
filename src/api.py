@@ -275,8 +275,8 @@ app.include_router(dashboard_frontend_router)
 async def get_prediction_history_grouped(limit_dates: int = Query(25, ge=1, le=100)):
     """Get grouped prediction history by date"""
     try:
-        from src.public_api import get_predictions_performance_endpoint
-        return await get_predictions_performance_endpoint(limit_dates)
+        from src.public_api import get_predictions_performance
+        return await get_predictions_performance(limit_dates)
     except Exception as e:
         logger.error(f"Error in grouped prediction history: {e}")
         raise HTTPException(status_code=500, detail="Error retrieving grouped prediction history")
