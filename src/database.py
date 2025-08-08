@@ -56,7 +56,7 @@ def calculate_next_drawing_date() -> str:
         str: Next drawing date in YYYY-MM-DD format
     """
     from src.date_utils import DateManager
-    
+
     logger.debug("Calculating next drawing date using centralized DateManager")
     return DateManager.calculate_next_drawing_date()
 
@@ -429,8 +429,22 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
 
     # Validar la fecha del sorteo objetivo
     if not _validate_target_draw_date(target_draw_date_str):
-        logger.error(f"Invalid target_draw_date: {target_draw_date_str}")
-        return None
+        logger.error(f"Invalid target_draw_date format: {target_draw_date_str}")
+        raise ValueError(f"Invalid target_draw_date format: {target_draw_date_str}")
+
+    # Additional validation to prevent data corruption
+    if len(target_draw_date_str) != 10 or target_draw_date_str.count('-') != 2:
+        logger.error(f"CORRUPTION DETECTED: target_draw_date has invalid format: {target_draw_date_str}")
+        raise ValueError(f"Corrupted target_draw_date detected: {target_draw_date_str}")
+
+    # Validate created_at is not corrupted with other field values
+    created_at_val = sanitized_data.get('created_at', datetime.now().isoformat())
+    if isinstance(created_at_val, str) and (len(created_at_val) < 15 or created_at_val.count('T') != 1):
+        logger.warning(f"Potentially corrupted created_at field: {created_at_val}")
+        from src.date_utils import DateManager
+        created_at_val = DateManager.get_current_et_time().isoformat()
+        logger.info(f"Corrected created_at to current time: {created_at_val}")
+
     if not _is_valid_drawing_date(target_draw_date_str):
         logger.warning(f"Target draw date {target_draw_date_str} is not a valid Powerball drawing day.")
         # Decidir si se debe continuar o fallar aquí. Por ahora, registramos una advertencia.
@@ -1779,7 +1793,7 @@ def _validate_target_draw_date(date_str: str) -> bool:
         True si la fecha es válida
     """
     from src.date_utils import DateManager
-    
+
     logger.debug(f"Validating target draw date using centralized DateManager: {date_str}")
     return DateManager.validate_date_format(date_str)
 
@@ -1796,7 +1810,7 @@ def _is_valid_drawing_date(date_str: str) -> bool:
         True si es un día de sorteo válido
     """
     from src.date_utils import DateManager
-    
+
     logger.debug(f"Validating drawing date using centralized DateManager: {date_str}")
     return DateManager.is_valid_drawing_date(date_str)
 

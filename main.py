@@ -1064,6 +1064,12 @@ Server mode:
         help='Execute data migration to fix corrupted dates (Fase 2)'
     )
 
+    parser.add_argument(
+        '--diagnose',
+        action='store_true',
+        help='Run comprehensive system diagnostics and health check'
+    )
+
     args = parser.parse_args()
 
     try:
@@ -1074,6 +1080,49 @@ Server mode:
 
         # Initialize pipeline orchestrator
         orchestrator = PipelineOrchestrator(config_path=args.config)
+
+        # Handle diagnostics execution
+        if args.diagnose:
+            print("\n" + "=" * 60)
+            print("EJECUTANDO DIAGNÓSTICO COMPLETO DEL SISTEMA")
+            print("=" * 60)
+
+            try:
+                from src.system_diagnostics import SystemDiagnostics
+                report = SystemDiagnostics.run_system_health_check()
+
+                print(f"\nEstado del sistema: {report['health_status'].upper()}")
+                
+                if report['issues_found']:
+                    print(f"Problemas detectados: {', '.join(report['issues_found'])}")
+                    print(f"\nRecomendaciones:")
+                    for rec in report['recommendations']:
+                        print(f"  • {rec['issue']}: {rec['action']} (Prioridad: {rec['priority']})")
+                else:
+                    print("✓ No se encontraron problemas críticos")
+
+                print(f"\nDiagnóstico de reloj:")
+                clock = report['clock_diagnosis']
+                print(f"  Drift detectado: {'SÍ' if clock['drift_detected'] else 'NO'}")
+                print(f"  Fecha esperada: {clock['expected_date']}")
+                print(f"  Fecha actual: {clock['actual_date']}")
+
+                print(f"\nDiagnóstico de corrupción:")
+                corruption = report['corruption_diagnosis']
+                print(f"  Registros corruptos: {corruption['total_corrupted_records']}")
+                
+                # Save detailed report
+                import json
+                with open("reports/system_diagnostics.json", "w") as f:
+                    json.dump(report, f, indent=2, default=str)
+                print(f"\n✓ Reporte detallado guardado en: reports/system_diagnostics.json")
+
+            except Exception as e:
+                print(f"\n✗ Error ejecutando diagnósticos: {e}")
+                sys.exit(1)
+
+            print("=" * 60)
+            return
 
         # Handle migration execution
         if args.migrate:

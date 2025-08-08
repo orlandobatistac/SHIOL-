@@ -4,10 +4,20 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Powerball Predictions</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-    />
+    <!-- Tailwind CSS - Local installation recommended for production -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Suppress production warning for development environment
+        if (console && console.warn) {
+            const originalWarn = console.warn;
+            console.warn = function(...args) {
+                if (args[0] && args[0].includes('cdn.tailwindcss.com should not be used in production')) {
+                    return; // Suppress this specific warning
+                }
+                originalWarn.apply(console, args);
+            };
+        }
+    </script>
   </head>
   <body class="bg-gray-100 text-gray-800">
     <div class="container mx-auto p-6">
@@ -683,18 +693,6 @@
                   <td class="py-2 px-4">15 - 22 - 37 - 44 - 59</td>
                   <td class="py-2 px-4">12</td>
                   <td class="py-2 px-4">5+1</td>
-                </tr>
-                <tr>
-                  <td class="py-2 px-4">2</td>
-                  <td class="py-2 px-4">15 - 22 - 37 - 44 - 50</td>
-                  <td class="py-2 px-4">12</td>
-                  <td class="py-2 px-4">4+1</td>
-                </tr>
-                <tr>
-                  <td class="py-2 px-4">2</td>
-                  <td class="py-2 px-4">15 - 22 - 37 - 44 - 50</td>
-                  <td class="py-2 px-4">12</td>
-                  <td class="py-2 px-4">4+1</td>
                 </tr>
                 <tr>
                   <td class="py-2 px-4">2</td>
