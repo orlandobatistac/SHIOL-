@@ -982,15 +982,15 @@ def get_predictions_by_dataset_hash(dataset_hash: str) -> pd.DataFrame:
 
 def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
     """
-    Obtiene predicciones agrupadas por fecha del sorteo objetivo para mostrar historial.
-    CORREGIDO: Ahora agrupa por target_draw_date (fecha del sorteo) en lugar de created_at.
+    Obtiene predicciones agrupadas por fecha de sorteos que YA OCURRIERON.
+    Solo muestra predicciones para sorteos con resultados oficiales.
 
     Args:
         limit_dates: Número máximo de fechas a retornar (default: 25)
 
     Returns:
         Lista de diccionarios con estructura:
-        - date: fecha del sorteo objetivo
+        - date: fecha del sorteo que ya ocurrió
         - formatted_date: fecha formateada en español
         - total_plays: total de predicciones para ese sorteo
         - winning_plays: número de predicciones que ganaron algún premio
@@ -1002,15 +1002,17 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
         with get_db_connection() as conn:
             cursor = conn.cursor()
 
-            # Get unique target drawing dates with prediction counts
+            # Solo obtener fechas de sorteos que YA TIENEN resultados oficiales
+            # Esto significa que solo mostramos historical data, no predicciones futuras
             cursor.execute("""
-                SELECT
-                    COALESCE(target_draw_date, DATE(created_at)) as target_date,
-                    COUNT(*) as total_predictions
-                FROM predictions_log
-                WHERE created_at IS NOT NULL
-                GROUP BY COALESCE(target_draw_date, DATE(created_at))
-                ORDER BY target_date DESC
+                SELECT DISTINCT
+                    pd.draw_date as target_date,
+                    COUNT(pl.id) as total_predictions
+                FROM powerball_draws pd
+                INNER JOIN predictions_log pl ON COALESCE(pl.target_draw_date, DATE(pl.created_at)) = pd.draw_date
+                WHERE pl.created_at IS NOT NULL
+                GROUP BY pd.draw_date
+                ORDER BY pd.draw_date DESC
                 LIMIT ?
             """, (limit_dates,))
 

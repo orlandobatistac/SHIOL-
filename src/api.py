@@ -1078,6 +1078,11 @@ async def get_smart_predictions(
             "average_score": float(avg_score),
             "best_score": float(best_score),
             "data_source": "database" if smart_predictions and "pipeline" in smart_predictions[0].get("method", "") else "realtime_generation",
+            "predictions_info": {
+                "generated_for_drawing": next_drawing_date,
+                "drawing_status": "future" if days_until_drawing > 0 else "today" if days_until_drawing == 0 else "past",
+                "note": f"Predictions generated for drawing on {next_date.strftime('%B %d, %Y')}"
+            },
             "next_drawing": {
                 "date": next_drawing_date,
                 "formatted_date": next_date.strftime('%B %d, %Y'),

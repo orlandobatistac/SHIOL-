@@ -847,7 +847,7 @@ class PublicInterface {
                         <div class="text-xs text-gray-500 dark:text-gray-400">${dateGroup.total_prize_display}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="publicInterface.showDateDetailsModal('${dateGroup.date}')" 
+                        <button onclick="publicInterface.showDateDetailsModal('${dateGroup.date}')"
                                 class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                             <i class="fas fa-eye mr-1"></i>
                             View Details
