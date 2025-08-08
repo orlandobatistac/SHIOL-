@@ -619,12 +619,19 @@ class PublicInterface {
             // Show loading state
             const historyContainer = document.getElementById('prediction-history');
             if (historyContainer) {
-                historyContainer.innerHTML = `
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        <span>Loading prediction history...</span>
-                    </div>
-                `;
+                historyContainer.textContent = '';
+                const loadingDiv = document.createElement('div');
+                loadingDiv.className = 'loading';
+                
+                const spinner = document.createElement('div');
+                spinner.className = 'loading-spinner';
+                loadingDiv.appendChild(spinner);
+                
+                const loadingText = document.createElement('span');
+                loadingText.textContent = 'Loading prediction history...';
+                loadingDiv.appendChild(loadingText);
+                
+                historyContainer.appendChild(loadingDiv);
             }
 
             const response = await fetch('/api/v1/prediction-history-public?limit=25');
@@ -644,15 +651,25 @@ class PublicInterface {
             // Show error state
             const historyContainer = document.getElementById('prediction-history');
             if (historyContainer) {
-                historyContainer.innerHTML = `
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <span>Error loading prediction history. Please try again later.</span>
-                        <button onclick="publicInterface.loadPredictionHistory()" class="retry-button">
-                            Retry
-                        </button>
-                    </div>
-                `;
+                historyContainer.textContent = '';
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                
+                const errorIcon = document.createElement('i');
+                errorIcon.className = 'fas fa-exclamation-triangle';
+                errorDiv.appendChild(errorIcon);
+                
+                const errorText = document.createElement('span');
+                errorText.textContent = 'Error loading prediction history. Please try again later.';
+                errorDiv.appendChild(errorText);
+                
+                const retryButton = document.createElement('button');
+                retryButton.className = 'retry-button';
+                retryButton.textContent = 'Retry';
+                retryButton.onclick = () => publicInterface.loadPredictionHistory();
+                errorDiv.appendChild(retryButton);
+                
+                historyContainer.appendChild(errorDiv);
             }
         }
     }
@@ -774,13 +791,25 @@ class PublicInterface {
         const container = document.getElementById('history-container');
         if (!container) return;
 
-        container.innerHTML = `
-            <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center">
-                <i class="fas fa-clock text-4xl text-gray-400 mb-4"></i>
-                <h3 class="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">No History Available</h3>
-                <p class="text-sm text-gray-500 dark:text-gray-500">No previous predictions found in the database.</p>
-            </div>
-        `;
+        container.textContent = '';
+        const emptyDiv = document.createElement('div');
+        emptyDiv.className = 'bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-8 text-center';
+        
+        const clockIcon = document.createElement('i');
+        clockIcon.className = 'fas fa-clock text-4xl text-gray-400 mb-4';
+        emptyDiv.appendChild(clockIcon);
+        
+        const title = document.createElement('h3');
+        title.className = 'text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2';
+        title.textContent = 'No History Available';
+        emptyDiv.appendChild(title);
+        
+        const description = document.createElement('p');
+        description.className = 'text-sm text-gray-500 dark:text-gray-500';
+        description.textContent = 'No previous predictions found in the database.';
+        emptyDiv.appendChild(description);
+        
+        container.appendChild(emptyDiv);
         container.classList.remove('hidden');
         this.hideHistoryLoadingState();
     }
@@ -888,11 +917,7 @@ class PublicInterface {
         }
 
         if (loginSpinner) {
-            if (loading) {
-                loginSpinner.classList.remove('hidden');
-            } else {
-                loginSpinner.classList.add('hidden');
-            }
+            loginSpinner.style.display = loading ? 'inline' : 'none';
         }
     }
 

@@ -5,7 +5,7 @@ try {
         const originalConsoleError = console.error;
         console.error = function(...args) {
             const message = args.join(' ');
-            if (message.includes('Unchecked runtime.lastError') || 
+            if (message.includes('Unchecked runtime.lastError') ||
                 message.includes('message port closed') ||
                 message.includes('Extension context invalidated')) {
                 // Suppress these specific chrome extension errors
@@ -241,17 +241,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!executionHistoryTbody) return;
 
         if (!executions || executions.length === 0) {
-            executionHistoryTbody.innerHTML = `
-                <tr>
-                    <td colspan="5" class="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-                        No execution history available
-                    </td>
-                </tr>
-            `;
+            executionHistoryTbody.textContent = ''; // Clear existing content safely
+            const row = document.createElement('tr');
+            const cell = document.createElement('td');
+            cell.colSpan = 5;
+            cell.className = 'px-4 py-8 text-center text-gray-500 dark:text-gray-400';
+            cell.textContent = 'No execution history available';
+            row.appendChild(cell);
+            executionHistoryTbody.appendChild(row);
             return;
         }
 
-        const historyHTML = executions.map(execution => {
+        executionHistoryTbody.textContent = ''; // Clear previous content safely
+
+        executions.forEach(execution => {
             const startTime = execution.start_time ? new Date(execution.start_time).toLocaleString() : 'N/A';
             const endTime = execution.end_time ? new Date(execution.end_time) : null;
             const startTimeObj = execution.start_time ? new Date(execution.start_time) : null;
@@ -265,25 +268,47 @@ document.addEventListener('DOMContentLoaded', () => {
             const status = execution.status || 'unknown';
             const executionId = execution.execution_id || 'unknown';
 
-            return `
-                <tr>
-                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${startTime}</td>
-                    <td class="px-4 py-3">
-                        <span class="status-badge ${status}">${status}</span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${duration}</td>
-                    <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">${execution.steps_completed || 0}/${execution.total_steps || 7}</td>
-                    <td class="px-4 py-3">
-                        <button onclick="viewExecutionDetails('${executionId}')"
-                                class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium">
-                            View Details
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
+            const row = document.createElement('tr');
 
-        executionHistoryTbody.innerHTML = historyHTML;
+            // Start time cell
+            const startTimeCell = document.createElement('td');
+            startTimeCell.className = 'px-4 py-3 text-sm text-gray-900 dark:text-gray-100';
+            startTimeCell.textContent = startTime;
+            row.appendChild(startTimeCell);
+
+            // Status cell
+            const statusCell = document.createElement('td');
+            statusCell.className = 'px-4 py-3';
+            const statusSpan = document.createElement('span');
+            statusSpan.className = `status-badge ${status}`;
+            statusSpan.textContent = status;
+            statusCell.appendChild(statusSpan);
+            row.appendChild(statusCell);
+
+            // Duration cell
+            const durationCell = document.createElement('td');
+            durationCell.className = 'px-4 py-3 text-sm text-gray-900 dark:text-gray-100';
+            durationCell.textContent = duration;
+            row.appendChild(durationCell);
+
+            // Steps cell
+            const stepsCell = document.createElement('td');
+            stepsCell.className = 'px-4 py-3 text-sm text-gray-900 dark:text-gray-100';
+            stepsCell.textContent = `${execution.steps_completed || 0}/${execution.total_steps || 7}`;
+            row.appendChild(stepsCell);
+
+            // Actions cell
+            const actionsCell = document.createElement('td');
+            actionsCell.className = 'px-4 py-3';
+            const detailsButton = document.createElement('button');
+            detailsButton.className = 'text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 text-sm font-medium';
+            detailsButton.textContent = 'View Details';
+            detailsButton.onclick = () => window.viewExecutionDetails(executionId);
+            actionsCell.appendChild(detailsButton);
+            row.appendChild(actionsCell);
+
+            executionHistoryTbody.appendChild(row);
+        });
     }
 
     function updateLastGeneratedPlays(lastRun) {
@@ -325,7 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             triggerPipelineBtn.disabled = true;
-            triggerPipelineBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Triggering...';
+            triggerPipelineBtn.textContent = 'Triggering...';
+            triggerPipelineBtn.className += ' opacity-75';
 
             const response = await fetch(`${API_BASE_URL}/pipeline/trigger`, {
                 method: 'POST',
@@ -351,7 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
             showPipelineNotification('Failed to trigger pipeline', 'error');
         } finally {
             triggerPipelineBtn.disabled = false;
-            triggerPipelineBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Trigger Pipeline';
+            triggerPipelineBtn.textContent = 'Trigger Pipeline';
+            triggerPipelineBtn.className = triggerPipelineBtn.className.replace(' opacity-75', '');
         }
     }
 
@@ -743,7 +770,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const rank = prediction.rank || (index + 1);
 
             // Create number balls display
-            const whiteBalls = numbers.map(num => 
+            const whiteBalls = numbers.map(num =>
                 `<span class="inline-flex items-center justify-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full text-xs font-semibold text-gray-800 dark:text-white mr-1">${num}</span>`
             ).join('');
 

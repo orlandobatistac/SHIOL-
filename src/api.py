@@ -205,13 +205,20 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# --- CORS Configuration ---
+# --- CORS Configuration - SECURED: Restricted to specific domains
+# Security improvement: No longer using wildcard for origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://localhost:3000",  # For HTTPS development
+        # Add your production domain here
+        # "https://yourdomain.com"
+    ],
+    allow_credentials=True,  # Required for HttpOnly cookies
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],  # Restricted headers for security
 )
 
 # --- Global Components ---

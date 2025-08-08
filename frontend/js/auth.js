@@ -11,7 +11,7 @@ class SimpleAuthManager {
         this.sessionToken = null;
         this.user = null;
         this.isLoading = false;
-        
+
         // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
@@ -25,10 +25,10 @@ class SimpleAuthManager {
      */
     init() {
         console.log('Initializing SHIOL+ Simple Authentication');
-        
+
         // Setup event listeners for login page
         this.setupLoginEventListeners();
-        
+
         // Check if we're on dashboard and need protection
         this.checkDashboardAccess();
     }
@@ -67,24 +67,12 @@ class SimpleAuthManager {
             return;
         }
 
-        const token = sessionStorage.getItem('shiol_session_token') || localStorage.getItem('shiol_session_token');
-        
-        if (!token) {
+        const isAuthenticated = await this.checkAuthentication();
+        if (!isAuthenticated) {
             this.redirectToLogin();
-            return;
-        }
-
-        try {
-            const isValid = await this.verifySessionOnce(token);
-            if (!isValid) {
-                this.redirectToLogin();
-            } else {
-                console.log('Dashboard access granted');
-                this.setupLogoutButton();
-            }
-        } catch (error) {
-            console.error('Dashboard access verification failed:', error);
-            this.redirectToLogin();
+        } else {
+            console.log('Dashboard access granted');
+            this.setupLogoutButton();
         }
     }
 
@@ -123,43 +111,56 @@ class SimpleAuthManager {
 
     /**
      * Handle login form submission
+     * @param {Event} e - Form submit event
      */
     async handleLogin(e) {
         e.preventDefault();
-        
-        if (this.isLoading) return;
 
-        const username = document.getElementById('username').value.trim();
-        const password = document.getElementById('password').value;
-        const rememberMe = document.getElementById('remember-me').checked;
+        const username = document.getElementById('username')?.value.trim();
+        const password = document.getElementById('password')?.value;
 
-        // Validate inputs
-        if (!this.validateLoginInputs(username, password)) {
+        if (!username || !password) {
+            this.showLoginError('Please enter both username and password');
             return;
         }
 
         try {
-            this.setLoadingState(true);
-            this.hideMessages();
+            this.setLoginLoading(true);
+            this.hideLoginError();
 
-            console.log('Attempting login for user:', username);
-
-            const response = await PowerballUtils.apiRequest('/auth/login', {
+            const response = await fetch('/api/v1/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ username, password })
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    username, 
+                    password
+                }),
+                credentials: 'include' // Include cookies for secure token storage
             });
 
-            if (response.success && response.session_token) {
-                this.handleLoginSuccess(response, rememberMe);
-            } else {
-                this.showError('Login failed. Please check your credentials.');
-            }
+            const data = await response.json();
 
+            if (data.success) {
+                // Token is now stored in HttpOnly, Secure, SameSite=Strict cookie
+                // This prevents XSS attacks and CSRF vulnerabilities
+                console.log('Login successful - token stored securely in HttpOnly cookie');
+
+                this.showLoginSuccess('Login successful! Redirecting...');
+
+                // Redirect to dashboard after short delay
+                setTimeout(() => {
+                    window.location.href = '/dashboard.html';
+                }, 1500);
+            } else {
+                this.showLoginError(data.message || 'Invalid username or password');
+            }
         } catch (error) {
             console.error('Login error:', error);
-            this.handleLoginError(error);
+            this.showLoginError('Login failed. Please check your connection.');
         } finally {
-            this.setLoadingState(false);
+            this.setLoginLoading(false);
         }
     }
 
@@ -266,43 +267,50 @@ class SimpleAuthManager {
     }
 
     /**
-     * Logout user
+     * Logout user and clear session
      */
     async logout() {
         try {
-            if (this.sessionToken) {
-                await PowerballUtils.apiRequest('/auth/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${this.sessionToken}`
-                    }
-                });
-            }
+            console.log('Logging out user...');
+
+            // Call logout endpoint to clear HttpOnly cookies
+            await fetch('/api/v1/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Include cookies for secure logout
+            });
+
+            // Reset state
+            this.sessionToken = null;
+            this.user = null;
+
+            console.log('Secure logout completed - HttpOnly cookies cleared');
+
+            // Redirect to login
+            window.location.href = '/login.html';
+
         } catch (error) {
             console.error('Logout error:', error);
-        } finally {
-            this.clearSession();
+            // Force redirect even if API call fails
             window.location.href = '/login.html';
         }
     }
 
     /**
-     * Clear session data
+     * Clear authentication state (HttpOnly cookies cleared by server)
      */
-    clearSession() {
+    clearAuthState() {
         this.sessionToken = null;
         this.user = null;
-        sessionStorage.removeItem('shiol_session_token');
-        sessionStorage.removeItem('shiol_user');
-        localStorage.removeItem('shiol_session_token');
-        localStorage.removeItem('shiol_user');
     }
 
     /**
      * Redirect to login page
      */
     redirectToLogin() {
-        this.clearSession();
+        this.clearAuthState();
         window.location.href = '/login.html';
     }
 
@@ -327,7 +335,7 @@ class SimpleAuthManager {
     /**
      * Set loading state
      */
-    setLoadingState(loading) {
+    setLoginLoading(loading) {
         this.isLoading = loading;
 
         const loginSubmit = document.getElementById('login-submit');
@@ -399,6 +407,75 @@ class SimpleAuthManager {
         if (successDiv) {
             successDiv.classList.add('hidden');
         }
+    }
+
+    /**
+     * Check authentication status on page load
+     */
+    async checkAuthentication() {
+        try {
+            // Verify authentication using secure HttpOnly cookies
+            const response = await fetch('/api/v1/auth/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include' // Include HttpOnly cookies
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.valid) {
+                    this.user = data.user;
+                    console.log('Authentication verified via secure HttpOnly cookie');
+                    return true;
+                }
+            }
+
+            // Authentication failed
+            console.log('Authentication verification failed');
+            return false;
+
+        } catch (error) {
+            console.error('Authentication check error:', error);
+            return false;
+        }
+    }
+
+    // Helper methods to show/hide login messages (assuming these exist in the HTML)
+    showLoginError(message) {
+        const errorDiv = document.getElementById('login-error');
+        const errorMessageSpan = errorDiv?.querySelector('.error-message');
+        if (errorMessageSpan) {
+            errorMessageSpan.textContent = message;
+        }
+        errorDiv?.classList.remove('hidden');
+        document.getElementById('login-success')?.classList.add('hidden');
+    }
+
+    hideLoginError() {
+        document.getElementById('login-error')?.classList.add('hidden');
+    }
+
+    showLoginSuccess(message) {
+        const successDiv = document.getElementById('login-success');
+        const successMessageSpan = successDiv?.querySelector('.success-message');
+        if (successMessageSpan) {
+            successMessageSpan.textContent = message;
+        }
+        successDiv?.classList.remove('hidden');
+        document.getElementById('login-error')?.classList.add('hidden');
+    }
+
+    setLoginLoading(loading) {
+        this.isLoading = loading;
+        const loginButton = document.getElementById('login-submit');
+        const buttonText = document.getElementById('login-btn-text');
+        const spinner = document.getElementById('login-spinner');
+
+        if (loginButton) loginButton.disabled = loading;
+        if (buttonText) buttonText.textContent = loading ? 'Signing In...' : 'Sign In';
+        if (spinner) spinner.style.display = loading ? 'inline-block' : 'none';
     }
 }
 

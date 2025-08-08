@@ -252,10 +252,14 @@ class PowerballUtils {
     static createLoadingPlaceholder(message = 'Loading...') {
         const placeholder = document.createElement('div');
         placeholder.className = 'loading-placeholder text-center py-12';
-        placeholder.innerHTML = `
-            <i class="fas fa-spinner fa-spin text-gray-400 text-3xl mb-4 loading-spinner"></i>
-            <p class="text-gray-500">${message}</p>
-        `;
+        const spinner = document.createElement('i');
+        spinner.className = 'fas fa-spinner fa-spin text-gray-400 text-3xl mb-4 loading-spinner';
+        placeholder.appendChild(spinner);
+        
+        const loadingText = document.createElement('p');
+        loadingText.className = 'text-gray-500';
+        loadingText.textContent = message;
+        placeholder.appendChild(loadingText);
         return placeholder;
     }
 
@@ -267,14 +271,20 @@ class PowerballUtils {
     static createErrorPlaceholder(message = 'Error loading data') {
         const placeholder = document.createElement('div');
         placeholder.className = 'error-placeholder text-center py-12';
-        placeholder.innerHTML = `
-            <i class="fas fa-exclamation-triangle text-red-400 text-3xl mb-4"></i>
-            <p class="text-red-500">${message}</p>
-            <button onclick="location.reload()" class="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                <i class="fas fa-redo mr-2"></i>
-                Retry
-            </button>
-        `;
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-exclamation-triangle text-red-400 text-3xl mb-4';
+        placeholder.appendChild(icon);
+        
+        const errorText = document.createElement('p');
+        errorText.className = 'text-red-500';
+        errorText.textContent = message;
+        placeholder.appendChild(errorText);
+        
+        const retryButton = document.createElement('button');
+        retryButton.className = 'mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors';
+        retryButton.textContent = 'Retry';
+        retryButton.onclick = () => location.reload();
+        placeholder.appendChild(retryButton);
         return placeholder;
     }
 

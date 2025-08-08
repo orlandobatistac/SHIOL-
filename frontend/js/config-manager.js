@@ -430,7 +430,7 @@ class ConfigurationManager {
         const originalText = executeButton ? executeButton.textContent : '';
         if (executeButton) {
             executeButton.disabled = true;
-            executeButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executing Pipeline...';
+            executeButton.textContent = 'Executing Pipeline...';
             executeButton.classList.add('opacity-75');
         }
 
@@ -518,7 +518,7 @@ class ConfigurationManager {
                     } else if (execution.status === 'running') {
                         // Update button text with current step if available
                         if (executeButton && execution.current_step) {
-                            executeButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${execution.current_step}...`;
+                            executeButton.textContent = `${execution.current_step}...`;
                         }
                     }
                 }
@@ -541,7 +541,7 @@ class ConfigurationManager {
         const triggerBtn = document.getElementById('trigger-pipeline-btn');
         if (triggerBtn) {
             triggerBtn.disabled = false;
-            triggerBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Execute Pipeline';
+            triggerBtn.textContent = 'Execute Pipeline';
         }
 
         const stopBtn = document.getElementById('stop-pipeline-btn');
@@ -772,17 +772,17 @@ class ConfigurationManager {
     async refreshPipelineHistory() {
         try {
             console.log('🔄 Refreshing pipeline execution history...');
-            
+
             const response = await fetch(`${this.API_BASE_URL}/pipeline/execution-history?limit=20`);
             if (response.ok) {
                 const data = await response.json();
                 console.log('✅ Pipeline execution history refreshed:', data);
-                
+
                 // Trigger the global function if it exists
                 if (typeof window.loadPipelineExecutionHistory === 'function') {
                     window.loadPipelineExecutionHistory();
                 }
-                
+
                 this.showNotification(`Pipeline history updated: ${data.count} executions`, 'success');
                 return data;
             } else {
