@@ -1,43 +1,48 @@
 {
   "pipeline_execution": {
-    "start_time": "2025-08-08T00:14:50.651919",
-    "end_time": "2025-08-08T00:17:31.915971",
-    "total_execution_time": "0:02:41.264052",
+    "start_time": "2025-08-08T00:30:26.238485",
+    "end_time": "2025-08-08T00:33:02.757093",
+    "total_execution_time": "0:02:36.518608",
     "status": {
       "data_update": {
         "status": "success",
-        "execution_time": "0:00:00.461908",
-        "timestamp": "2025-08-08T00:14:51.114095"
+        "execution_time": "0:00:00.475105",
+        "timestamp": "2025-08-08T00:30:26.713918"
       },
       "adaptive_analysis": {
         "status": "success",
-        "execution_time": "0:00:00.012683",
-        "timestamp": "2025-08-08T00:14:51.127149"
+        "execution_time": "0:00:00.005825",
+        "timestamp": "2025-08-08T00:30:26.720120"
       },
       "weight_optimization": {
         "status": "success",
-        "execution_time": "0:00:00.026117",
-        "timestamp": "2025-08-08T00:14:51.153715"
+        "execution_time": "0:00:00.026494",
+        "timestamp": "2025-08-08T00:30:26.746906"
       },
       "historical_validation": {
         "status": "success",
-        "execution_time": "0:00:00.078290",
-        "timestamp": "2025-08-08T00:14:51.232337"
+        "execution_time": "0:00:00.082198",
+        "timestamp": "2025-08-08T00:30:26.829448"
       },
       "prediction_generation": {
         "status": "success",
-        "execution_time": "0:02:40.676850",
-        "timestamp": "2025-08-08T00:17:31.909634"
+        "execution_time": "0:02:35.922683",
+        "timestamp": "2025-08-08T00:33:02.752505"
       },
       "performance_analysis": {
         "status": "success",
-        "execution_time": "0:00:00.004943",
-        "timestamp": "2025-08-08T00:17:31.915230"
+        "execution_time": "0:00:00.003818",
+        "timestamp": "2025-08-08T00:33:02.756601"
+      },
+      "notifications_reports": {
+        "status": "success",
+        "execution_time": "0:00:00.000690",
+        "timestamp": "2025-08-08T00:30:26.235059"
       }
     },
-    "execution_source": "scheduled_pipeline",
+    "execution_source": "manual_dashboard",
     "trigger_details": {
-      "type": "scheduled",
+      "type": "manual",
       "scheduled_config": {
         "days": [
           "monday",
@@ -49,10 +54,10 @@
       },
       "actual_execution": {
         "day": "friday",
-        "time": "00:17",
+        "time": "00:33",
         "matches_schedule": false
       },
-      "triggered_by": "pipeline_orchestrator"
+      "triggered_by": "user_dashboard"
     }
   },
   "system_info": {
@@ -69,10 +74,10 @@
         ],
         "actual_day": "friday",
         "expected_time": "23:30",
-        "actual_time": "00:17",
+        "actual_time": "00:33",
         "schedule_compliance": false
       }
     }
   },
-  "generated_at": "2025-08-08T00:17:31.915971"
+  "generated_at": "2025-08-08T00:33:02.757093"
 }
