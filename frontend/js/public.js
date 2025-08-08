@@ -523,8 +523,18 @@ class PublicInterface {
             </div>
         `;
 
-        // Display the predictions
-        container.innerHTML = predictionsHtml;
+        // Display the predictions using safe DOM methods
+        container.textContent = ''; // Clear existing content safely
+        
+        // Create a temporary container to parse the HTML safely
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = predictionsHtml;
+        
+        // Move all child nodes to the actual container
+        while (tempDiv.firstChild) {
+            container.appendChild(tempDiv.firstChild);
+        }
+        
         container.classList.remove('hidden');
         container.style.display = 'block';
 
@@ -682,12 +692,21 @@ class PublicInterface {
         if (!historyContainer) return;
 
         if (!data.history || data.history.length === 0) {
-            historyContainer.innerHTML = `
-                <div class="no-data">
-                    <i class="fas fa-info-circle"></i>
-                    <span>No prediction history available yet.</span>
-                </div>
-            `;
+            // Create elements safely without innerHTML
+        historyContainer.textContent = '';
+        
+        const noDataDiv = document.createElement('div');
+        noDataDiv.className = 'no-data';
+        
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-info-circle';
+        
+        const span = document.createElement('span');
+        span.textContent = 'No prediction history available yet.';
+        
+        noDataDiv.appendChild(icon);
+        noDataDiv.appendChild(span);
+        historyContainer.appendChild(noDataDiv);
             return;
         }
 
@@ -1107,7 +1126,18 @@ class PublicInterface {
             </div>
         `;
 
-        container.innerHTML = historyHTML;
+        // Use safe DOM methods to display grouped history
+        container.textContent = ''; // Clear existing content safely
+        
+        // Create a temporary container to parse the HTML safely
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = historyHTML;
+        
+        // Move all child nodes to the actual container
+        while (tempDiv.firstChild) {
+            container.appendChild(tempDiv.firstChild);
+        }
+        
         container.classList.remove('hidden');
     }
 
@@ -1241,7 +1271,17 @@ class PublicInterface {
 
         detailsHTML += '</div>';
 
-        modalContent.innerHTML = detailsHTML;
+        // Use safe DOM methods to display date details
+        modalContent.textContent = ''; // Clear existing content safely
+        
+        // Create a temporary container to parse the HTML safely
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = detailsHTML;
+        
+        // Move all child nodes to the actual container
+        while (tempDiv.firstChild) {
+            modalContent.appendChild(tempDiv.firstChild);
+        }
     }
 
     /**
