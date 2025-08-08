@@ -138,13 +138,13 @@ class PipelineOrchestrator:
             logger.error(f"Database initialization failed: {e}")
             raise
 
-    def run_full_pipeline(self, num_predictions=10, requested_steps=None, execution_source="scheduled_pipeline", trigger_details=None) -> Dict[str, Any]:
+    def run_full_pipeline(self, num_predictions=100, requested_steps=None, execution_source="scheduled_pipeline", trigger_details=None) -> Dict[str, Any]:
         """
         Execute the complete pipeline with all steps, enhanced logging, and metadata tracking.
 
         Args:
-            num_predictions (int): Number of predictions to generate
-            requested_steps (list): Specific steps to run, or None for all steps
+            num_predictions (int): Number of predictions to generate (default: 100)
+            requested_steps (list): Specific steps to run, or None for all 7 steps
             execution_source (str): Source of execution ('scheduled_pipeline', 'manual_dashboard', etc.)
             trigger_details (dict): Additional trigger metadata
         """
@@ -153,6 +153,7 @@ class PipelineOrchestrator:
         logger.info("=" * 60)
 
         self.execution_start_time = datetime.now()
+        self.trigger_details = trigger_details  # Store trigger details for report generation
         pipeline_results = {}
         current_date = datetime.now()
 
@@ -161,6 +162,8 @@ class PipelineOrchestrator:
         hours_after_drawing = current_date.hour >= 23  # After 11 PM ET
 
         logger.info(f"Pipeline execution context: Drawing day: {is_drawing_day}, After 11PM: {hours_after_drawing}")
+        logger.info(f"Pipeline configuration: {num_predictions} predictions, Full 7-step execution")
+        logger.info(f"Execution source: {execution_source}")
 
         try:
             # STEP 1: Data Update & Drawing Detection
@@ -213,13 +216,17 @@ class PipelineOrchestrator:
             logger.info("=" * 60)
             logger.info("SHIOL+ PHASE 5 PIPELINE EXECUTION COMPLETED SUCCESSFULLY")
             logger.info(f"Total execution time: {execution_time}")
+            logger.info(f"Steps completed: {pipeline_summary.get('successful_steps', 0)}/7")
+            logger.info(f"Pipeline health: {pipeline_summary.get('pipeline_health', 'unknown')}")
             logger.info("=" * 60)
 
             return {
                 'status': 'success',
                 'execution_time': str(execution_time),
                 'results': pipeline_results,
-                'summary': pipeline_summary
+                'summary': pipeline_summary,
+                'steps_completed': pipeline_summary.get('successful_steps', 0),
+                'total_steps': 7  # Always 7 for full pipeline
             }
 
         except Exception as e:

@@ -118,9 +118,9 @@ async def trigger_full_pipeline_automatically():
                 "start_time": current_time.isoformat(),
                 "current_step": "automated_trigger",
                 "steps_completed": 0,
-                "total_steps": 7,
-                "num_predictions": 10,
-                "requested_steps": None,
+                "total_steps": 7,  # Always 7 steps for full pipeline
+                "num_predictions": 100,  # Standard 100 predictions
+                "requested_steps": None,  # Full pipeline, all steps
                 "error": None,
                 "trigger_type": "automatic_scheduler",
                 "execution_source": "automatic_scheduler",
@@ -140,9 +140,9 @@ async def trigger_full_pipeline_automatically():
                 }
             }
 
-            # Run the pipeline in background
-            asyncio.create_task(run_full_pipeline_background(execution_id, 10))
-            logger.info(f"Automatic pipeline execution started with ID: {execution_id} (scheduled: {matches_schedule})")
+            # Run the full 7-step pipeline in background with 100 predictions
+            asyncio.create_task(run_full_pipeline_background(execution_id, 100))
+            logger.info(f"Automatic pipeline execution started with ID: {execution_id} - Full 7-step pipeline (scheduled: {matches_schedule})")
         else:
             logger.warning("Pipeline orchestrator not available to trigger pipeline.")
     except Exception as e:
@@ -1409,14 +1409,17 @@ async def trigger_pipeline_execution(
         expected_time = '23:30'
         timezone = 'America/New_York'
 
+        # Always ensure 7 total steps for full pipeline, or count of step_list for partial
+        total_steps = len(step_list) if step_list else 7
+
         pipeline_executions[execution_id] = {
             "execution_id": execution_id,
             "status": "starting",
             "start_time": current_time.isoformat(),
             "current_step": None,
             "steps_completed": 0,
-            "total_steps": len(step_list) if step_list else 7, # Default to 7 if full pipeline
-            "num_predictions": num_predictions,
+            "total_steps": total_steps,  # Ensure correct step count
+            "num_predictions": num_predictions if num_predictions else 100,  # Default to 100
             "requested_steps": step_list,
             "error": None,
             "trigger_type": "manual_dashboard",
@@ -1435,9 +1438,10 @@ async def trigger_pipeline_execution(
                 },
                 "triggered_by": "user_dashboard",
                 "manual_parameters": {
-                    "num_predictions": num_predictions,
+                    "num_predictions": num_predictions if num_predictions else 100,
                     "specific_steps": step_list,
-                    "force_execution": force
+                    "force_execution": force,
+                    "pipeline_type": "partial" if step_list else "full"
                 }
             }
         }
@@ -1867,7 +1871,7 @@ async def stop_pipeline_execution():
 
 # Background task functions for pipeline execution
 async def run_full_pipeline_background(execution_id: str, num_predictions: int):
-    """Run full pipeline in background task with enhanced logging."""
+    """Run full pipeline in background task with enhanced logging and guaranteed 7-step execution."""
     try:
         pipeline_executions[execution_id]["status"] = "running"
         pipeline_executions[execution_id]["current_step"] = "starting"
@@ -1877,26 +1881,48 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
         trigger_details = execution_meta.get("trigger_details", {})
 
         logger.info(f"Starting background pipeline execution {execution_id}")
+        logger.info(f"Pipeline type: Full 7-step pipeline with {num_predictions} predictions")
         logger.info(f"Execution source: {execution_meta.get('execution_source', 'unknown')}")
         logger.info(f"Triggered by: {trigger_details.get('triggered_by', 'unknown')}")
         logger.info(f"Schedule compliance: {trigger_details.get('actual_execution', {}).get('matches_schedule', 'unknown')}")
 
-        # Run the full pipeline
-        result = pipeline_orchestrator.run_full_pipeline() # This method should handle its own internal steps and logging
+        # Run the full pipeline with explicit parameters
+        result = pipeline_orchestrator.run_full_pipeline(
+            num_predictions=num_predictions,
+            requested_steps=None,  # Full pipeline - all 7 steps
+            execution_source=execution_meta.get('execution_source', 'background_task'),
+            trigger_details=trigger_details
+        )
+
+        # Extract step summary from result
+        steps_completed = 0
+        if result.get("results"):
+            # Count successful steps
+            steps_completed = sum(1 for step_result in result["results"].values() 
+                                if step_result.get("status") == "success")
+        
+        # Determine final status
+        final_status = result.get("status", "unknown")
+        if final_status == "success" and steps_completed != 7:
+            final_status = "partial_success"
+            logger.warning(f"Pipeline completed but only {steps_completed}/7 steps were successful")
 
         # Update execution status based on orchestrator's result
         pipeline_executions[execution_id].update({
-            "status": result.get("status", "unknown"), # Use status reported by orchestrator
+            "status": final_status,
             "end_time": datetime.now().isoformat(),
             "result": result,
-            "steps_completed": result.get("steps_completed", 7), # Assuming 7 steps for full pipeline
-            "total_steps": result.get("total_steps", 7),
-            "error": result.get("error") # Capture any error message
+            "steps_completed": steps_completed,
+            "total_steps": 7,  # Always 7 for full pipeline
+            "error": result.get("error"),
+            "pipeline_summary": result.get("summary", {}),
+            "execution_time": result.get("execution_time")
         })
 
         # Enhanced completion logging
-        completion_status = result.get("status", "unknown")
-        logger.info(f"Background pipeline execution {execution_id} completed with status: {completion_status}")
+        logger.info(f"Background pipeline execution {execution_id} completed with status: {final_status}")
+        logger.info(f"Steps completed: {steps_completed}/7")
+        logger.info(f"Execution time: {result.get('execution_time', 'unknown')}")
         logger.info(f"Execution metadata: Source={execution_meta.get('execution_source')}, "
                    f"Triggered_by={trigger_details.get('triggered_by')}, "
                    f"Scheduled={trigger_details.get('actual_execution', {}).get('matches_schedule')}")
@@ -1910,8 +1936,9 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
             "status": "failed",
             "end_time": datetime.now().isoformat(),
             "error": str(e),
-            "current_step": "exception_handler", # Indicate where failure occurred
-            "steps_completed": pipeline_executions[execution_id].get("steps_completed", 0) # Keep track of steps before crash
+            "current_step": "exception_handler",
+            "steps_completed": pipeline_executions[execution_id].get("steps_completed", 0),
+            "total_steps": 7  # Always 7 for full pipeline
         })
 
         logger.error(f"Critical error during background pipeline execution {execution_id}: {e}")
