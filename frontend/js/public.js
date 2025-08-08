@@ -204,6 +204,12 @@ class PublicInterface {
                 drawingDateElement.textContent = `Drawing in ${formattedCountdown}`;
             }
         }
+
+        // Update drawing time element if it exists
+        const drawingTimeElement = document.getElementById('next-drawing-time');
+        if (drawingTimeElement && this.nextDrawingInfo && this.nextDrawingInfo.exact_drawing_time) {
+            drawingTimeElement.textContent = this.nextDrawingInfo.exact_drawing_time;
+        }
     }
 
     /**
@@ -330,6 +336,10 @@ class PublicInterface {
                     <span class="date-label">Next Drawing:</span>
                     <span class="date-value">${nextDrawing.formatted_date}</span>
                     <span class="countdown-display" id="smart-predictions-countdown">Loading...</span>
+                </div>
+                <div class="drawing-time text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <i class="fas fa-clock mr-1"></i>
+                    ${nextDrawing.exact_drawing_time}
                 </div>
             </div>
         ` : '';
