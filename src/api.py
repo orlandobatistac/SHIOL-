@@ -232,6 +232,8 @@ try:
 
     # Set up prediction components for modular endpoints
     set_prediction_components(predictor, intelligent_generator, deterministic_generator)
+    set_public_components(predictor, intelligent_generator, deterministic_generator)
+    set_dashboard_components(predictor, intelligent_generator, deterministic_generator)
 
 except Exception as e:
     logger.critical(f"Fatal error during startup: Failed to load model. Error: {e}")

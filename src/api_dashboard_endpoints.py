@@ -1,3 +1,4 @@
+
 """
 SHIOL+ Dashboard API Endpoints
 ==============================
@@ -6,187 +7,95 @@ API endpoints specifically for the dashboard frontend (dashboard.html).
 These endpoints provide administrative access and system management.
 """
 
-from flask import Blueprint, render_template, request, jsonify, redirect, url_for
+from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from typing import Optional, Dict, Any, List
+from datetime import datetime
+from loguru import logger
+import os
+from pathlib import Path
 
-# Import necessary modules from your application
-from src.api_frontend_public import get_public_endpoints
-from src.api_backend_endpoint import get_backend_endpoints
-from src.api_frontend_dashboard import get_dashboard_endpoints
-from src.auth import auth_required
+from src.auth import get_current_user, User
+from src.api_utils import convert_numpy_types
+from src.database import get_all_draws, get_prediction_history, get_system_stats
+from src.predictor import Predictor
+from src.intelligent_generator import IntelligentGenerator, DeterministicGenerator
 
-# Define the blueprint for the dashboard API
-dashboard_api_bp = Blueprint("dashboard_api", __name__)
+# Create router for dashboard frontend endpoints
+dashboard_frontend_router = APIRouter(tags=["dashboard_frontend"])
 
-@dashboard_api_bp.route("/dashboard", methods=["GET"])
-@auth_required
-def dashboard():
-    """Renders the main dashboard page."""
-    return render_template("dashboard.html")
+# Global components (will be injected from main API)
+predictor = None
+intelligent_generator = None
+deterministic_generator = None
 
-@dashboard_api_bp.route("/dashboard/api", methods=["GET"])
-@auth_required
-def dashboard_api():
-    """
-    Provides a consolidated list of all API endpoints available on the dashboard.
-    This includes public, backend, and dashboard-specific endpoints.
-    """
-    all_endpoints = {
-        "public": get_public_endpoints(),
-        "backend": get_backend_endpoints(),
-        "dashboard": get_dashboard_endpoints(),
-    }
-    return jsonify(all_endpoints)
+def set_dashboard_components(pred, intel_gen, det_gen):
+    """Set the global components for dashboard endpoints."""
+    global predictor, intelligent_generator, deterministic_generator
+    predictor = pred
+    intelligent_generator = intel_gen
+    deterministic_generator = det_gen
 
-@dashboard_api_bp.route("/dashboard/api/data", methods=["GET"])
-@auth_required
-def get_dashboard_data():
-    """
-    Example endpoint to fetch data for the dashboard.
-    Replace this with actual data retrieval logic.
-    """
-    # Placeholder for actual data fetching
-    data = {
-        "users": 150,
-        "active_sessions": 75,
-        "system_status": "nominal",
-        "recent_activity": [
-            {"user": "admin", "action": "login", "timestamp": "2023-10-27T10:00:00Z"},
-            {"user": "guest", "action": "view", "timestamp": "2023-10-27T09:55:00Z"},
-        ],
-    }
-    return jsonify(data)
+# Build path to frontend templates
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
+templates = Jinja2Templates(directory=FRONTEND_DIR)
 
-# Example of a POST endpoint for the dashboard
-@dashboard_api_bp.route("/dashboard/api/action", methods=["POST"])
-@auth_required
-def perform_dashboard_action():
-    """
-    Example endpoint to perform an action on the dashboard.
-    Receives data via POST request.
-    """
-    action_data = request.get_json()
-    if not action_data:
-        return jsonify({"status": "error", "message": "No data provided"}), 400
+@dashboard_frontend_router.get("/dashboard", response_class=HTMLResponse)
+async def serve_dashboard(request: Request, current_user: User = Depends(get_current_user)):
+    """Serve the dashboard page (requires authentication)"""
+    return templates.TemplateResponse("dashboard.html", {"request": request, "user": current_user})
 
-    # Placeholder for action processing
-    print(f"Received action data: {action_data}")
-    status = "success"
-    message = f"Action '{action_data.get('type', 'unknown')}' processed successfully."
+@dashboard_frontend_router.get("/login", response_class=HTMLResponse)
+async def serve_login(request: Request):
+    """Serve the login page"""
+    return templates.TemplateResponse("login.html", {"request": request})
 
-    return jsonify({"status": status, "message": message})
-
-
-# Endpoint to manage user accounts (example)
-@dashboard_api_bp.route("/dashboard/api/users", methods=["GET", "POST", "PUT", "DELETE"])
-@auth_required
-def manage_users():
-    """
-    Manages user accounts. Handles GET, POST, PUT, and DELETE requests.
-    """
-    if request.method == "GET":
-        # Placeholder for fetching users
-        users = [
-            {"id": 1, "username": "admin", "role": "administrator"},
-            {"id": 2, "username": "editor", "role": "editor"},
-        ]
-        return jsonify(users)
-    elif request.method == "POST":
-        user_data = request.get_json()
-        # Placeholder for creating a user
-        print(f"Creating user: {user_data}")
-        return jsonify({"status": "success", "message": "User created"}), 201
-    elif request.method == "PUT":
-        user_id = request.args.get('id')
-        update_data = request.get_json()
-        # Placeholder for updating a user
-        print(f"Updating user {user_id} with data: {update_data}")
-        return jsonify({"status": "success", "message": "User updated"})
-    elif request.method == "DELETE":
-        user_id = request.args.get('id')
-        # Placeholder for deleting a user
-        print(f"Deleting user {user_id}")
-        return jsonify({"status": "success", "message": "User deleted"})
-
-# Endpoint to view system logs (example)
-@dashboard_api_bp.route("/dashboard/api/logs", methods=["GET"])
-@auth_required
-def view_logs():
-    """
-    Retrieves system logs.
-    """
-    # Placeholder for fetching logs
-    logs = [
-        {"level": "INFO", "message": "System started successfully.", "timestamp": "2023-10-27T08:00:00Z"},
-        {"level": "WARNING", "message": "Disk space low.", "timestamp": "2023-10-27T09:30:00Z"},
-        {"level": "ERROR", "message": "Failed to connect to database.", "timestamp": "2023-10-27T09:45:00Z"},
-    ]
-    return jsonify(logs)
-
-# Endpoint to configure system settings (example)
-@dashboard_api_bp.route("/dashboard/api/settings", methods=["GET", "POST"])
-@auth_required
-def configure_settings():
-    """
-    Manages system settings. Handles GET and POST requests.
-    """
-    if request.method == "GET":
-        # Placeholder for fetching settings
-        settings = {
-            "site_name": "SHIOL+",
-            "theme": "dark",
-            "max_users": 200,
+@dashboard_frontend_router.get("/api/v1/dashboard/system/status")
+async def get_dashboard_system_status(current_user: User = Depends(get_current_user)):
+    """Get system status for dashboard"""
+    try:
+        import psutil
+        
+        status = {
+            "timestamp": datetime.now().isoformat(),
+            "system": {
+                "cpu_percent": psutil.cpu_percent(interval=1),
+                "memory_percent": psutil.virtual_memory().percent,
+                "disk_percent": psutil.disk_usage('.').percent
+            },
+            "services": {
+                "database": "connected",
+                "model": "loaded" if predictor and hasattr(predictor, 'model') else "not_loaded",
+                "api": "operational"
+            }
         }
-        return jsonify(settings)
-    elif request.method == "POST":
-        setting_data = request.get_json()
-        # Placeholder for updating settings
-        print(f"Updating settings: {setting_data}")
-        return jsonify({"status": "success", "message": "Settings updated"})
+        
+        return convert_numpy_types(status)
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard system status: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting system status: {str(e)}")
 
-# Endpoint to restart a service (example)
-@dashboard_api_bp.route("/dashboard/api/restart_service", methods=["POST"])
-@auth_required
-def restart_service():
-    """
-    Restarts a specified service.
-    """
-    service_data = request.get_json()
-    service_name = service_data.get("service_name")
-    if not service_name:
-        return jsonify({"status": "error", "message": "Service name not provided"}), 400
-
-    # Placeholder for service restart logic
-    print(f"Restarting service: {service_name}")
-    return jsonify({"status": "success", "message": f"Service '{service_name}' restart initiated."})
-
-# Endpoint to shut down the system (example)
-@dashboard_api_bp.route("/dashboard/api/shutdown", methods=["POST"])
-@auth_required
-def shutdown_system():
-    """
-    Shuts down the system. Requires confirmation.
-    """
-    confirmation = request.get_json().get("confirm")
-    if confirmation != "true":
-        return jsonify({"status": "error", "message": "Confirmation not provided or incorrect"}), 400
-
-    # Placeholder for system shutdown logic
-    print("System shutdown initiated.")
-    return jsonify({"status": "success", "message": "System shutdown initiated."})
-
-
-# Utility function to get dashboard-specific endpoints
-# This function is intended to be called by other parts of the application
-# to list the available dashboard API endpoints.
-def get_dashboard_endpoints():
-    """Returns a list of dashboard API endpoint URLs."""
-    return [
-        url_for("dashboard_api.dashboard_api"),
-        url_for("dashboard_api.get_dashboard_data"),
-        url_for("dashboard_api.perform_dashboard_action"),
-        url_for("dashboard_api.manage_users"),
-        url_for("dashboard_api.view_logs"),
-        url_for("dashboard_api.configure_settings"),
-        url_for("dashboard_api.restart_service"),
-        url_for("dashboard_api.shutdown_system"),
-    ]
+@dashboard_frontend_router.get("/api/v1/dashboard/predictions/stats")
+async def get_dashboard_prediction_stats(current_user: User = Depends(get_current_user)):
+    """Get prediction statistics for dashboard"""
+    try:
+        # Get recent prediction history
+        recent_predictions = get_prediction_history(limit=1000)
+        
+        stats = {
+            "total_predictions": len(recent_predictions),
+            "recent_activity": len([p for p in recent_predictions if 
+                                  datetime.fromisoformat(p.get('timestamp', '1970-01-01')) > 
+                                  datetime.now().replace(day=datetime.now().day-7)]),
+            "model_version": "1.0.0",
+            "last_update": datetime.now().isoformat()
+        }
+        
+        return convert_numpy_types(stats)
+        
+    except Exception as e:
+        logger.error(f"Error getting dashboard prediction stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Error getting prediction stats: {str(e)}")
