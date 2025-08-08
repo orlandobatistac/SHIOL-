@@ -804,196 +804,204 @@ html {
     border-color: var(--powerball-blue);
 }
 
-/* Next Drawing Card Styles - Improved Design */
-.next-drawing-card {
-    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-    border: 2px solid #cbd5e1;
-    border-radius: 1rem;
-    margin-bottom: 1.5rem;
+/* Next Drawing Compact Styles - Clean & Dark Theme Compatible */
+.next-drawing-compact {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
     overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transition: all 0.3s ease;
 }
 
-.next-drawing-card:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-    border-color: #94a3b8;
+.dark .next-drawing-compact {
+    background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
+    border-color: #4b5563;
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.3);
 }
 
-.drawing-header {
-    background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
-    color: white;
-    padding: 1rem 1.5rem;
+.next-drawing-compact:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
+}
+
+.dark .next-drawing-compact:hover {
+    border-color: #6b7280;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+}
+
+.drawing-compact-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
 }
 
-.drawing-title {
+.dark .drawing-compact-header {
+    border-bottom-color: #4b5563;
+}
+
+.drawing-compact-title {
     display: flex;
     align-items: center;
-    font-weight: 700;
-    font-size: 1.125rem;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #374151;
 }
 
-.title-text {
-    color: white;
+.dark .drawing-compact-title {
+    color: #f3f4f6;
 }
 
-.drawing-status {
+.drawing-compact-title i {
+    color: #3b82f6;
+    font-size: 1rem;
+}
+
+.dark .drawing-compact-title i {
+    color: #60a5fa;
+}
+
+.drawing-status-compact {
     display: flex;
     align-items: center;
+    gap: 0.5rem;
 }
 
-.status-badge {
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    display: inline-block;
     animation: pulse 2s infinite;
 }
 
-.status-badge.live {
+.status-dot.live {
     background: #ef4444;
-    color: white;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
 }
 
-.status-badge.loading {
+.status-dot.loading {
     background: #f59e0b;
-    color: white;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5);
 }
 
-.drawing-main-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1.5rem;
-    padding: 1.5rem;
-    background: white;
-}
-
-.date-section, .time-section, .countdown-section {
-    text-align: center;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    transition: all 0.3s ease;
-}
-
-.date-section:hover, .time-section:hover, .countdown-section:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.1);
-}
-
-.date-label, .time-label, .countdown-label {
+.status-text {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #64748b;
+    color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 0.5rem;
 }
 
-.date-value {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #1e40af;
-    line-height: 1;
+.dark .status-text {
+    color: #9ca3af;
 }
 
-.time-value {
-    font-size: 1rem;
+.drawing-compact-content {
+    padding: 1.25rem;
+}
+
+.drawing-time-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.primary-time {
+    font-size: 1.125rem;
     font-weight: 700;
-    color: #059669;
+    color: #1f2937;
+    text-align: center;
+}
+
+.dark .primary-time {
+    color: #f9fafb;
+}
+
+.countdown-compact {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 0.25rem;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 1px solid #f59e0b;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    color: #92400e;
 }
 
-.countdown-value {
-    font-size: 1.125rem;
-    font-weight: 800;
-    color: #dc2626;
-    line-height: 1;
-    background: linear-gradient(135deg, #dc2626, #b91c1c);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+.dark .countdown-compact {
+    background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+    border-color: #6b7280;
+    color: #fbbf24;
 }
 
-.drawing-footer {
-    background: #f1f5f9;
-    padding: 0.75rem 1.5rem;
-    border-top: 1px solid #e2e8f0;
-    text-align: center;
-}
-
-.exact-time {
+.countdown-compact i {
+    color: #f59e0b;
     font-size: 0.875rem;
-    color: #64748b;
-    font-weight: 500;
-    font-style: italic;
 }
 
-/* Mobile Responsive */
+.dark .countdown-compact i {
+    color: #fbbf24;
+}
+
+/* Mobile Responsive for Compact Design */
 @media (max-width: 768px) {
-    .drawing-main-info {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-        padding: 1rem;
-    }
-    
-    .drawing-header {
+    .drawing-compact-header {
         padding: 0.75rem 1rem;
         flex-direction: column;
         gap: 0.5rem;
         text-align: center;
     }
     
-    .drawing-title {
+    .drawing-compact-content {
+        padding: 1rem;
+    }
+    
+    .primary-time {
         font-size: 1rem;
     }
     
-    .date-section, .time-section, .countdown-section {
-        padding: 0.75rem;
-    }
-    
-    .drawing-footer {
-        padding: 0.5rem 1rem;
+    .countdown-compact {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
     }
 }
 
 @media (max-width: 480px) {
-    .next-drawing-card {
-        margin: 0 -0.5rem 1.5rem -0.5rem;
-        border-radius: 0.75rem;
+    .next-drawing-compact {
+        margin: 0 -0.25rem 1rem -0.25rem;
+        border-radius: 0.5rem;
     }
     
-    .drawing-header {
+    .drawing-compact-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .drawing-compact-title {
+        font-size: 0.875rem;
+    }
+    
+    .drawing-compact-content {
+        padding: 0.75rem;
+    }
+    
+    .primary-time {
+        font-size: 0.875rem;
+    }
+    
+    .countdown-compact {
         padding: 0.5rem;
+        font-size: 0.75rem;
     }
     
-    .drawing-title {
-        font-size: 0.875rem;
-    }
-    
-    .date-value {
-        font-size: 1rem;
-    }
-    
-    .time-value {
-        font-size: 0.875rem;
-    }
-    
-    .countdown-value {
-        font-size: 1rem;
+    .countdown-compact i {
+        font-size: 0.75rem;
     }
 }
 

@@ -338,80 +338,52 @@ class PublicInterface {
             return scoreB - scoreA; // Descending order (best to worst)
         });
 
-        // Format next drawing information with improved design
+        // Format next drawing information with clean, simplified design
         const drawingInfo = this.nextDrawingInfo || {};
         const nextDrawingInfoHtml = drawingInfo.date ? `
-            <div class="next-drawing-card">
-                <div class="drawing-header">
-                    <div class="drawing-title">
-                        <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
-                        <span class="title-text">Next Powerball Drawing</span>
+            <div class="next-drawing-compact">
+                <div class="drawing-compact-header">
+                    <div class="drawing-compact-title">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Next Drawing
                     </div>
-                    <div class="drawing-status">
-                        <span class="status-badge live">LIVE</span>
+                    <div class="drawing-status-compact">
+                        <span class="status-dot live"></span>
+                        <span class="status-text">Live</span>
                     </div>
                 </div>
                 
-                <div class="drawing-main-info">
-                    <div class="date-section">
-                        <div class="date-label">Date</div>
-                        <div class="date-value">${drawingInfo.date}</div>
-                    </div>
-                    
-                    <div class="time-section">
-                        <div class="time-label">Time</div>
-                        <div class="time-value">
-                            <i class="fas fa-clock mr-1"></i>
-                            ${drawingInfo.time || '10:59 PM'} ${drawingInfo.timezone || 'ET'}
+                <div class="drawing-compact-content">
+                    <div class="drawing-time-info">
+                        <div class="primary-time">${drawingInfo.exact_drawing_time || `${drawingInfo.date} at ${drawingInfo.time || '10:59 PM'} ${drawingInfo.timezone || 'ET'}`}</div>
+                        <div class="countdown-compact">
+                            <i class="fas fa-hourglass-half mr-2"></i>
+                            <span id="smart-predictions-countdown">Loading...</span>
                         </div>
-                    </div>
-                    
-                    <div class="countdown-section">
-                        <div class="countdown-label">Time Remaining</div>
-                        <div class="countdown-value" id="smart-predictions-countdown">Loading...</div>
-                    </div>
-                </div>
-                
-                <div class="drawing-footer">
-                    <div class="exact-time">
-                        ${drawingInfo.exact_drawing_time || `${drawingInfo.date} at ${drawingInfo.time || '10:59 PM'} ${drawingInfo.timezone || 'ET'}`}
                     </div>
                 </div>
             </div>
         ` : `
-            <div class="next-drawing-card">
-                <div class="drawing-header">
-                    <div class="drawing-title">
-                        <i class="fas fa-calendar-check text-blue-600 mr-2"></i>
-                        <span class="title-text">Next Powerball Drawing</span>
+            <div class="next-drawing-compact">
+                <div class="drawing-compact-header">
+                    <div class="drawing-compact-title">
+                        <i class="fas fa-calendar-alt mr-2"></i>
+                        Next Drawing
                     </div>
-                    <div class="drawing-status">
-                        <span class="status-badge loading">LOADING</span>
+                    <div class="drawing-status-compact">
+                        <span class="status-dot loading"></span>
+                        <span class="status-text">Loading</span>
                     </div>
                 </div>
                 
-                <div class="drawing-main-info">
-                    <div class="date-section">
-                        <div class="date-label">Date</div>
-                        <div class="date-value">Loading...</div>
-                    </div>
-                    
-                    <div class="time-section">
-                        <div class="time-label">Time</div>
-                        <div class="time-value">
-                            <i class="fas fa-clock mr-1"></i>
-                            Loading...
+                <div class="drawing-compact-content">
+                    <div class="drawing-time-info">
+                        <div class="primary-time">Loading drawing information...</div>
+                        <div class="countdown-compact">
+                            <i class="fas fa-hourglass-half mr-2"></i>
+                            <span id="smart-predictions-countdown">Loading...</span>
                         </div>
                     </div>
-                    
-                    <div class="countdown-section">
-                        <div class="countdown-label">Time Remaining</div>
-                        <div class="countdown-value" id="smart-predictions-countdown">Loading...</div>
-                    </div>
-                </div>
-                
-                <div class="drawing-footer">
-                    <div class="exact-time">Loading drawing information...</div>
                 </div>
             </div>
         `;
