@@ -317,50 +317,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const timestamp = new Date(lastRun.timestamp).toLocaleString();
         lastPlaysTimestamp.textContent = `Generated: ${timestamp}`;
 
-        // Display all 5 plays (not just 3)
-        const playsHTML = lastRun.plays.slice(0, 5).map((play, index) => {
-            const whiteBalls = play.slice(0, 5).map(num => {
-                        // Sanitize number input
-                        const sanitizedNum = parseInt(num, 10);
-                        if (isNaN(sanitizedNum) || sanitizedNum < 1 || sanitizedNum > 69) {
-                            return '<span class="number-ball">?</span>';
-                        }
-                        return `<span class="number-ball">${sanitizedNum}</span>`;
-                    }).join('');
-
-            const powerball = `<span class="powerball-number">${parseInt(play[5], 10) || '?'}</span>`;
-
-            return `
-                <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2">
-                    <div class="flex items-center space-x-2">
-                        <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Play ${index + 1}:</span>
-                        ${whiteBalls}
-                        ${powerball}
-                    </div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                        Score: ${lastRun.scores && lastRun.scores[index] ? this.sanitizeText(Math.round(parseFloat(lastRun.scores[index]) * 100)) + '%' : 'N/A'}
-                    </div>
-                </div>
-            `;
-        }).join('');
-
         // Clear container safely
         while (lastPlaysContainer.firstChild) {
             lastPlaysContainer.removeChild(lastPlaysContainer.firstChild);
         }
 
-        // Create and append sanitized elements
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = playsHTML;
+        // Display all 5 plays (not just 3) using safe DOM methods
+        lastRun.plays.slice(0, 5).forEach((play, index) => {
+            // Create main container
+            const playContainer = document.createElement('div');
+            playContainer.className = 'flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2';
 
-        // Sanitize each element before appending
-        const elements = tempDiv.children;
-        for (let i = 0; i < elements.length; i++) {
-            const element = elements[i];
-            // Sanitize text content and attributes
-            this.sanitizeElement(element);
-            lastPlaysContainer.appendChild(element.cloneNode(true));
-        }
+            // Create left side container (play label and numbers)
+            const leftContainer = document.createElement('div');
+            leftContainer.className = 'flex items-center space-x-2';
+
+            // Create play label
+            const playLabel = document.createElement('span');
+            playLabel.className = 'text-sm font-medium text-gray-600 dark:text-gray-400';
+            playLabel.textContent = `Play ${index + 1}:`;
+            leftContainer.appendChild(playLabel);
+
+            // Create white balls safely
+            play.slice(0, 5).forEach(num => {
+                const sanitizedNum = parseInt(num, 10);
+                const ballSpan = document.createElement('span');
+                ballSpan.className = 'number-ball';
+                
+                if (isNaN(sanitizedNum) || sanitizedNum < 1 || sanitizedNum > 69) {
+                    ballSpan.textContent = '?';
+                } else {
+                    ballSpan.textContent = sanitizedNum.toString();
+                }
+                leftContainer.appendChild(ballSpan);
+            });
+
+            // Create powerball safely
+            const powerballSpan = document.createElement('span');
+            powerballSpan.className = 'powerball-number';
+            const sanitizedPowerball = parseInt(play[5], 10);
+            powerballSpan.textContent = isNaN(sanitizedPowerball) ? '?' : sanitizedPowerball.toString();
+            leftContainer.appendChild(powerballSpan);
+
+            // Create right side container (score)
+            const rightContainer = document.createElement('div');
+            rightContainer.className = 'text-xs text-gray-500 dark:text-gray-400';
+            
+            const scoreText = document.createElement('span');
+            if (lastRun.scores && lastRun.scores[index]) {
+                const score = Math.round(parseFloat(lastRun.scores[index]) * 100);
+                scoreText.textContent = `Score: ${score}%`;
+            } else {
+                scoreText.textContent = 'Score: N/A';
+            }
+            rightContainer.appendChild(scoreText);
+
+            // Assemble the play container
+            playContainer.appendChild(leftContainer);
+            playContainer.appendChild(rightContainer);
+
+            // Add to main container
+            lastPlaysContainer.appendChild(playContainer);
+        });
         lastGeneratedPlays.classList.remove('hidden');
     }
 
@@ -421,10 +439,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const data = await response.json();
 
-            // Create a simple modal to display logs
+            // Create a simple modal to display logs safely
             const logsModal = document.createElement('div');
             logsModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            // Fix XSS: Create modal structure safely using DOM methods
+            
             const modalContent = document.createElement('div');
             modalContent.className = 'bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-hidden';
 
@@ -449,14 +467,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const logsContainer = document.createElement('div');
             logsContainer.className = 'bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-y-auto max-h-80';
 
-            // Safely display logs without innerHTML
+            // Safely display logs without innerHTML - prevent XSS
             if (data.logs) {
                 const lines = data.logs.split('\n');
                 lines.forEach((line, index) => {
                     if (index > 0) {
                         logsContainer.appendChild(document.createElement('br'));
                     }
-                    logsContainer.appendChild(document.createTextNode(line));
+                    // Sanitize each line before displaying
+                    const sanitizedLine = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                    logsContainer.appendChild(document.createTextNode(sanitizedLine));
                 });
             } else {
                 logsContainer.textContent = 'No logs available';
@@ -1143,7 +1163,17 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         toast.className = `fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-xl opacity-100 transition-opacity duration-300 z-50 ${typeClasses[type] || typeClasses.info}`;
-        toast.innerHTML = `<i class="fas fa-info mr-2"></i>${message}`; // Use innerHTML here for icon, but message itself should be sanitized if coming from user input.
+        // Create content safely without innerHTML
+        toast.textContent = ''; // Clear existing content
+        
+        const icon = document.createElement('i');
+        icon.className = 'fas fa-info mr-2';
+        
+        const messageSpan = document.createElement('span');
+        messageSpan.textContent = message; // Safe text content, prevents XSS
+        
+        toast.appendChild(icon);
+        toast.appendChild(messageSpan);
 
         setTimeout(() => {
             toast.classList.remove('opacity-100');
