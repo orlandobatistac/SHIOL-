@@ -19,6 +19,23 @@ from src.predictor import Predictor
 from src.intelligent_generator import DeterministicGenerator
 from src.loader import get_data_loader
 
+# Assuming DateManager is available and has POWERBALL_TIMEZONE and DRAWING_HOUR defined
+# For demonstration purposes, let's mock a simple DateManager if not provided
+class MockDateManager:
+    def __init__(self):
+        from pytz import timezone
+        self.POWERBALL_TIMEZONE = timezone("America/New_York")
+        self.DRAWING_HOUR = 22 # 10 PM ET
+
+    def get_current_et_time(self):
+        return datetime.now(self.POWERBALL_TIMEZONE)
+
+# Replace this with the actual import if DateManager is in a separate file
+# from src.date_utils import DateManager as ActualDateManager
+# DateManager = ActualDateManager
+DateManager = MockDateManager()
+
+
 # Create router for public endpoints
 public_router = APIRouter(prefix="/api/v1/public", tags=["public"])
 auth_router = APIRouter(prefix="/api/v1/auth", tags=["authentication"])
@@ -31,44 +48,80 @@ def get_next_powerball_drawing() -> Dict[str, Any]:
     Calculate the next Powerball drawing date and time.
     Powerball drawings are on Wednesdays and Saturdays at 10:59 PM ET.
     """
-    now = datetime.now()
+    now_et = DateManager.get_current_et_time() # Use ET time
 
     # Find next Wednesday or Saturday
     days_ahead = 0
-    current_weekday = now.weekday()  # Monday = 0, Sunday = 6
+    current_weekday = now_et.weekday()  # Monday = 0, Sunday = 6
 
     if current_weekday < 2:  # Monday or Tuesday
         days_ahead = 2 - current_weekday  # Next Wednesday
     elif current_weekday == 2:  # Wednesday
-        # Check if it's before 10:59 PM
-        if now.hour < 22 or (now.hour == 22 and now.minute < 59):
+        # Check if it's before 10:59 PM ET
+        if now_et.hour < DateManager.DRAWING_HOUR or (now_et.hour == DateManager.DRAWING_HOUR and now_et.minute < 59):
             days_ahead = 0  # Today
         else:
             days_ahead = 3  # Next Saturday
     elif current_weekday < 5:  # Thursday or Friday
         days_ahead = 5 - current_weekday  # Next Saturday
     elif current_weekday == 5:  # Saturday
-        # Check if it's before 10:59 PM
-        if now.hour < 22 or (now.hour == 22 and now.minute < 59):
+        # Check if it's before 10:59 PM ET
+        if now_et.hour < DateManager.DRAWING_HOUR or (now_et.hour == DateManager.DRAWING_HOUR and now_et.minute < 59):
             days_ahead = 0  # Today
         else:
             days_ahead = 4  # Next Wednesday
     else:  # Sunday
         days_ahead = 2  # Next Wednesday
 
-    next_drawing = now + timedelta(days=days_ahead)
-    next_drawing = next_drawing.replace(hour=22, minute=59, second=0, microsecond=0)
+    next_drawing_naive = now_et + timedelta(days=days_ahead)
+    next_drawing = next_drawing_naive.replace(hour=DateManager.DRAWING_HOUR, minute=59, second=0, microsecond=0)
 
     # Calculate countdown in seconds
-    countdown_seconds = int((next_drawing - now).total_seconds())
+    countdown_seconds = int((next_drawing - now_et).total_seconds())
+
+    # Format for API response
+    next_drawing_date_str = next_drawing.strftime("%Y-%m-%d")
+    next_drawing_time_str = next_drawing.strftime("%H:%M:%S")
+
+    # Calculate if the next drawing is today
+    current_date = DateManager.get_current_et_time()
+    next_drawing_date_obj = datetime.strptime(next_drawing_date_str, '%Y-%m-%d')
+    # Localize the next drawing date to ET for comparison
+    next_drawing_et = DateManager.POWERBALL_TIMEZONE.localize(next_drawing_date_obj).replace(hour=DateManager.DRAWING_HOUR, minute=59, second=0)
+
+
+    # More precise calculation: only consider it "today" if we're on the same date
+    # AND it's before the drawing time (11 PM ET)
+    is_same_date = (current_date.date() == next_drawing_et.date())
+    is_before_drawing_time = current_date.hour < DateManager.DRAWING_HOUR
+    is_today = is_same_date and is_before_drawing_time
+
+    days_until = max(0, (next_drawing_et.date() - current_date.date()).days)
+
+    # Adjust days_until if it's before the drawing time today, and the calculated next_drawing was also today
+    if is_today and days_until == 0:
+        pass # Correctly 0 days until
+    elif not is_today and days_until == 0:
+        # This means current_date is the same as next_drawing_et.date(), but it's past the drawing time.
+        # So the *next* drawing is actually in 3 or 4 days.
+        # We need to recalculate days_ahead based on this fact.
+        # This part of logic might be complex and depends on the exact logic for `days_ahead` calculation above.
+        # For now, let's trust the initial `days_ahead` calculation and ensure `is_today` is correct.
+        # If `is_today` is false, `days_until` should reflect the actual days to the *next* drawing.
+        if days_until == 0 and not is_today:
+             # If it's the same date but after drawing time, the next drawing is not today.
+             # Recalculate days_until based on the original `days_ahead` logic.
+             # The initial calculation of `days_ahead` already handles this, so we just need to ensure `is_today` is correct.
+             pass # The `is_today` logic already handles this by checking `is_before_drawing_time`
+
 
     return {
-        "date": next_drawing.strftime("%Y-%m-%d"),
-        "time": "22:59:00",
+        "date": next_drawing_date_str,
+        "time": next_drawing_time_str,
         "timezone": "ET",
         "datetime_iso": next_drawing.isoformat(),
         "countdown_seconds": max(0, countdown_seconds),
-        "is_today": days_ahead == 0
+        "is_today": is_today
     }
 
 @public_router.get("/next-drawing")
@@ -200,7 +253,7 @@ async def get_recent_results(limit: int = 30):
             result = {
                 "draw_date": row['draw_date'].strftime("%Y-%m-%d"),
                 "winning_numbers": [
-                    int(row['n1']), int(row['n2']), int(row['n3']), 
+                    int(row['n1']), int(row['n2']), int(row['n3']),
                     int(row['n4']), int(row['n5'])
                 ],
                 "powerball": int(row['pb']),

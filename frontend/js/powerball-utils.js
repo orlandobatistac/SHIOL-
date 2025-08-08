@@ -150,9 +150,16 @@ class PowerballUtils {
             const tomorrowUTC = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
             const dateUTC = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
             
-            // Check if it's today
+            // Check if it's today (and before drawing time)
             if (dateUTC.getTime() === todayUTC.getTime()) {
-                return 'Today';
+                const currentHour = today.getHours();
+                // Only show "Today" if it's before 11 PM (23:00)
+                if (currentHour < 23) {
+                    return 'Today';
+                } else {
+                    // After 11 PM, the next drawing is effectively tomorrow or later
+                    return 'Tomorrow';
+                }
             }
             
             // Check if it's tomorrow

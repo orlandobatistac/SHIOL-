@@ -118,6 +118,7 @@ class DateManager:
         logger.debug(f"Reference weekday: {current_weekday} ({'Monday' if current_weekday == 0 else 'Wednesday' if current_weekday == 2 else 'Saturday' if current_weekday == 5 else 'Other'})")
         
         # Si es día de sorteo y es antes de las 11 PM ET, el sorteo es ese día
+        # PERO si estamos después de medianoche del día de sorteo, el sorteo ya es "hoy"
         if current_weekday in cls.DRAWING_DAYS and reference_date.hour < cls.DRAWING_HOUR:
             next_draw_date = reference_date.strftime('%Y-%m-%d')
             logger.info(f"Drawing day before cutoff time - next drawing today: {next_draw_date}")
