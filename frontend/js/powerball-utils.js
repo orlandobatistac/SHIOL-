@@ -72,20 +72,83 @@ class PowerballUtils {
             `;
         }
 
-        // Assemble the card
-        card.innerHTML = `
-            ${dateBadge}
-            <div class="text-center">
-                ${numbersHtml}
-                ${metadataHtml}
-            </div>
-        `;
+        // Assemble the card using safe DOM methods to prevent XSS
+        // Clear any existing content
+        card.textContent = '';
+        
+        // Add date badge if provided
+        if (date) {
+            const badgeContainer = document.createElement('div');
+            const badge = document.createElement('div');
+            badge.className = `date-badge ${type === 'prediction' ? 'bg-blue-600' : 'bg-gray-600'} text-white text-sm font-semibold px-3 py-1 rounded-full inline-block mb-4`;
+            badge.textContent = this.formatDate(date);
+            badgeContainer.appendChild(badge);
+            card.appendChild(badgeContainer);
+        }
+        
+        // Create center container
+        const centerDiv = document.createElement('div');
+        centerDiv.className = 'text-center';
+        
+        // Add numbers display safely
+        const numbersContainer = this.createNumbersDisplaySafe(numbers, powerball);
+        centerDiv.appendChild(numbersContainer);
+        
+        // Add metadata safely
+        const metadataContainer = this.createMetadataSafe(type, metadata);
+        if (metadataContainer) {
+            centerDiv.appendChild(metadataContainer);
+        }
+        
+        card.appendChild(centerDiv);
 
         return card;
     }
 
     /**
-     * Create the numbers display component
+     * Create the numbers display component safely
+     * @param {Array} numbers - Array of 5 white ball numbers
+     * @param {number} powerball - Powerball number
+     * @returns {HTMLElement} - Safe DOM element for numbers display
+     */
+    static createNumbersDisplaySafe(numbers, powerball) {
+        const container = document.createElement('div');
+        container.className = 'flex items-center justify-center space-x-3 mb-2';
+        
+        if (!numbers || numbers.length !== 5 || !powerball) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'text-gray-500';
+            errorDiv.textContent = 'Invalid numbers';
+            return errorDiv;
+        }
+
+        // Create white balls
+        numbers.forEach(num => {
+            const ball = document.createElement('div');
+            ball.className = 'powerball-number white-ball';
+            ball.textContent = num.toString();
+            container.appendChild(ball);
+        });
+        
+        // Create separator
+        const separator = document.createElement('div');
+        separator.className = 'w-4 h-4 flex items-center justify-center';
+        const dot = document.createElement('div');
+        dot.className = 'w-2 h-2 bg-red-600 rounded-full';
+        separator.appendChild(dot);
+        container.appendChild(separator);
+        
+        // Create powerball
+        const powerBall = document.createElement('div');
+        powerBall.className = 'powerball-number power-ball';
+        powerBall.textContent = powerball.toString();
+        container.appendChild(powerBall);
+        
+        return container;
+    }
+
+    /**
+     * Create the numbers display component (legacy method - kept for backward compatibility)
      * @param {Array} numbers - Array of 5 white ball numbers
      * @param {number} powerball - Powerball number
      * @returns {string} - HTML string for numbers display
@@ -110,6 +173,77 @@ class PowerballUtils {
                 ${powerBall}
             </div>
         `;
+    }
+
+    /**
+     * Create metadata section safely
+     * @param {string} type - Type of card ('prediction' or 'result')
+     * @param {Object} metadata - Metadata object
+     * @returns {HTMLElement|null} - Safe DOM element for metadata or null
+     */
+    static createMetadataSafe(type, metadata) {
+        if (type === 'prediction' && metadata.confidence_score) {
+            const container = document.createElement('div');
+            container.className = 'mt-4 flex items-center justify-center space-x-4 text-sm text-gray-600';
+            
+            // Confidence section
+            const confidenceDiv = document.createElement('div');
+            confidenceDiv.className = 'flex items-center';
+            
+            const confidenceIcon = document.createElement('i');
+            confidenceIcon.className = 'fas fa-chart-line text-green-600 mr-1';
+            confidenceDiv.appendChild(confidenceIcon);
+            
+            const confidenceText = document.createElement('span');
+            confidenceText.textContent = 'Confidence: ';
+            const confidenceValue = document.createElement('span');
+            confidenceValue.className = 'font-semibold';
+            confidenceValue.textContent = `${(metadata.confidence_score * 100).toFixed(1)}%`;
+            confidenceText.appendChild(confidenceValue);
+            confidenceDiv.appendChild(confidenceText);
+            
+            container.appendChild(confidenceDiv);
+            
+            // Method section
+            const methodDiv = document.createElement('div');
+            methodDiv.className = 'flex items-center';
+            
+            const methodIcon = document.createElement('i');
+            methodIcon.className = 'fas fa-robot text-blue-600 mr-1';
+            methodDiv.appendChild(methodIcon);
+            
+            const methodText = document.createElement('span');
+            methodText.textContent = 'Method: ';
+            const methodValue = document.createElement('span');
+            methodValue.className = 'font-semibold';
+            methodValue.textContent = metadata.method || 'AI';
+            methodText.appendChild(methodValue);
+            methodDiv.appendChild(methodText);
+            
+            container.appendChild(methodDiv);
+            
+            return container;
+            
+        } else if (type === 'result' && metadata.jackpot_amount) {
+            const container = document.createElement('div');
+            container.className = 'mt-4 text-center';
+            
+            const jackpotDiv = document.createElement('div');
+            jackpotDiv.className = 'jackpot-amount text-green-600 font-bold text-lg';
+            jackpotDiv.textContent = `Jackpot: ${metadata.jackpot_amount}`;
+            container.appendChild(jackpotDiv);
+            
+            if (metadata.multiplier) {
+                const multiplierDiv = document.createElement('div');
+                multiplierDiv.className = 'text-sm text-gray-600 mt-1';
+                multiplierDiv.textContent = `Multiplier: ${metadata.multiplier}x`;
+                container.appendChild(multiplierDiv);
+            }
+            
+            return container;
+        }
+        
+        return null;
     }
 
     /**
