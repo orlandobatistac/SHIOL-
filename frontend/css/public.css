@@ -804,53 +804,203 @@ html {
     border-color: var(--powerball-blue);
 }
 
-/* Next Drawing Information Styles */
-.next-drawing-info {
+/* Next Drawing Card Styles - Improved Design */
+.next-drawing-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 2px solid #cbd5e1;
+    border-radius: 1rem;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.next-drawing-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #94a3b8;
+}
+
+.drawing-header {
     background: linear-gradient(135deg, #1e40af 0%, #3730a3 100%);
     color: white;
-    padding: 1rem;
-    border-radius: 0.75rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-}
-
-.drawing-date {
+    padding: 1rem 1.5rem;
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.5rem;
 }
 
-.date-label {
-    font-size: 0.875rem;
-    opacity: 0.9;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-}
-
-.date-value {
-    font-size: 1.5rem;
+.drawing-title {
+    display: flex;
+    align-items: center;
     font-weight: 700;
-    color: #fbbf24;
+    font-size: 1.125rem;
 }
 
-.today-badge {
-    background: #ef4444;
+.title-text {
     color: white;
+}
+
+.drawing-status {
+    display: flex;
+    align-items: center;
+}
+
+.status-badge {
     padding: 0.25rem 0.75rem;
     border-radius: 9999px;
     font-size: 0.75rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-left: 0.5rem;
+    animation: pulse 2s infinite;
 }
 
-.days-until {
-    font-size: 0.875rem;
-    opacity: 0.8;
-    margin-left: 0.5rem;
+.status-badge.live {
+    background: #ef4444;
+    color: white;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
 }
+
+.status-badge.loading {
+    background: #f59e0b;
+    color: white;
+}
+
+.drawing-main-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    background: white;
+}
+
+.date-section, .time-section, .countdown-section {
+    text-align: center;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.date-section:hover, .time-section:hover, .countdown-section:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.1);
+}
+
+.date-label, .time-label, .countdown-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.date-value {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1e40af;
+    line-height: 1;
+}
+
+.time-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #059669;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+}
+
+.countdown-value {
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: #dc2626;
+    line-height: 1;
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.drawing-footer {
+    background: #f1f5f9;
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.exact-time {
+    font-size: 0.875rem;
+    color: #64748b;
+    font-weight: 500;
+    font-style: italic;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .drawing-main-info {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+        padding: 1rem;
+    }
+    
+    .drawing-header {
+        padding: 0.75rem 1rem;
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .drawing-title {
+        font-size: 1rem;
+    }
+    
+    .date-section, .time-section, .countdown-section {
+        padding: 0.75rem;
+    }
+    
+    .drawing-footer {
+        padding: 0.5rem 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .next-drawing-card {
+        margin: 0 -0.5rem 1.5rem -0.5rem;
+        border-radius: 0.75rem;
+    }
+    
+    .drawing-header {
+        padding: 0.5rem;
+    }
+    
+    .drawing-title {
+        font-size: 0.875rem;
+    }
+    
+    .date-value {
+        font-size: 1rem;
+    }
+    
+    .time-value {
+        font-size: 0.875rem;
+    }
+    
+    .countdown-value {
+        font-size: 1rem;
+    }
+}
+
+/* Remove old styles */
+.next-drawing-info {
+
+/* Estilos antiguos eliminados - ahora se usa .next-drawing-card */
 
 /* Improved Date Context Styles */
 .date-context {
@@ -1965,6 +2115,21 @@ html {
             0 4px 12px rgba(0, 0, 0, 0.4);
         transform: scale(1.12);
     }
+}
+
+@keyframes livePulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.8);
+        transform: scale(1.05);
+    }
+}
+
+.status-badge.live {
+    animation: livePulse 2s ease-in-out infinite;
 }
 
 /* Ensure golden glow works in all contexts */
