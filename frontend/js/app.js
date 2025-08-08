@@ -341,7 +341,44 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        lastPlaysContainer.innerHTML = playsHTML;
+        // Fix XSS: Clear container safely and use DOM methods instead of innerHTML
+        lastPlaysContainer.textContent = ''; // Clear existing content safely
+        
+        // Create plays elements using safe DOM methods
+        lastRun.plays.slice(0, 5).forEach((play, index) => {
+            const playDiv = document.createElement('div');
+            playDiv.className = 'flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-2';
+            
+            const leftDiv = document.createElement('div');
+            leftDiv.className = 'flex items-center space-x-2';
+            
+            const playLabel = document.createElement('span');
+            playLabel.className = 'text-sm font-medium text-gray-600 dark:text-gray-400';
+            playLabel.textContent = `Play ${index + 1}:`;
+            leftDiv.appendChild(playLabel);
+            
+            // Add white balls safely
+            play.slice(0, 5).forEach(num => {
+                const ball = document.createElement('div');
+                ball.className = 'w-8 h-8 flex items-center justify-center bg-gray-200 dark:bg-gray-700 rounded-full text-sm font-semibold text-gray-800 dark:text-white';
+                ball.textContent = num;
+                leftDiv.appendChild(ball);
+            });
+            
+            // Add powerball safely
+            const powerball = document.createElement('div');
+            powerball.className = 'w-8 h-8 flex items-center justify-center bg-red-500 rounded-full text-sm font-semibold text-white';
+            powerball.textContent = play[5];
+            leftDiv.appendChild(powerball);
+            
+            const rightDiv = document.createElement('div');
+            rightDiv.className = 'text-xs text-gray-500 dark:text-gray-400';
+            rightDiv.textContent = `Score: ${lastRun.scores && lastRun.scores[index] ? lastRun.scores[index].toFixed(4) : 'N/A'}`;
+            
+            playDiv.appendChild(leftDiv);
+            playDiv.appendChild(rightDiv);
+            lastPlaysContainer.appendChild(playDiv);
+        });
         lastGeneratedPlays.classList.remove('hidden');
     }
 
@@ -405,19 +442,47 @@ document.addEventListener('DOMContentLoaded', () => {
             // Create a simple modal to display logs
             const logsModal = document.createElement('div');
             logsModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            logsModal.innerHTML = `
-                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Pipeline Logs</h3>
-                        <button onclick="this.closest('.fixed').remove()" class="text-gray-500 hover:text-gray-700">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-y-auto max-h-80">
-                        ${data.logs ? data.logs.replace(/\n/g, '<br>') : 'No logs available'}
-                    </div>
-                </div>
-            `;
+            // Fix XSS: Create modal structure safely using DOM methods
+            const modalContent = document.createElement('div');
+            modalContent.className = 'bg-white dark:bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-hidden';
+            
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'flex justify-between items-center mb-4';
+            
+            const title = document.createElement('h3');
+            title.className = 'text-lg font-semibold text-gray-800 dark:text-white';
+            title.textContent = 'Pipeline Logs';
+            
+            const closeButton = document.createElement('button');
+            closeButton.className = 'text-gray-500 hover:text-gray-700';
+            closeButton.onclick = () => logsModal.remove();
+            
+            const closeIcon = document.createElement('i');
+            closeIcon.className = 'fas fa-times';
+            closeButton.appendChild(closeIcon);
+            
+            headerDiv.appendChild(title);
+            headerDiv.appendChild(closeButton);
+            
+            const logsContainer = document.createElement('div');
+            logsContainer.className = 'bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-y-auto max-h-80';
+            
+            // Safely display logs without innerHTML
+            if (data.logs) {
+                const lines = data.logs.split('\n');
+                lines.forEach((line, index) => {
+                    if (index > 0) {
+                        logsContainer.appendChild(document.createElement('br'));
+                    }
+                    logsContainer.appendChild(document.createTextNode(line));
+                });
+            } else {
+                logsContainer.textContent = 'No logs available';
+            }
+            
+            modalContent.appendChild(headerDiv);
+            modalContent.appendChild(logsContainer);
+            logsModal.appendChild(modalContent);
             document.body.appendChild(logsModal);
 
         } catch (error) {
@@ -718,7 +783,248 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        resultsDiv.innerHTML = html;
+        // Fix XSS: Use safe DOM manipulation instead of innerHTML
+        resultsDiv.textContent = ''; // Clear existing content safely
+        
+        // Create main container
+        const mainContainer = document.createElement('div');
+        mainContainer.className = 'space-y-6';
+        
+        // Create AI Analysis Summary section
+        const analysisDiv = document.createElement('div');
+        analysisDiv.className = 'bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 p-6 rounded-lg border border-blue-200 dark:border-blue-800';
+        
+        // Header with brain icon
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'flex items-center space-x-3 mb-4';
+        
+        const brainIcon = document.createElement('i');
+        brainIcon.className = 'fas fa-brain text-2xl text-blue-600 dark:text-blue-400';
+        
+        const headerTitle = document.createElement('h3');
+        headerTitle.className = 'text-lg font-bold text-blue-800 dark:text-blue-200';
+        headerTitle.textContent = 'Smart AI Analysis';
+        
+        headerDiv.appendChild(brainIcon);
+        headerDiv.appendChild(headerTitle);
+        
+        // Stats grid
+        const statsGrid = document.createElement('div');
+        statsGrid.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 text-sm';
+        
+        // Candidates Evaluated stat
+        const candidatesDiv = document.createElement('div');
+        candidatesDiv.className = 'bg-white dark:bg-gray-800 p-3 rounded-lg';
+        
+        const candidatesLabel = document.createElement('div');
+        candidatesLabel.className = 'font-semibold text-gray-700 dark:text-gray-300';
+        candidatesLabel.textContent = 'Candidates Evaluated';
+        
+        const candidatesValue = document.createElement('div');
+        candidatesValue.className = 'text-2xl font-bold text-blue-600 dark:text-blue-400';
+        candidatesValue.textContent = analysis.candidates_evaluated.toLocaleString();
+        
+        candidatesDiv.appendChild(candidatesLabel);
+        candidatesDiv.appendChild(candidatesValue);
+        
+        // AI Methods stat
+        const methodsDiv = document.createElement('div');
+        methodsDiv.className = 'bg-white dark:bg-gray-800 p-3 rounded-lg';
+        
+        const methodsLabel = document.createElement('div');
+        methodsLabel.className = 'font-semibold text-gray-700 dark:text-gray-300';
+        methodsLabel.textContent = 'AI Methods Used';
+        
+        const methodsValue = document.createElement('div');
+        methodsValue.className = 'text-sm text-blue-600 dark:text-blue-400';
+        methodsValue.textContent = analysis.methods_used.join(', ').toUpperCase();
+        
+        methodsDiv.appendChild(methodsLabel);
+        methodsDiv.appendChild(methodsValue);
+        
+        // Average Score stat
+        const scoreDiv = document.createElement('div');
+        scoreDiv.className = 'bg-white dark:bg-gray-800 p-3 rounded-lg';
+        
+        const scoreLabel = document.createElement('div');
+        scoreLabel.className = 'font-semibold text-gray-700 dark:text-gray-300';
+        scoreLabel.textContent = 'Average AI Score';
+        
+        const scoreValue = document.createElement('div');
+        scoreValue.className = 'text-2xl font-bold text-green-600 dark:text-green-400';
+        scoreValue.textContent = (analysis.score_range.average * 100).toFixed(1) + '%';
+        
+        scoreDiv.appendChild(scoreLabel);
+        scoreDiv.appendChild(scoreValue);
+        
+        statsGrid.appendChild(candidatesDiv);
+        statsGrid.appendChild(methodsDiv);
+        statsGrid.appendChild(scoreDiv);
+        
+        // Recommendation box
+        const recBox = document.createElement('div');
+        recBox.className = 'mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800';
+        
+        const recText = document.createElement('p');
+        recText.className = 'text-sm text-green-800 dark:text-green-200';
+        
+        const lightbulbIcon = document.createElement('i');
+        lightbulbIcon.className = 'fas fa-lightbulb mr-2';
+        
+        const strongText = document.createElement('strong');
+        strongText.textContent = 'AI Recommendation: ';
+        
+        recText.appendChild(lightbulbIcon);
+        recText.appendChild(strongText);
+        recText.appendChild(document.createTextNode(data.recommendation));
+        
+        recBox.appendChild(recText);
+        
+        analysisDiv.appendChild(headerDiv);
+        analysisDiv.appendChild(statsGrid);
+        analysisDiv.appendChild(recBox);
+        
+        // Create predictions table section
+        const tableSection = document.createElement('div');
+        tableSection.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700';
+        
+        // Table header
+        const tableHeader = document.createElement('div');
+        tableHeader.className = 'px-6 py-4 border-b border-gray-200 dark:border-gray-700';
+        
+        const tableTitle = document.createElement('h4');
+        tableTitle.className = 'text-lg font-semibold text-gray-900 dark:text-white';
+        tableTitle.textContent = 'Smart AI Predictions (Ranked by AI Score)';
+        
+        const tableSubtitle = document.createElement('p');
+        tableSubtitle.className = 'text-sm text-gray-600 dark:text-gray-400 mt-1';
+        tableSubtitle.textContent = `Top ${predictions.length} predictions automatically selected and ranked by AI`;
+        
+        tableHeader.appendChild(tableTitle);
+        tableHeader.appendChild(tableSubtitle);
+        
+        // Create table
+        const tableContainer = document.createElement('div');
+        tableContainer.className = 'overflow-x-auto';
+        
+        const table = document.createElement('table');
+        table.className = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
+        
+        // Table head
+        const thead = document.createElement('thead');
+        thead.className = 'bg-gray-50 dark:bg-gray-900';
+        
+        const headerRow = document.createElement('tr');
+        const headers = ['Rank', 'Numbers', 'PB', 'AI Score', 'Tier', 'Method'];
+        
+        headers.forEach(headerText => {
+            const th = document.createElement('th');
+            th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider';
+            th.textContent = headerText;
+            headerRow.appendChild(th);
+        });
+        
+        thead.appendChild(headerRow);
+        
+        // Table body
+        const tbody = document.createElement('tbody');
+        tbody.className = 'bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700';
+        
+        predictions.forEach((pred, index) => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+            
+            // Rank cell
+            const rankCell = document.createElement('td');
+            rankCell.className = 'px-6 py-4 whitespace-nowrap';
+            
+            const rankContainer = document.createElement('div');
+            rankContainer.className = 'flex items-center';
+            
+            const rankSpan = document.createElement('span');
+            rankSpan.className = `inline-flex items-center justify-center w-8 h-8 rounded-full ${index < 10 ? 'bg-yellow-100 text-yellow-800 border-2 border-yellow-300' : 'bg-gray-100 text-gray-800'} text-sm font-bold`;
+            rankSpan.textContent = pred.rank;
+            
+            rankContainer.appendChild(rankSpan);
+            rankCell.appendChild(rankContainer);
+            
+            // Numbers cell
+            const numbersCell = document.createElement('td');
+            numbersCell.className = 'px-6 py-4 whitespace-nowrap';
+            
+            const numbersContainer = document.createElement('div');
+            numbersContainer.className = 'flex space-x-1';
+            
+            pred.numbers.forEach(num => {
+                const numSpan = document.createElement('span');
+                numSpan.className = 'powerball-number small bg-blue-600 text-white';
+                numSpan.textContent = num;
+                numbersContainer.appendChild(numSpan);
+            });
+            
+            numbersCell.appendChild(numbersContainer);
+            
+            // Powerball cell
+            const pbCell = document.createElement('td');
+            pbCell.className = 'px-6 py-4 whitespace-nowrap';
+            
+            const pbSpan = document.createElement('span');
+            pbSpan.className = 'powerball-number small bg-red-600 text-white';
+            pbSpan.textContent = pred.powerball;
+            
+            pbCell.appendChild(pbSpan);
+            
+            // Score cell
+            const scoreCell = document.createElement('td');
+            scoreCell.className = 'px-6 py-4 whitespace-nowrap';
+            
+            const scoreMain = document.createElement('div');
+            scoreMain.className = 'text-sm font-medium text-gray-900 dark:text-white';
+            scoreMain.textContent = (pred.smart_ai_score * 100).toFixed(1) + '%';
+            
+            const scoreBase = document.createElement('div');
+            scoreBase.className = 'text-xs text-gray-500 dark:text-gray-400';
+            scoreBase.textContent = 'Base: ' + (pred.base_score * 100).toFixed(1) + '%';
+            
+            scoreCell.appendChild(scoreMain);
+            scoreCell.appendChild(scoreBase);
+            
+            // Tier cell
+            const tierCell = document.createElement('td');
+            tierCell.className = 'px-6 py-4 whitespace-nowrap';
+            
+            const tierSpan = document.createElement('span');
+            tierSpan.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTierColor(pred.tier)}`;
+            tierSpan.textContent = pred.tier;
+            
+            tierCell.appendChild(tierSpan);
+            
+            // Method cell
+            const methodCell = document.createElement('td');
+            methodCell.className = 'px-6 py-4 whitespace-nowrap';
+            methodCell.innerHTML = getMethodBadge(pred.ai_method); // This is safe as getMethodBadge returns predefined HTML
+            
+            row.appendChild(rankCell);
+            row.appendChild(numbersCell);
+            row.appendChild(pbCell);
+            row.appendChild(scoreCell);
+            row.appendChild(tierCell);
+            row.appendChild(methodCell);
+            
+            tbody.appendChild(row);
+        });
+        
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableContainer.appendChild(table);
+        
+        tableSection.appendChild(tableHeader);
+        tableSection.appendChild(tableContainer);
+        
+        mainContainer.appendChild(analysisDiv);
+        mainContainer.appendChild(tableSection);
+        
+        resultsDiv.appendChild(mainContainer);
         resultsDiv.classList.remove('hidden');
     }
 
@@ -805,7 +1111,88 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        tbody.innerHTML = playsHTML;
+        // Fix XSS: Clear tbody safely and use DOM methods
+        tbody.textContent = ''; // Clear existing content safely
+        
+        data.syndicate_predictions.forEach((prediction, index) => {
+            const numbers = prediction.numbers || [];
+            const powerball = prediction.powerball || 0;
+            const score = prediction.score || 0;
+            const tier = prediction.tier || 'Standard';
+            const method = prediction.method || data.method;
+            const rank = prediction.rank || (index + 1);
+
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700';
+
+            // Rank cell
+            const rankCell = document.createElement('td');
+            rankCell.className = 'px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100';
+            rankCell.textContent = rank;
+
+            // Numbers cell
+            const numbersCell = document.createElement('td');
+            numbersCell.className = 'px-4 py-3';
+            
+            const numbersContainer = document.createElement('div');
+            numbersContainer.className = 'flex items-center';
+
+            // Create white balls safely
+            numbers.forEach(num => {
+                const ball = document.createElement('span');
+                ball.className = 'inline-flex items-center justify-center w-6 h-6 bg-gray-200 dark:bg-gray-600 rounded-full text-xs font-semibold text-gray-800 dark:text-white mr-1';
+                ball.textContent = num;
+                numbersContainer.appendChild(ball);
+            });
+
+            // Add separator
+            const separator = document.createElement('span');
+            separator.className = 'mx-2 text-red-500';
+            separator.textContent = '•';
+            numbersContainer.appendChild(separator);
+
+            // Create powerball safely
+            const powerBall = document.createElement('span');
+            powerBall.className = 'inline-flex items-center justify-center w-6 h-6 bg-red-500 rounded-full text-xs font-semibold text-white';
+            powerBall.textContent = powerball;
+            numbersContainer.appendChild(powerBall);
+
+            numbersCell.appendChild(numbersContainer);
+
+            // Score cell
+            const scoreCell = document.createElement('td');
+            scoreCell.className = 'px-4 py-3 text-sm text-gray-900 dark:text-gray-100';
+            scoreCell.textContent = (score * 100).toFixed(2) + '%';
+
+            // Tier cell
+            const tierCell = document.createElement('td');
+            tierCell.className = 'px-4 py-3';
+            
+            const tierSpan = document.createElement('span');
+            const tierColors = {
+                'Premium': 'text-purple-600 bg-purple-100 dark:bg-purple-900 dark:text-purple-300',
+                'High': 'text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300',
+                'Medium': 'text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300',
+                'Standard': 'text-gray-600 bg-gray-100 dark:bg-gray-900 dark:text-gray-100 dark:text-gray-300'
+            };
+            
+            tierSpan.className = `px-2 py-1 text-xs font-medium rounded-full ${tierColors[tier] || tierColors['Standard']}`;
+            tierSpan.textContent = tier;
+            tierCell.appendChild(tierSpan);
+
+            // Method cell
+            const methodCell = document.createElement('td');
+            methodCell.className = 'px-4 py-3 text-sm text-gray-500 dark:text-gray-400';
+            methodCell.textContent = method;
+
+            row.appendChild(rankCell);
+            row.appendChild(numbersCell);
+            row.appendChild(scoreCell);
+            row.appendChild(tierCell);
+            row.appendChild(methodCell);
+
+            tbody.appendChild(row);
+        });
     }
 
     function exportSyndicateData() {
