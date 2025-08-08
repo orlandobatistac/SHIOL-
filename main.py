@@ -1239,5 +1239,11 @@ Server mode:
         sys.exit(1)
 
 
+# Import the FastAPI app for deployment compatibility
+try:
+    from src.api import app
+except ImportError:
+    app = None
+
 if __name__ == "__main__":
     main()
