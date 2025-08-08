@@ -219,24 +219,25 @@ async def get_database_status():
         # Get counts from all main tables
         table_counts = {}
 
-        tables_to_check = [
-            'powerball_draws',
-            'predictions_log',
-            'performance_tracking',
-            'adaptive_weights',
-            'pattern_analysis',
-            'reliable_plays',
-            'model_feedback',
-            'system_config'
-        ]
+        # Safe table count operations using predefined queries
+        safe_table_queries = {
+            'powerball_draws': 'SELECT COUNT(*) FROM powerball_draws',
+            'predictions_log': 'SELECT COUNT(*) FROM predictions_log',
+            'performance_tracking': 'SELECT COUNT(*) FROM performance_tracking',
+            'adaptive_weights': 'SELECT COUNT(*) FROM adaptive_weights',
+            'pattern_analysis': 'SELECT COUNT(*) FROM pattern_analysis',
+            'reliable_plays': 'SELECT COUNT(*) FROM reliable_plays',
+            'model_feedback': 'SELECT COUNT(*) FROM model_feedback',
+            'system_config': 'SELECT COUNT(*) FROM system_config'
+        }
 
-        for table in tables_to_check:
+        for table_name, safe_query in safe_table_queries.items():
             try:
-                cursor.execute(f"SELECT COUNT(*) FROM {table}")
+                cursor.execute(safe_query)
                 count = cursor.fetchone()[0]
-                table_counts[table] = count
+                table_counts[table_name] = count
             except sqlite3.Error as e:
-                table_counts[table] = f"Error: {str(e)}"
+                table_counts[table_name] = f"Error: {str(e)}"
 
         # Check if database is "empty" (only has essential data)
         is_empty = (
