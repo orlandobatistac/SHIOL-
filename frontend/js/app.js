@@ -474,9 +474,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (index > 0) {
                         logsContainer.appendChild(document.createElement('br'));
                     }
-                    // Sanitize each line before displaying
-                    const sanitizedLine = line.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-                    logsContainer.appendChild(document.createTextNode(sanitizedLine));
+                    // Use safe text content to prevent XSS - no HTML parsing
+                    const textNode = document.createTextNode(line);
+                    logsContainer.appendChild(textNode);
                 });
             } else {
                 logsContainer.textContent = 'No logs available';
