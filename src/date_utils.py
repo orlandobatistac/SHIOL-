@@ -312,6 +312,29 @@ class DateManager:
         
         logger.debug(f"Recent drawing dates retrieved: {drawing_dates}")
         return drawing_dates
+    
+    @classmethod
+    def get_current_date_info(cls) -> Dict[str, Any]:
+        """
+        Obtiene información completa de la fecha actual en ET.
+        
+        Returns:
+            Dict: Información de fecha actual
+        """
+        current_time = cls.get_current_et_time()
+        
+        return {
+            "date": current_time.strftime('%Y-%m-%d'),
+            "formatted_date": current_time.strftime('%B %d, %Y'),
+            "day": current_time.day,
+            "month": current_time.month,
+            "year": current_time.year,
+            "weekday": current_time.weekday(),
+            "weekday_name": current_time.strftime('%A'),
+            "time": current_time.strftime('%H:%M ET'),
+            "is_drawing_day": current_time.weekday() in cls.DRAWING_DAYS,
+            "iso": current_time.isoformat()
+        }
 
 
 def get_current_et_time() -> datetime:

@@ -876,6 +876,35 @@ html {
     gap: 0.5rem;
 }
 
+/* Prediction Generation Info Styles */
+.predictions-generation-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.generation-label {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.generation-date {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #fbbf24;
+}
+
+.generation-time {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
 .prediction-row {
     display: grid;
     grid-template-columns: 1fr auto;

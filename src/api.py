@@ -1081,7 +1081,10 @@ async def get_smart_predictions(
             "predictions_info": {
                 "generated_for_drawing": next_drawing_date,
                 "drawing_status": "future" if days_until_drawing > 0 else "today" if days_until_drawing == 0 else "past",
-                "note": f"Predictions generated for drawing on {next_date.strftime('%B %d, %Y')}"
+                "note": f"Predictions generated for drawing on {next_date.strftime('%B %d, %Y')}",
+                "generated_date": datetime.now().strftime('%Y-%m-%d'),
+                "generated_formatted": datetime.now().strftime('%B %d, %Y'),
+                "generation_time": datetime.now().strftime('%H:%M ET')
             },
             "next_drawing": {
                 "date": next_drawing_date,
@@ -1089,9 +1092,12 @@ async def get_smart_predictions(
                 "days_until": int(days_until_drawing),
                 "is_today": days_until_drawing == 0,
                 "is_drawing_day": is_drawing_day,
+                "current_date": datetime.now().strftime('%Y-%m-%d'),
+                "current_formatted": datetime.now().strftime('%B %d, %Y'),
+                "current_day": datetime.now().day,
                 "drawing_schedule": {
                     "monday": "Drawing Day",
-                    "wednesday": "Drawing Day",
+                    "wednesday": "Drawing Day", 
                     "saturday": "Drawing Day",
                     "other_days": "No Drawing"
                 }

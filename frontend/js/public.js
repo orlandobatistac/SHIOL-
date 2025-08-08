@@ -299,6 +299,7 @@ class PublicInterface {
                                                     ${displayRank}
                                                 </span>
                                                 ${isTopFive ? '<span class="ml-2 text-xs font-semibold text-blue-600 uppercase tracking-wide">Top Pick</span>' : ''}
+                                                ${displayRank === 1 && nextDrawing && nextDrawing.current_day ? `<span class="ml-2 text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Generated ${nextDrawing.current_day}</span>` : ''}
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
