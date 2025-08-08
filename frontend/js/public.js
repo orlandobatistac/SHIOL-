@@ -269,7 +269,9 @@ class PublicInterface {
                     key.toLowerCase().includes('probability')
                 ));
 
-                this.displaySmartPredictions(data.smart_predictions, data.next_drawing);
+                // Use the nextDrawingInfo from the API call or this.nextDrawingInfo
+                const nextDrawingData = data.next_drawing || this.nextDrawingInfo;
+                this.displaySmartPredictions(data.smart_predictions, nextDrawingData);
             } else {
                 this.showPredictionError();
             }
@@ -334,15 +336,27 @@ class PublicInterface {
             <div class="next-drawing-info">
                 <div class="drawing-date">
                     <span class="date-label">Next Drawing:</span>
-                    <span class="date-value">${nextDrawing.formatted_date}</span>
+                    <span class="date-value">${nextDrawing.formatted_date || nextDrawing.date}</span>
                     <span class="countdown-display" id="smart-predictions-countdown">Loading...</span>
                 </div>
                 <div class="drawing-time text-sm text-gray-600 dark:text-gray-400 mt-1">
                     <i class="fas fa-clock mr-1"></i>
-                    ${nextDrawing.exact_drawing_time}
+                    ${nextDrawing.exact_drawing_time || `${nextDrawing.date} at ${nextDrawing.time} ${nextDrawing.timezone}`}
                 </div>
             </div>
-        ` : '';
+        ` : (this.nextDrawingInfo ? `
+            <div class="next-drawing-info">
+                <div class="drawing-date">
+                    <span class="date-label">Next Drawing:</span>
+                    <span class="date-value">${this.nextDrawingInfo.date}</span>
+                    <span class="countdown-display" id="smart-predictions-countdown">Loading...</span>
+                </div>
+                <div class="drawing-time text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    <i class="fas fa-clock mr-1"></i>
+                    ${this.nextDrawingInfo.exact_drawing_time}
+                </div>
+            </div>
+        ` : '');
 
 
         const predictionsHtml = `
