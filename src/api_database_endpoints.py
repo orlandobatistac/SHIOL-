@@ -122,25 +122,53 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
             logger.info(f"Cleared {pipeline_files_cleared} pipeline log files and execution history")
 
         if cleanup_options.get('models', False):
-            # Reset AI models data
-            cursor.execute('DELETE FROM adaptive_weights')
-            deleted_weights = cursor.rowcount
-            cursor.execute('DELETE FROM model_feedback')
-            deleted_feedback = cursor.rowcount
-            cursor.execute('DELETE FROM reliable_plays')
-            deleted_plays = cursor.rowcount
+            # Reset AI models data - using safe table operations
+            safe_model_tables = {
+                'adaptive_weights': 'DELETE FROM adaptive_weights',
+                'model_feedback': 'DELETE FROM model_feedback', 
+                'reliable_plays': 'DELETE FROM reliable_plays'
+            }
+            
+            deleted_weights = deleted_feedback = deleted_plays = 0
+            
+            for table_name, safe_query in safe_model_tables.items():
+                try:
+                    cursor.execute(safe_query)
+                    deleted_count = cursor.rowcount
+                    if table_name == 'adaptive_weights':
+                        deleted_weights = deleted_count
+                    elif table_name == 'model_feedback':
+                        deleted_feedback = deleted_count
+                    elif table_name == 'reliable_plays':
+                        deleted_plays = deleted_count
+                    logger.info(f"Safely cleared {deleted_count} records from {table_name}")
+                except sqlite3.Error as e:
+                    logger.error(f"Error clearing {table_name}: {e}")
+                    
             results.append(f"Reset AI models: deleted {deleted_weights} weight sets, {deleted_feedback} feedback records, {deleted_plays} reliable plays")
             logger.info(f"Reset AI models data")
 
         if cleanup_options.get('complete_reset', False):
-            # Complete system reset
-            tables_to_clear = ['predictions_log', 'performance_tracking', 'adaptive_weights', 'pattern_analysis', 'reliable_plays', 'model_feedback']
+            # Complete system reset - using predefined safe queries
+            safe_reset_operations = {
+                'predictions_log': 'DELETE FROM predictions_log',
+                'performance_tracking': 'DELETE FROM performance_tracking',
+                'adaptive_weights': 'DELETE FROM adaptive_weights',
+                'pattern_analysis': 'DELETE FROM pattern_analysis',
+                'reliable_plays': 'DELETE FROM reliable_plays',
+                'model_feedback': 'DELETE FROM model_feedback'
+            }
             total_cleared = 0
 
-            for table in tables_to_clear:
-                cursor.execute(f'DELETE FROM {table}')
-                total_cleared += cursor.rowcount
-                logger.info(f"Cleared {cursor.rowcount} records from {table}")
+            for table_name, safe_query in safe_reset_operations.items():
+                try:
+                    cursor.execute(safe_query)
+                    deleted_count = cursor.rowcount
+                    total_cleared += deleted_count
+                    logger.info(f"Safely cleared {deleted_count} records from {table_name}")
+                except sqlite3.Error as e:
+                    logger.error(f"Error clearing {table_name}: {e}")
+                    results.append(f"Error clearing {table_name}: {str(e)}")
 
             # Clear all log files
             logs_dir = Path('logs')
