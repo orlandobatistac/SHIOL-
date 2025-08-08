@@ -882,6 +882,12 @@
                 statusText = 'Partial';
             }
 
+            // Create status badge
+            const statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusClass}">
+                <i class="${statusIcon} mr-1"></i>
+                ${statusText}
+            </span>`;
+
             // Determine trigger source badge
             const triggerSource = execution.execution_source || 'unknown';
             let triggerBadge = '';
@@ -907,6 +913,10 @@
                     </span>`;
             }
 
+            // Calculate success rate
+            const successfulSteps = execution.steps_successful || 0;
+            const totalSteps = execution.total_steps || 1;
+            const successRate = Math.round((successfulSteps / totalSteps) * 100);
 
             row.innerHTML = `
                 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
@@ -921,7 +931,7 @@
                 <td class="px-4 py-4 whitespace-nowrap">${statusBadge}</td>
                 <td class="px-4 py-4 whitespace-nowrap">${triggerBadge}</td>
                 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                    ${execution.steps_successful}/${execution.total_steps}
+                    ${execution.steps_successful || 0}/${execution.total_steps || 0}
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     ${execution.execution_time || 'N/A'}
@@ -935,7 +945,7 @@
                     </div>
                 </td>
                 <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="viewExecutionDetails('${execution.execution_id}')" class="text-blue-600 hover:text-blue-900 dark:text-blue-400">
+                    <button onclick="showExecutionDetails('${execution.execution_id}')" class="text-blue-600 hover:text-blue-900 dark:text-blue-400">
                         View Details
                     </button>
                 </td>
