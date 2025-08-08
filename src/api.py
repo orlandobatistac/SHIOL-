@@ -1045,10 +1045,16 @@ async def get_smart_predictions(
                 score_details = pred.get("score_details", {})
                 safe_score_details = {}
                 for key, value in score_details.items():
-                    if isinstance(value, (np.integer, np.floating)):
-                        safe_score_details[key] = float(value)
-                    else:
-                        safe_score_details[key] = value
+                    try:
+                        # Handle various types safely
+                        if hasattr(value, 'item'):  # numpy scalar
+                            safe_score_details[key] = float(value.item())
+                        elif isinstance(value, (int, float)):
+                            safe_score_details[key] = float(value)
+                        else:
+                            safe_score_details[key] = float(str(value)) if str(value).replace('.','').isdigit() else 0.0
+                    except:
+                        safe_score_details[key] = 0.0
 
                 smart_pred = {
                     "rank": i + 1,
