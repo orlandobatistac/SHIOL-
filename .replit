@@ -6,7 +6,7 @@ channel = "stable-25_05"
 packages = ["cargo", "glibcLocales", "libiconv", "rustc"]
 
 [deployment]
-run = ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port 3000"]
+run = ["sh", "-c", "uvicorn src.api:app --host 0.0.0.0 --port 3000"]
 
 [workflows]
 runButton = "Restart Server"
