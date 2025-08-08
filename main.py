@@ -26,6 +26,7 @@ import sys
 import traceback
 import subprocess
 import requests
+import re
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 from pathlib import Path
@@ -944,19 +945,33 @@ def start_api_server(host: str = "0.0.0.0", port: int = 8000, auto_detect_ip: bo
     print("=" * 50)
 
     try:
-        # Command to start uvicorn
+        import shlex
+        
+        # Validate and sanitize inputs to prevent command injection
+        # Only allow safe characters for host and validate port range
+        if not re.match(r'^[0-9a-zA-Z\.-]+$', host):
+            raise ValueError(f"Invalid host format: {host}")
+        
+        if not isinstance(port, int) or not (1024 <= port <= 65535):
+            raise ValueError(f"Invalid port number: {port}")
+        
+        # Use shlex.escape() for safety and build command as list to prevent injection
+        safe_host = shlex.escape(str(host))
+        safe_port = shlex.escape(str(port))
+        
+        # Command to start uvicorn - using list format prevents shell injection
         cmd = [
             "uvicorn",
             "src.api:app",
-            "--host", host,
-            "--port", str(port),
+            "--host", safe_host,
+            "--port", safe_port,
             "--reload",  # Auto-reload in development
             "--access-log",  # Access logs
             "--log-level", "info"
         ]
 
-        # Execute the server
-        subprocess.run(cmd, check=True)
+        # Execute the server with shell=False for additional security
+        subprocess.run(cmd, check=True, shell=False)
 
     except KeyboardInterrupt:
         print("\n🛑 Server stopped by user")
