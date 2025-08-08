@@ -1,0 +1,33 @@
+{
+  "scan_date": "2025-08-08T17:25:20.991828",
+  "total_issues": 3,
+  "severity_breakdown": {
+    "CRITICAL": 3
+  },
+  "issues": [
+    {
+      "severity": "CRITICAL",
+      "file": "src/auth.py",
+      "line": 122,
+      "issue": "Hardcoded password",
+      "evidence": "default_password = \"shiol2024!\"  # TODO: Change this!",
+      "recommendation": "Move to environment variables"
+    },
+    {
+      "severity": "CRITICAL",
+      "file": "src/api.py",
+      "line": "Multiple",
+      "issue": "Permissive CORS configuration",
+      "evidence": "allow_origins=[\"*\"]",
+      "recommendation": "Restrict to specific domains"
+    },
+    {
+      "severity": "CRITICAL",
+      "file": "src/security_analyzer.py",
+      "line": "Multiple",
+      "issue": "Permissive CORS configuration",
+      "evidence": "allow_origins=[\"*\"]",
+      "recommendation": "Restrict to specific domains"
+    }
+  ]
+}
