@@ -765,7 +765,16 @@ class ConfigurationManager {
     displayLogs(logs) {
         const logOutputElement = document.getElementById('log-output'); // Assuming there's a div with this ID to display logs
         if (logOutputElement) {
-            logOutputElement.innerHTML = logs.map(log => `<div>${log.timestamp} - ${log.message}</div>`).join('');
+            // Clear existing content safely
+            logOutputElement.textContent = '';
+            
+            // Use safe DOM methods to prevent XSS
+            logs.forEach(log => {
+                const logDiv = document.createElement('div');
+                const logText = document.createTextNode(`${log.timestamp} - ${log.message}`);
+                logDiv.appendChild(logText);
+                logOutputElement.appendChild(logDiv);
+            });
         }
     }
 
