@@ -364,7 +364,7 @@ async def get_diverse_predictions(num_plays: int = Query(5, ge=1, le=10, descrip
     """
     Generates multiple diverse high-quality predictions for the next lottery drawing.
 
-    - **num_plays**: Number of diverse plays to generate (default: 5, min: 1, max: 10)
+    - **num_plays**: Number of diverse plays to generate (default: 5, max: 10)
     """
     if not predictor or not deterministic_generator:
         logger.error("Endpoint /predict-diverse called, but components are not available.")
@@ -2272,7 +2272,7 @@ async def cleanup_database(cleanup_options: Dict[str, bool]):
             logger.info(f"Cleared {log_files_cleared} log files")
 
         if cleanup_options.get('pipeline_logs', False):
-            # Clear pipeline execution reports and system logs
+            # Clear pipeline reports
             pipeline_files_cleared = 0
 
             # Clear pipeline reports
