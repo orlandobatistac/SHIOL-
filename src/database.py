@@ -287,16 +287,16 @@ def initialize_database():
                 logger.warning(f"Error creating indexes (may already exist): {idx_error}")
 
             conn.commit()
-            
+
             # Initialize hybrid configuration system
             if not is_config_initialized():
                 logger.info("Initializing hybrid configuration system...")
                 migrate_config_from_file()
-            
+
             # Check if we have any historical data, if not add sample data
             cursor.execute("SELECT COUNT(*) FROM powerball_draws")
             count = cursor.fetchone()[0]
-            
+
             if count == 0:
                 logger.info("No historical data found. Adding sample data for testing...")
                 sample_data = [
@@ -335,15 +335,15 @@ def initialize_database():
                     ('2025-08-06', 10, 18, 27, 41, 54, 14),
                     ('2025-08-07', 8, 22, 35, 44, 58, 9)
                 ]
-                
+
                 cursor.executemany("""
                     INSERT INTO powerball_draws (draw_date, n1, n2, n3, n4, n5, pb)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 """, sample_data)
-                
+
                 conn.commit()
                 logger.info(f"Added {len(sample_data)} sample draw records to database")
-            
+
             logger.info("Database initialized. All tables including Phase 4 adaptive feedback system are ready.")
     except sqlite3.Error as e:
         logger.error(f"Database error during initialization: {e}")
@@ -434,25 +434,40 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
     Returns:
         ID de la predicción insertada o None si hay error
     """
+    logger.debug(f"Received prediction data: {prediction_data}")
+
+    # Sanitizar y validar los datos de la predicción
+    sanitized_data = _sanitize_prediction_data(prediction_data)
+    if sanitized_data is None:
+        logger.error("Prediction data is invalid after sanitization.")
+        return None
+
+    # Asegurar que target_draw_date sea válido o calcularlo
+    target_draw_date_str = sanitized_data.get('target_draw_date')
+    if not target_draw_date_str:
+        target_draw_date_str = calculate_next_drawing_date()
+        logger.debug(f"Target draw date not provided, calculated: {target_draw_date_str}")
+
+    # Validar la fecha del sorteo objetivo
+    if not _validate_target_draw_date(target_draw_date_str):
+        logger.error(f"Invalid target_draw_date: {target_draw_date_str}")
+        return None
+    if not _is_valid_drawing_date(target_draw_date_str):
+        logger.warning(f"Target draw date {target_draw_date_str} is not a valid Powerball drawing day.")
+        # Decidir si se debe continuar o fallar aquí. Por ahora, registramos una advertencia.
+
+    # Safe type conversion to avoid numpy issues
+    def safe_int(value):
+        if hasattr(value, 'item'):  # numpy scalar
+            return int(value.item())
+        return int(value)
+
+    def safe_float(value):
+        if hasattr(value, 'item'):  # numpy scalar
+            return float(value.item())
+        return float(value)
+
     try:
-        logger.debug(f"Saving prediction log with data: {prediction_data}")
-
-        # Calculate target drawing date if not provided
-        target_draw_date = prediction_data.get('target_draw_date')
-        if not target_draw_date:
-            target_draw_date = calculate_next_drawing_date()
-
-        # Safe type conversion to avoid numpy issues
-        def safe_int(value):
-            if hasattr(value, 'item'):  # numpy scalar
-                return int(value.item())
-            return int(value)
-        
-        def safe_float(value):
-            if hasattr(value, 'item'):  # numpy scalar
-                return float(value.item())
-            return float(value)
-
         # Insertar registro en SQLite
         with get_db_connection() as conn:
             cursor = conn.cursor()
@@ -462,18 +477,18 @@ def save_prediction_log(prediction_data: Dict[str, Any]) -> Optional[int]:
                  model_version, dataset_hash, json_details_path, target_draw_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
-                str(prediction_data['timestamp']),
-                safe_int(prediction_data['numbers'][0]),
-                safe_int(prediction_data['numbers'][1]),
-                safe_int(prediction_data['numbers'][2]),
-                safe_int(prediction_data['numbers'][3]),
-                safe_int(prediction_data['numbers'][4]),
-                safe_int(prediction_data['powerball']),
-                safe_float(prediction_data['score_total']),
-                str(prediction_data['model_version']),
-                str(prediction_data['dataset_hash']),
-                prediction_data.get('json_details_path', None),
-                str(target_draw_date)
+                str(sanitized_data['timestamp']),
+                safe_int(sanitized_data['numbers'][0]),
+                safe_int(sanitized_data['numbers'][1]),
+                safe_int(sanitized_data['numbers'][2]),
+                safe_int(sanitized_data['numbers'][3]),
+                safe_int(sanitized_data['numbers'][4]),
+                safe_int(sanitized_data['powerball']),
+                safe_float(sanitized_data['score_total']),
+                str(sanitized_data['model_version']),
+                str(sanitized_data['dataset_hash']),
+                sanitized_data.get('json_details_path', None),
+                target_draw_date_str # Usar la fecha validada
             ))
 
             prediction_id = cursor.lastrowid
@@ -1021,8 +1036,8 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                 cursor.execute("""
                     SELECT
                         id, timestamp, n1, n2, n3, n4, n5, powerball,
-                        score_total, model_version, dataset_hash, 
-                        COALESCE(target_draw_date, DATE(created_at)) as target_draw_date, 
+                        score_total, model_version, dataset_hash,
+                        COALESCE(target_draw_date, DATE(created_at)) as target_draw_date,
                         created_at
                     FROM predictions_log
                     WHERE COALESCE(target_draw_date, DATE(created_at)) = ?
@@ -1504,7 +1519,7 @@ def migrate_config_from_file() -> bool:
     """
     Migra la configuración desde config.ini a la base de datos.
     Solo se ejecuta en la primera inicialización del sistema.
-    
+
     Returns:
         bool: True si la migración fue exitosa
     """
@@ -1514,7 +1529,7 @@ def migrate_config_from_file() -> bool:
             cursor = conn.cursor()
             cursor.execute("SELECT COUNT(*) FROM system_config")
             config_count = cursor.fetchone()[0]
-            
+
             if config_count > 0:
                 logger.info("Configuration already exists in database, skipping migration")
                 return True
@@ -1523,35 +1538,35 @@ def migrate_config_from_file() -> bool:
         config = configparser.ConfigParser()
         current_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
-        
+
         if not os.path.exists(config_path):
             logger.warning(f"Config file not found at {config_path}, using default values")
             return _create_default_config_in_db()
-        
+
         config.read(config_path)
-        
+
         # Migrar cada sección del archivo a la DB
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             for section_name in config.sections():
                 for key, value in config.items(section_name):
                     cursor.execute("""
                         INSERT OR REPLACE INTO system_config (section, key, value)
                         VALUES (?, ?, ?)
                     """, (section_name, key, value))
-            
+
             # Marcar migración como completada
             cursor.execute("""
                 INSERT OR REPLACE INTO system_config (section, key, value)
                 VALUES ('system', 'config_migrated', 'true')
             """)
-            
+
             conn.commit()
-            
+
         logger.info("Configuration successfully migrated from config.ini to database")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error migrating configuration from file: {e}")
         return False
@@ -1567,7 +1582,7 @@ def _create_default_config_in_db() -> bool:
             },
             'pipeline': {
                 'execution_days_monday': 'True',
-                'execution_days_wednesday': 'True', 
+                'execution_days_wednesday': 'True',
                 'execution_days_saturday': 'True',
                 'execution_time': '02:00',
                 'timezone': 'America/New_York',
@@ -1584,28 +1599,28 @@ def _create_default_config_in_db() -> bool:
                 'risk': '10'
             }
         }
-        
+
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             for section_name, section_data in default_config.items():
                 for key, value in section_data.items():
                     cursor.execute("""
                         INSERT OR REPLACE INTO system_config (section, key, value)
                         VALUES (?, ?, ?)
                     """, (section_name, key, value))
-            
+
             # Marcar como configuración por defecto
             cursor.execute("""
                 INSERT OR REPLACE INTO system_config (section, key, value)
                 VALUES ('system', 'config_migrated', 'default')
             """)
-            
+
             conn.commit()
-            
+
         logger.info("Default configuration created in database")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error creating default configuration: {e}")
         return False
@@ -1615,7 +1630,7 @@ def load_config_from_db() -> Dict[str, Any]:
     """
     Carga la configuración desde la base de datos.
     Implementa fallback automático al archivo config.ini si falla.
-    
+
     Returns:
         Dict con la configuración del sistema
     """
@@ -1624,21 +1639,21 @@ def load_config_from_db() -> Dict[str, Any]:
             cursor = conn.cursor()
             cursor.execute("SELECT section, key, value FROM system_config")
             config_rows = cursor.fetchall()
-            
+
             if not config_rows:
                 logger.warning("No configuration found in database, using file fallback")
                 return _load_config_from_file()
-            
+
             # Convertir a estructura de diccionario
             config_dict = {}
             for section, key, value in config_rows:
                 if section not in config_dict:
                     config_dict[section] = {}
                 config_dict[section][key] = value
-            
+
             logger.info("Configuration loaded successfully from database")
             return config_dict
-            
+
     except Exception as e:
         logger.error(f"Error loading configuration from database: {e}")
         logger.info("Falling back to config file")
@@ -1651,16 +1666,16 @@ def _load_config_from_file() -> Dict[str, Any]:
         config = configparser.ConfigParser()
         current_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
-        
+
         config.read(config_path)
-        
+
         config_dict = {}
         for section in config.sections():
             config_dict[section] = dict(config.items(section))
-        
-        logger.info("Configuration loaded from file fallback")
+
+        logger.info(f"Configuration loaded from {config_path}")
         return config_dict
-        
+
     except Exception as e:
         logger.error(f"Error loading configuration from file: {e}")
         return {}
@@ -1670,17 +1685,17 @@ def save_config_to_db(config_data: Dict[str, Any]) -> bool:
     """
     Guarda la configuración en la base de datos.
     Esta función es llamada desde el dashboard.
-    
+
     Args:
         config_data: Diccionario con la configuración
-        
+
     Returns:
         bool: True si se guardó exitosamente
     """
     try:
         with get_db_connection() as conn:
             cursor = conn.cursor()
-            
+
             # Guardar cada valor en la tabla
             for section_name, section_data in config_data.items():
                 if isinstance(section_data, dict):
@@ -1695,12 +1710,12 @@ def save_config_to_db(config_data: Dict[str, Any]) -> bool:
                         INSERT OR REPLACE INTO system_config (section, key, value, updated_at)
                         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                     """, ('general', section_name, str(section_data)))
-            
+
             conn.commit()
-            
+
         logger.info("Configuration saved successfully to database")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error saving configuration to database: {e}")
         return False
@@ -1709,12 +1724,12 @@ def save_config_to_db(config_data: Dict[str, Any]) -> bool:
 def get_config_value(section: str, key: str, default: Any = None) -> Any:
     """
     Obtiene un valor específico de configuración con fallback automático.
-    
+
     Args:
         section: Sección de configuración
         key: Clave específica
         default: Valor por defecto si no se encuentra
-        
+
     Returns:
         Valor de configuración o default
     """
@@ -1722,26 +1737,26 @@ def get_config_value(section: str, key: str, default: Any = None) -> Any:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT value FROM system_config 
+                SELECT value FROM system_config
                 WHERE section = ? AND key = ?
             """, (section, key))
-            
+
             result = cursor.fetchone()
             if result:
                 return result[0]
-            
+
         # Fallback a archivo si no está en DB
         config = configparser.ConfigParser()
         current_dir = os.path.dirname(os.path.abspath(__file__))
         config_path = os.path.join(current_dir, '..', 'config', 'config.ini')
-        
+
         if os.path.exists(config_path):
             config.read(config_path)
             if config.has_section(section) and config.has_option(section, key):
                 return config.get(section, key)
-        
+
         return default
-        
+
     except Exception as e:
         logger.error(f"Error getting config value {section}.{key}: {e}")
         return default
@@ -1750,7 +1765,7 @@ def get_config_value(section: str, key: str, default: Any = None) -> Any:
 def is_config_initialized() -> bool:
     """
     Verifica si el sistema de configuración híbrido está inicializado.
-    
+
     Returns:
         bool: True si la configuración está inicializada
     """
@@ -1758,13 +1773,150 @@ def is_config_initialized() -> bool:
         with get_db_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT value FROM system_config 
+                SELECT value FROM system_config
                 WHERE section = 'system' AND key = 'config_migrated'
             """)
-            
+
             result = cursor.fetchone()
             return result is not None
-            
+
     except Exception as e:
         logger.error(f"Error checking config initialization: {e}")
         return False
+
+
+# ========================================================================
+# FASE 2: FUNCIONES DE VALIDACIÓN DE FECHAS
+# ========================================================================
+
+def _validate_target_draw_date(date_str: str) -> bool:
+    """
+    Valida que target_draw_date tenga el formato correcto YYYY-MM-DD.
+
+    Args:
+        date_str: String de fecha a validar
+
+    Returns:
+        True si la fecha es válida
+    """
+    if not isinstance(date_str, str):
+        return False
+
+    if len(date_str) != 10:
+        return False
+
+    if not date_str.count('-') == 2:
+        return False
+
+    try:
+        # Verificar que sea una fecha válida
+        datetime.strptime(date_str, '%Y-%m-%d')
+
+        # Verificar que no sea una fecha muy antigua o muy futura
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        current_year = datetime.now().year
+
+        if date_obj.year < (current_year - 1) or date_obj.year > (current_year + 2):
+            logger.warning(f"Date {date_str} is outside reasonable range")
+            return False
+
+        return True
+
+    except ValueError:
+        return False
+
+
+def _is_valid_drawing_date(date_str: str) -> bool:
+    """
+    Verifica que una fecha corresponda a un día de sorteo de Powerball.
+    Los sorteos son: Lunes (0), Miércoles (2), Sábado (5)
+
+    Args:
+        date_str: Fecha en formato YYYY-MM-DD
+
+    Returns:
+        True si es un día de sorteo válido
+    """
+    try:
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        # Lunes=0, Miércoles=2, Sábado=5
+        drawing_days = [0, 2, 5]
+        return date_obj.weekday() in drawing_days
+
+    except ValueError:
+        return False
+
+
+def _sanitize_prediction_data(prediction_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Sanitiza y valida todos los campos de una predicción antes de guardar.
+
+    Args:
+        prediction_data: Datos de predicción originales
+
+    Returns:
+        Datos de predicción sanitizados y validados
+    """
+    sanitized_data = prediction_data.copy()
+
+    # Validar y corregir timestamp
+    if 'timestamp' not in sanitized_data or not sanitized_data['timestamp']:
+        sanitized_data['timestamp'] = datetime.now().isoformat()
+
+    # Validar números principales (deben estar entre 1-69)
+    if 'numbers' in sanitized_data:
+        numbers = sanitized_data['numbers']
+        if isinstance(numbers, list) and len(numbers) == 5:
+            valid_numbers = []
+            for num in numbers:
+                try:
+                    num_int = int(num)
+                    if 1 <= num_int <= 69:
+                        valid_numbers.append(num_int)
+                    else:
+                        logger.warning(f"Number {num} is outside valid range 1-69")
+                        return None  # Datos inválidos
+                except (ValueError, TypeError):
+                    logger.error(f"Invalid number format: {num}")
+                    return None
+            sanitized_data['numbers'] = valid_numbers
+        else:
+            logger.error(f"Invalid numbers format: {numbers}")
+            return None
+
+    # Validar Powerball (debe estar entre 1-26)
+    if 'powerball' in sanitized_data:
+        try:
+            pb = int(sanitized_data['powerball'])
+            if not (1 <= pb <= 26):
+                logger.error(f"Powerball {pb} is outside valid range 1-26")
+                return None
+            sanitized_data['powerball'] = pb
+        except (ValueError, TypeError):
+            logger.error(f"Invalid powerball format: {sanitized_data['powerball']}")
+            return None
+
+    # Validar score_total
+    if 'score_total' in sanitized_data:
+        try:
+            score = float(sanitized_data['score_total'])
+            if score < 0 or score > 1:
+                logger.warning(f"Score {score} is outside typical range 0-1")
+            sanitized_data['score_total'] = score
+        except (ValueError, TypeError):
+            logger.error(f"Invalid score format: {sanitized_data['score_total']}")
+            return None
+
+    # Validar model_version
+    if 'model_version' not in sanitized_data or not sanitized_data['model_version']:
+        sanitized_data['model_version'] = '1.0.0'  # Default version
+
+    # Validar dataset_hash
+    if 'dataset_hash' not in sanitized_data or not sanitized_data['dataset_hash']:
+        # Generar hash por defecto basado en timestamp
+        import hashlib
+        timestamp_str = str(sanitized_data.get('timestamp', datetime.now().isoformat()))
+        default_hash = hashlib.md5(timestamp_str.encode()).hexdigest()[:16]
+        sanitized_data['dataset_hash'] = default_hash
+
+    return sanitized_data

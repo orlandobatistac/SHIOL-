@@ -1019,6 +1019,7 @@ Examples:
   python main.py --step data        # Run data update step only
   python main.py --step prediction  # Run prediction generation only
   python main.py --status           # Check pipeline status
+  python main.py --migrate          # Execute Fase 2 date correction migration
   python main.py --server           # Start API server for VPN access
   python main.py --api --port 8080  # Start API server on custom port
   python main.py --help             # Show this help message
@@ -1083,6 +1084,12 @@ Server mode:
         help='Port to bind server to (default: 8000)'
     )
 
+    parser.add_argument(
+        '--migrate',
+        action='store_true',
+        help='Execute data migration to fix corrupted dates (Fase 2)'
+    )
+
     args = parser.parse_args()
 
     try:
@@ -1093,6 +1100,46 @@ Server mode:
 
         # Initialize pipeline orchestrator
         orchestrator = PipelineOrchestrator(config_path=args.config)
+
+        # Handle migration execution
+        if args.migrate:
+            print("\n" + "=" * 60)
+            print("EJECUTANDO MIGRACIÓN DE CORRECCIÓN DE FECHAS - FASE 2")
+            print("=" * 60)
+            
+            try:
+                from src.data_migration import run_date_correction_migration
+                results = run_date_correction_migration()
+                
+                print(f"\nResultados de la migración:")
+                print(f"Estado: {results.get('status', 'unknown')}")
+                print(f"Registros corruptos encontrados: {results.get('corrupted_records_found', 0)}")
+                print(f"Registros corregidos: {results.get('records_corrected', 0)}")
+                print(f"Errores de validación: {results.get('validation_failures', 0)}")
+                
+                if results.get('final_validation'):
+                    validation = results['final_validation']
+                    print(f"\nValidación final:")
+                    print(f"Total de registros: {validation.get('total_records', 0)}")
+                    print(f"Fechas válidas: {validation.get('valid_target_dates', 0)}")
+                    print(f"Tasa de éxito: {validation.get('success_rate', '0%')}")
+                
+                if results.get('status') == 'completed':
+                    print("\n✓ Migración completada exitosamente")
+                elif results.get('status') == 'no_action_needed':
+                    print("\n✓ No se encontraron datos que requieran migración")
+                else:
+                    print("\n✗ Migración falló")
+                    if results.get('errors'):
+                        for error in results['errors']:
+                            print(f"  Error: {error}")
+                            
+            except Exception as e:
+                print(f"\n✗ Error ejecutando migración: {e}")
+                sys.exit(1)
+            
+            print("=" * 60)
+            return
 
         # Handle status check
         if args.status:
