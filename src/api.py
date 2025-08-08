@@ -27,8 +27,8 @@ from src.api_analytics_endpoints import analytics_router
 from src.api_model_endpoints import model_router
 from src.api_pipeline_endpoints import pipeline_router
 from src.public_api import public_router, auth_router
-from src.api_frontend_public import public_frontend_router, set_public_components
-from src.api_frontend_dashboard import dashboard_frontend_router, set_dashboard_components
+from src.api_public_endpoints import public_frontend_router, set_public_components
+from src.api_dashboard_endpoints import dashboard_frontend_router, set_dashboard_components
 
 # --- Pipeline Monitoring Global Variables ---
 # Global variables for pipeline monitoring
