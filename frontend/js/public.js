@@ -233,6 +233,7 @@ class PublicInterface {
      */
     async loadInitialData() {
         await this.loadNextDrawingInfo();
+        await this.loadSmartPredictions();
         await this.loadGroupedPredictionHistory();
     }
 
@@ -484,6 +485,7 @@ class PublicInterface {
         // Display the predictions
         container.innerHTML = predictionsHtml;
         container.classList.remove('hidden');
+        container.style.display = 'block';
 
         // Ensure loading is hidden
         loading.classList.add('hidden');
@@ -1232,6 +1234,7 @@ class PublicInterface {
      */
     async refreshData() {
         await this.loadNextDrawingInfo();
+        await this.loadSmartPredictions();
         await this.loadGroupedPredictionHistory();
     }
 }
