@@ -83,37 +83,27 @@ def get_next_powerball_drawing() -> Dict[str, Any]:
     next_drawing_date_str = next_drawing.strftime("%Y-%m-%d")
     next_drawing_time_str = next_drawing.strftime("%H:%M:%S")
 
-    # Calculate if the next drawing is today
-    current_date = DateManager.get_current_et_time()
-    next_drawing_date_obj = datetime.strptime(next_drawing_date_str, '%Y-%m-%d')
-    # Localize the next drawing date to ET for comparison
-    next_drawing_et = DateManager.POWERBALL_TIMEZONE.localize(next_drawing_date_obj).replace(hour=DateManager.DRAWING_HOUR, minute=59, second=0)
-
-
-    # More precise calculation: only consider it "today" if we're on the same date
-    # AND it's before the drawing time (11 PM ET)
-    is_same_date = (current_date.date() == next_drawing_et.date())
-    is_before_drawing_time = current_date.hour < DateManager.DRAWING_HOUR
-    is_today = is_same_date and is_before_drawing_time
-
-    days_until = max(0, (next_drawing_et.date() - current_date.date()).days)
-
-    # Adjust days_until if it's before the drawing time today, and the calculated next_drawing was also today
-    if is_today and days_until == 0:
-        pass # Correctly 0 days until
-    elif not is_today and days_until == 0:
-        # This means current_date is the same as next_drawing_et.date(), but it's past the drawing time.
-        # So the *next* drawing is actually in 3 or 4 days.
-        # We need to recalculate days_ahead based on this fact.
-        # This part of logic might be complex and depends on the exact logic for `days_ahead` calculation above.
-        # For now, let's trust the initial `days_ahead` calculation and ensure `is_today` is correct.
-        # If `is_today` is false, `days_until` should reflect the actual days to the *next* drawing.
-        if days_until == 0 and not is_today:
-             # If it's the same date but after drawing time, the next drawing is not today.
-             # Recalculate days_until based on the original `days_ahead` logic.
-             # The initial calculation of `days_ahead` already handles this, so we just need to ensure `is_today` is correct.
-             pass # The `is_today` logic already handles this by checking `is_before_drawing_time`
-
+    # Calculate days and hours for better display
+    days_until = max(0, (next_drawing.date() - now_et.date()).days)
+    hours_until = int(countdown_seconds / 3600)
+    minutes_until = int((countdown_seconds % 3600) / 60)
+    
+    # Determine display text based on time remaining
+    if countdown_seconds <= 0:
+        display_text = "Drawing in progress"
+        status = "drawing_active"
+    elif countdown_seconds <= 3600:  # Less than 1 hour
+        display_text = f"Drawing in {minutes_until + 1} minutes"
+        status = "very_soon"
+    elif days_until == 0:  # Same day
+        display_text = f"Drawing in {hours_until} hours"
+        status = "today"
+    elif days_until == 1:
+        display_text = "Drawing tomorrow"
+        status = "tomorrow"
+    else:
+        display_text = f"Drawing in {days_until} days"
+        status = "future"
 
     return {
         "date": next_drawing_date_str,
@@ -121,7 +111,12 @@ def get_next_powerball_drawing() -> Dict[str, Any]:
         "timezone": "ET",
         "datetime_iso": next_drawing.isoformat(),
         "countdown_seconds": max(0, countdown_seconds),
-        "is_today": is_today
+        "days_until": days_until,
+        "hours_until": hours_until,
+        "minutes_until": minutes_until,
+        "display_text": display_text,
+        "status": status,
+        "exact_drawing_time": next_drawing.strftime("%A, %B %d at %I:%M %p ET")
     }
 
 @public_router.get("/next-drawing")

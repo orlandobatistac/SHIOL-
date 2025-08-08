@@ -8,7 +8,8 @@
 
 class PublicInterface {
     constructor() {
-        this.countdownTimer = null;
+        this.countdownInterval = null; // Renamed from countdownTimer to avoid confusion with a potential CountdownTimer class
+        this.nextDrawingInfo = null; // To store the next drawing data for countdown updates
         this.currentHistoryPage = 1;
         this.historyPerPage = 30;
         this.isLoading = false;
@@ -28,11 +29,12 @@ class PublicInterface {
         console.log('Initializing SHIOL+ Public Interface');
 
         try {
+            // Initialize properties
+            this.countdownInterval = null;
+            this.nextDrawingInfo = null;
+
             // Setup event listeners
             this.setupEventListeners();
-
-            // Initialize countdown timer
-            this.initializeCountdown();
 
             // Load initial data
             await this.loadInitialData();
@@ -111,10 +113,119 @@ class PublicInterface {
     }
 
     /**
-     * Initialize countdown timer
+     * Initialize countdown timer with real-time updates
      */
-    initializeCountdown() {
-        this.countdownTimer = new CountdownTimer('countdown-timer', 'countdown-display');
+    initializeCountdown(drawingData) {
+        try {
+            // Clear any existing countdown
+            if (this.countdownInterval) {
+                clearInterval(this.countdownInterval);
+            }
+
+            if (!drawingData.countdown_seconds || drawingData.countdown_seconds <= 0) {
+                console.log('No countdown needed - drawing time has passed');
+                this.showDrawingActive();
+                return;
+            }
+
+            // Start countdown with current seconds
+            let remainingSeconds = drawingData.countdown_seconds;
+
+            // Update countdown display immediately
+            this.updateCountdownDisplay(remainingSeconds);
+
+            // Set up interval to update every second
+            this.countdownInterval = setInterval(() => {
+                remainingSeconds--;
+
+                if (remainingSeconds <= 0) {
+                    clearInterval(this.countdownInterval);
+                    this.showDrawingActive();
+                    // Refresh drawing info after 5 minutes
+                    setTimeout(() => this.loadNextDrawingInfo(), 5 * 60 * 1000);
+                } else {
+                    this.updateCountdownDisplay(remainingSeconds);
+                }
+            }, 1000);
+
+            console.log('Countdown timer initialized with', remainingSeconds, 'seconds remaining');
+        } catch (error) {
+            console.error('Error initializing countdown:', error);
+        }
+    }
+
+    /**
+     * Update countdown display elements
+     */
+    updateCountdownDisplay(seconds) {
+        const countdownElement = document.getElementById('countdown-display');
+        const drawingDateElement = document.getElementById('next-drawing-date');
+
+        if (seconds <= 0) {
+            if (countdownElement) {
+                countdownElement.textContent = 'Drawing in progress...';
+                countdownElement.classList.add('text-red-600', 'font-bold');
+            }
+            if (drawingDateElement) {
+                drawingDateElement.textContent = 'Drawing in progress';
+                drawingDateElement.classList.add('text-red-600', 'font-bold');
+            }
+            return;
+        }
+
+        const formattedCountdown = PowerballUtils.formatCountdown(seconds);
+
+        if (countdownElement) {
+            countdownElement.textContent = formattedCountdown;
+
+            // Add urgency styling based on time remaining
+            countdownElement.classList.remove('text-red-600', 'text-orange-600', 'text-blue-600');
+            if (seconds <= 3600) { // Less than 1 hour
+                countdownElement.classList.add('text-red-600', 'font-bold');
+            } else if (seconds <= 21600) { // Less than 6 hours
+                countdownElement.classList.add('text-orange-600', 'font-semibold');
+            } else {
+                countdownElement.classList.add('text-blue-600');
+            }
+        }
+
+        // Update the main drawing date display with dynamic text
+        if (drawingDateElement && this.nextDrawingInfo) {
+            const days = Math.floor(seconds / (24 * 3600));
+            const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+
+            let displayText;
+            if (seconds <= 3600) { // Less than 1 hour
+                displayText = `Drawing in ${minutes + 1} minute${minutes === 0 ? '' : 's'}`;
+            } else if (days === 0) { // Same day
+                displayText = `Drawing in ${hours} hour${hours === 1 ? '' : 's'}`;
+            } else if (days === 1) {
+                displayText = 'Drawing tomorrow';
+            } else {
+                displayText = `Drawing in ${days} days`;
+            }
+
+            drawingDateElement.textContent = displayText;
+        }
+    }
+
+    /**
+     * Show drawing active state
+     */
+    showDrawingActive() {
+        const countdownElement = document.getElementById('countdown-display');
+        const drawingDateElement = document.getElementById('next-drawing-date');
+
+        if (countdownElement) {
+            countdownElement.textContent = 'Drawing in progress...';
+            countdownElement.classList.add('text-red-600', 'font-bold');
+        }
+
+        if (drawingDateElement) {
+            drawingDateElement.textContent = 'Drawing in progress';
+            drawingDateElement.classList.add('text-red-600', 'font-bold');
+        }
     }
 
     /**
@@ -128,7 +239,7 @@ class PublicInterface {
     /**
      * Load Smart AI predictions from pipeline
      */
-    async loadNextDrawingInfo() {
+    async loadSmartPredictions() {
         try {
             console.log('Loading Smart AI predictions...');
 
@@ -216,7 +327,7 @@ class PublicInterface {
         });
 
         // Format next drawing information
-        const nextDrawingInfo = nextDrawing ? `
+        const nextDrawingInfoHtml = nextDrawing ? `
             <div class="next-drawing-info">
                 <div class="drawing-date">
                     <span class="date-label">Next Drawing:</span>
@@ -238,7 +349,7 @@ class PublicInterface {
                                 <i class="fas fa-brain mr-2 text-blue-600"></i>
                                 Smart AI Predictions
                             </h3>
-                            ${nextDrawingInfo}
+                            ${nextDrawingInfoHtml}
                             <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                 ${sortedPredictions.length} predictions ordered from highest to lowest AI confidence score
                             </p>
@@ -1074,6 +1185,46 @@ class PublicInterface {
         `;
         container.classList.remove('hidden');
         this.hideGroupedHistoryLoadingState();
+    }
+
+    /**
+     * Load and display next drawing information with countdown
+     */
+    async loadNextDrawingInfo() {
+        try {
+            console.log('Loading next drawing information...');
+
+            const response = await PowerballUtils.apiRequest('/public/next-drawing');
+            const data = response.next_drawing;
+
+            // Store drawing info for countdown updates
+            this.nextDrawingInfo = data;
+
+            // Update next drawing display
+            const drawingDateElement = document.getElementById('next-drawing-date');
+            const drawingTimeElement = document.getElementById('next-drawing-time');
+
+            if (drawingDateElement) {
+                drawingDateElement.textContent = PowerballUtils.formatNextDrawingDate(data);
+            }
+
+            if (drawingTimeElement) {
+                drawingTimeElement.textContent = data.exact_drawing_time || `${data.time} ${data.timezone}`;
+            }
+
+            // Initialize countdown timer
+            this.initializeCountdown(data);
+
+            console.log('Next drawing info loaded successfully');
+        } catch (error) {
+            console.error('Error loading next drawing info:', error);
+
+            // Show error state
+            const drawingDateElement = document.getElementById('next-drawing-date');
+            if (drawingDateElement) {
+                drawingDateElement.textContent = 'Error loading';
+            }
+        }
     }
 
     /**

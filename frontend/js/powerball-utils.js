@@ -134,49 +134,72 @@ class PowerballUtils {
     }
 
     /**
-     * Format date for next drawing display
-     * @param {string|Date} date - Date to format
-     * @returns {string} - Formatted date string for next drawing
+     * Format date for next drawing display with countdown
+     * @param {Object} drawingInfo - Drawing information object
+     * @returns {string} - Formatted display text
      */
-    static formatNextDrawingDate(date) {
+    static formatNextDrawingDate(drawingInfo) {
         try {
-            const dateObj = typeof date === 'string' ? new Date(date) : date;
-            const today = new Date();
-            const tomorrow = new Date(today);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-
-            // Convert to same timezone for comparison
-            const todayUTC = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-            const tomorrowUTC = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
-            const dateUTC = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
-            
-            // Check if it's today (and before drawing time)
-            if (dateUTC.getTime() === todayUTC.getTime()) {
-                const currentHour = today.getHours();
-                // Only show "Today" if it's before 11 PM (23:00)
-                if (currentHour < 23) {
-                    return 'Today';
-                } else {
-                    // After 11 PM, the next drawing is effectively tomorrow or later
-                    return 'Tomorrow';
-                }
-            }
-            
-            // Check if it's tomorrow
-            if (dateUTC.getTime() === tomorrowUTC.getTime()) {
-                return 'Tomorrow';
+            if (typeof drawingInfo === 'string') {
+                // Fallback for old format
+                const dateObj = new Date(drawingInfo);
+                const options = { 
+                    weekday: 'long', 
+                    month: 'short', 
+                    day: 'numeric' 
+                };
+                return dateObj.toLocaleDateString('en-US', options);
             }
 
-            // Otherwise, show day of week and date
-            const options = { 
-                weekday: 'long', 
-                month: 'short', 
-                day: 'numeric' 
-            };
-            return dateObj.toLocaleDateString('en-US', options);
+            // Use the display_text from the API if available
+            if (drawingInfo.display_text) {
+                return drawingInfo.display_text;
+            }
+
+            // Fallback to countdown calculation
+            const countdownSeconds = drawingInfo.countdown_seconds || 0;
+            if (countdownSeconds <= 0) {
+                return 'Drawing in progress';
+            }
+
+            const days = Math.floor(countdownSeconds / (24 * 3600));
+            const hours = Math.floor((countdownSeconds % (24 * 3600)) / 3600);
+            const minutes = Math.floor((countdownSeconds % 3600) / 60);
+
+            if (days > 0) {
+                return `Drawing in ${days} day${days > 1 ? 's' : ''}`;
+            } else if (hours > 0) {
+                return `Drawing in ${hours} hour${hours > 1 ? 's' : ''}`;
+            } else if (minutes > 0) {
+                return `Drawing in ${minutes} minute${minutes > 1 ? 's' : ''}`;
+            } else {
+                return 'Drawing very soon';
+            }
         } catch (error) {
             console.error('Error formatting next drawing date:', error);
-            return date.toString();
+            return 'Next drawing';
+        }
+    }
+
+    /**
+     * Format countdown time for display
+     * @param {number} seconds - Countdown seconds
+     * @returns {string} - Formatted countdown string
+     */
+    static formatCountdown(seconds) {
+        if (seconds <= 0) {
+            return 'Drawing time!';
+        }
+
+        const days = Math.floor(seconds / (24 * 3600));
+        const hours = Math.floor((seconds % (24 * 3600)) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = seconds % 60;
+
+        if (days > 0) {
+            return `${days}d ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        } else {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
         }
     }
 
