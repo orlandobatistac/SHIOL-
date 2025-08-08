@@ -9,6 +9,7 @@
 class PublicInterface {
     constructor() {
         this.countdownInterval = null; // Renamed from countdownTimer to avoid confusion with a potential CountdownTimer class
+        this.smartCountdownInterval = null; // For Smart AI Predictions countdown
         this.nextDrawingInfo = null; // To store the next drawing data for countdown updates
         this.currentHistoryPage = 1;
         this.historyPerPage = 30;
@@ -140,6 +141,9 @@ class PublicInterface {
 
                 if (remainingSeconds <= 0) {
                     clearInterval(this.countdownInterval);
+                    if (this.smartCountdownInterval) {
+                        clearInterval(this.smartCountdownInterval);
+                    }
                     this.showDrawingActive();
                     // Refresh drawing info after 5 minutes
                     setTimeout(() => this.loadNextDrawingInfo(), 5 * 60 * 1000);
@@ -234,7 +238,10 @@ class PublicInterface {
      * Load initial data when page loads
      */
     async loadInitialData() {
+        // Load drawing info first to ensure countdown data is available
         await this.loadNextDrawingInfo();
+        // Small delay to ensure nextDrawingInfo is properly set
+        await new Promise(resolve => setTimeout(resolve, 100));
         await this.loadSmartPredictions();
         await this.loadGroupedPredictionHistory();
     }
@@ -511,12 +518,55 @@ class PublicInterface {
         loading.classList.add('hidden');
 
         // Initialize countdown for smart predictions if we have drawing info
-        if (this.nextDrawingInfo && this.nextDrawingInfo.countdown_seconds > 0) {
-            const smartCountdown = document.getElementById('smart-predictions-countdown');
-            if (smartCountdown) {
-                smartCountdown.textContent = PowerballUtils.formatCountdown(this.nextDrawingInfo.countdown_seconds);
+        setTimeout(() => {
+            if (this.nextDrawingInfo && this.nextDrawingInfo.countdown_seconds > 0) {
+                const smartCountdown = document.getElementById('smart-predictions-countdown');
+                if (smartCountdown) {
+                    smartCountdown.textContent = PowerballUtils.formatCountdown(this.nextDrawingInfo.countdown_seconds);
+                    // Also start the countdown timer for this element
+                    this.startSmartPredictionsCountdown();
+                }
             }
+        }, 200);
+    }
+
+    /**
+     * Start countdown specifically for Smart AI Predictions section
+     */
+    startSmartPredictionsCountdown() {
+        if (!this.nextDrawingInfo || this.nextDrawingInfo.countdown_seconds <= 0) {
+            return;
         }
+
+        const smartCountdown = document.getElementById('smart-predictions-countdown');
+        if (!smartCountdown) {
+            return;
+        }
+
+        // Clear any existing countdown for this element
+        if (this.smartCountdownInterval) {
+            clearInterval(this.smartCountdownInterval);
+        }
+
+        let remainingSeconds = this.nextDrawingInfo.countdown_seconds;
+
+        // Update immediately
+        smartCountdown.textContent = PowerballUtils.formatCountdown(remainingSeconds);
+
+        // Set up interval to update every second
+        this.smartCountdownInterval = setInterval(() => {
+            remainingSeconds--;
+
+            if (remainingSeconds <= 0) {
+                clearInterval(this.smartCountdownInterval);
+                smartCountdown.textContent = 'Drawing time!';
+            } else {
+                smartCountdown.textContent = PowerballUtils.formatCountdown(remainingSeconds);
+            }
+        }, 1000);
+    }
+
+    /**
     }
 
     /**
