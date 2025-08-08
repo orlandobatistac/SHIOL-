@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 import asyncio
 import uuid
-from typing import Optional
+from typing import Optional, Dict, Any
 from pathlib import Path
 
 from src.predictor import Predictor
@@ -270,6 +270,17 @@ app.include_router(auth_router)
 # Mount modular frontend routers
 app.include_router(public_frontend_router)
 app.include_router(dashboard_frontend_router)
+
+@app.get("/api/v1/prediction-history-grouped")
+async def get_prediction_history_grouped(limit_dates: int = Query(25, ge=1, le=100)):
+    """Get grouped prediction history by date"""
+    try:
+        from src.public_api import get_predictions_performance_endpoint
+        return await get_predictions_performance_endpoint(limit_dates)
+    except Exception as e:
+        logger.error(f"Error in grouped prediction history: {e}")
+        raise HTTPException(status_code=500, detail="Error retrieving grouped prediction history")
+
 
 # Build an absolute path to the 'frontend' directory for robust file serving.
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

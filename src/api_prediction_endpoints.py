@@ -14,8 +14,28 @@ from loguru import logger
 from src.api_utils import convert_numpy_types, format_prediction_response, safe_database_operation
 from src.predictor import Predictor
 from src.intelligent_generator import IntelligentGenerator, DeterministicGenerator
-from src.database import save_prediction_log, get_prediction_history, calculate_next_drawing_date
+from src.database import save_prediction_log, get_prediction_history
 import src.database as db
+
+# Fix for calculate_next_drawing_date function
+def calculate_next_drawing_date():
+    """Calculate next Powerball drawing date (Mon, Wed, Sat)"""
+    from datetime import datetime, timedelta
+    today = datetime.now()
+    # Powerball drawings: Monday (0), Wednesday (2), Saturday (5)
+    drawing_days = [0, 2, 5]
+    
+    for i in range(7):  # Check next 7 days
+        check_date = today + timedelta(days=i)
+        if check_date.weekday() in drawing_days:
+            return check_date.strftime('%Y-%m-%d')
+    
+    # Fallback to next Monday
+    days_until_monday = (7 - today.weekday()) % 7
+    if days_until_monday == 0:
+        days_until_monday = 7
+    next_drawing = today + timedelta(days=days_until_monday)
+    return next_drawing.strftime('%Y-%m-%d')
 
 # Create router for prediction endpoints
 prediction_router = APIRouter(prefix="/api/v1", tags=["predictions"])
