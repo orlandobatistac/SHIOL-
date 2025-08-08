@@ -1,38 +1,38 @@
 {
   "pipeline_execution": {
-    "start_time": "2025-08-08T01:59:21.648898",
-    "end_time": "2025-08-08T02:01:49.071016",
-    "total_execution_time": "0:02:27.422118",
+    "start_time": "2025-08-08T02:24:44.676145",
+    "end_time": "2025-08-08T02:27:16.855622",
+    "total_execution_time": "0:02:32.179477",
     "status": {
       "data_update": {
         "status": "success",
-        "execution_time": "0:00:00.459540",
-        "timestamp": "2025-08-08T01:59:22.108992"
+        "execution_time": "0:00:00.461588",
+        "timestamp": "2025-08-08T02:24:45.138321"
       },
       "adaptive_analysis": {
         "status": "success",
-        "execution_time": "0:00:00.010990",
-        "timestamp": "2025-08-08T01:59:22.120235"
+        "execution_time": "0:00:00.009978",
+        "timestamp": "2025-08-08T02:24:45.148659"
       },
       "weight_optimization": {
         "status": "success",
-        "execution_time": "0:00:00.004617",
-        "timestamp": "2025-08-08T01:59:22.125188"
+        "execution_time": "0:00:00.004451",
+        "timestamp": "2025-08-08T02:24:45.153531"
       },
       "historical_validation": {
         "status": "success",
-        "execution_time": "0:00:00.006877",
-        "timestamp": "2025-08-08T01:59:22.132346"
+        "execution_time": "0:00:00.007127",
+        "timestamp": "2025-08-08T02:24:45.161121"
       },
       "prediction_generation": {
         "status": "success",
-        "execution_time": "0:02:26.934118",
-        "timestamp": "2025-08-08T02:01:49.066733"
+        "execution_time": "0:02:31.689458",
+        "timestamp": "2025-08-08T02:27:16.850932"
       },
       "performance_analysis": {
         "status": "success",
-        "execution_time": "0:00:00.003517",
-        "timestamp": "2025-08-08T02:01:49.070610"
+        "execution_time": "0:00:00.003852",
+        "timestamp": "2025-08-08T02:27:16.855210"
       }
     },
     "execution_source": "manual_dashboard",
@@ -49,7 +49,7 @@
       },
       "actual_execution": {
         "day": "friday",
-        "time": "01:59",
+        "time": "02:24",
         "matches_schedule": false
       },
       "triggered_by": "user_dashboard",
@@ -75,10 +75,10 @@
         ],
         "actual_day": "friday",
         "expected_time": "23:30",
-        "actual_time": "02:01",
+        "actual_time": "02:27",
         "schedule_compliance": false
       }
     }
   },
-  "generated_at": "2025-08-08T02:01:49.071016"
+  "generated_at": "2025-08-08T02:27:16.855622"
 }
