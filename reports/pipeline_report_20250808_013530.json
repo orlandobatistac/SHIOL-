@@ -1,38 +1,38 @@
 {
   "pipeline_execution": {
-    "start_time": "2025-08-08T00:27:52.857223",
-    "end_time": "2025-08-08T00:30:26.234480",
-    "total_execution_time": "0:02:33.377257",
+    "start_time": "2025-08-08T01:32:52.270788",
+    "end_time": "2025-08-08T01:35:30.106098",
+    "total_execution_time": "0:02:37.835310",
     "status": {
       "data_update": {
         "status": "success",
-        "execution_time": "0:00:00.459708",
-        "timestamp": "2025-08-08T00:27:53.317236"
+        "execution_time": "0:00:00.476282",
+        "timestamp": "2025-08-08T01:32:52.747590"
       },
       "adaptive_analysis": {
         "status": "success",
-        "execution_time": "0:00:00.009891",
-        "timestamp": "2025-08-08T00:27:53.327414"
+        "execution_time": "0:00:00.010533",
+        "timestamp": "2025-08-08T01:32:52.758667"
       },
       "weight_optimization": {
         "status": "success",
-        "execution_time": "0:00:00.022160",
-        "timestamp": "2025-08-08T00:27:53.349916"
+        "execution_time": "0:00:00.023994",
+        "timestamp": "2025-08-08T01:32:52.783006"
       },
       "historical_validation": {
         "status": "success",
-        "execution_time": "0:00:00.067441",
-        "timestamp": "2025-08-08T00:27:53.417641"
+        "execution_time": "0:00:00.093849",
+        "timestamp": "2025-08-08T01:32:52.877225"
       },
       "prediction_generation": {
         "status": "success",
-        "execution_time": "0:02:32.811710",
-        "timestamp": "2025-08-08T00:30:26.229776"
+        "execution_time": "0:02:37.223452",
+        "timestamp": "2025-08-08T01:35:30.101071"
       },
       "performance_analysis": {
         "status": "success",
-        "execution_time": "0:00:00.003855",
-        "timestamp": "2025-08-08T00:30:26.234017"
+        "execution_time": "0:00:00.003888",
+        "timestamp": "2025-08-08T01:35:30.105533"
       }
     },
     "execution_source": "manual_dashboard",
@@ -49,10 +49,16 @@
       },
       "actual_execution": {
         "day": "friday",
-        "time": "00:30",
+        "time": "01:32",
         "matches_schedule": false
       },
-      "triggered_by": "user_dashboard"
+      "triggered_by": "user_dashboard",
+      "manual_parameters": {
+        "num_predictions": 1,
+        "specific_steps": null,
+        "force_execution": false,
+        "pipeline_type": "full"
+      }
     }
   },
   "system_info": {
@@ -69,10 +75,10 @@
         ],
         "actual_day": "friday",
         "expected_time": "23:30",
-        "actual_time": "00:30",
+        "actual_time": "01:35",
         "schedule_compliance": false
       }
     }
   },
-  "generated_at": "2025-08-08T00:30:26.234480"
+  "generated_at": "2025-08-08T01:35:30.106098"
 }
