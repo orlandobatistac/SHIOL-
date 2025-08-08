@@ -302,32 +302,35 @@ class PipelineOrchestrator:
     def _calculate_next_drawing_date(self) -> str:
         """
         Calculate the next Powerball drawing date.
-        Drawings are: Monday (0), Wednesday (2), Saturday (5)
+        Drawings are: Monday (0), Wednesday (2), Saturday (5) at 11 PM ET
 
         Returns:
             str: Next drawing date in YYYY-MM-DD format
         """
         from datetime import datetime, timedelta
+        import pytz
 
-        current_date = datetime.now()
-        current_weekday = current_date.weekday()
+        # Use Eastern Time for Powerball drawings
+        et_tz = pytz.timezone('America/New_York')
+        current_date_et = datetime.now(et_tz)
+        current_weekday = current_date_et.weekday()
 
         # Drawing days: Monday=0, Wednesday=2, Saturday=5
         drawing_days = [0, 2, 5]
 
-        # If today is a drawing day and it's before 11 PM, the drawing is today
-        if current_weekday in drawing_days and current_date.hour < 23:
-            return current_date.strftime('%Y-%m-%d')
+        # If today is a drawing day and it's before 11 PM ET, the drawing is today
+        if current_weekday in drawing_days and current_date_et.hour < 23:
+            return current_date_et.strftime('%Y-%m-%d')
 
         # Otherwise, find the next drawing day
         days_ahead = 0
         for i in range(1, 8):  # Check next 7 days
-            next_date = current_date + timedelta(days=i)
+            next_date = current_date_et + timedelta(days=i)
             if next_date.weekday() in drawing_days:
                 days_ahead = i
                 break
 
-        next_drawing_date = current_date + timedelta(days=days_ahead)
+        next_drawing_date = current_date_et + timedelta(days=days_ahead)
         return next_drawing_date.strftime('%Y-%m-%d')
 
     def step_data_update(self) -> Dict[str, Any]:

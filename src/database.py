@@ -50,32 +50,35 @@ def get_db_path() -> str:
 def calculate_next_drawing_date() -> str:
     """
     Calculate the next Powerball drawing date.
-    Drawings are: Monday (0), Wednesday (2), Saturday (5)
+    Drawings are: Monday (0), Wednesday (2), Saturday (5) at 11 PM ET
 
     Returns:
         str: Next drawing date in YYYY-MM-DD format
     """
     from datetime import datetime, timedelta
+    import pytz
 
-    current_date = datetime.now()
-    current_weekday = current_date.weekday()
+    # Use Eastern Time for Powerball drawings
+    et_tz = pytz.timezone('America/New_York')
+    current_date_et = datetime.now(et_tz)
+    current_weekday = current_date_et.weekday()
 
     # Drawing days: Monday=0, Wednesday=2, Saturday=5
     drawing_days = [0, 2, 5]
 
-    # If today is a drawing day and it's before 11 PM, the drawing is today
-    if current_weekday in drawing_days and current_date.hour < 23:
-        return current_date.strftime('%Y-%m-%d')
+    # If today is a drawing day and it's before 11 PM ET, the drawing is today
+    if current_weekday in drawing_days and current_date_et.hour < 23:
+        return current_date_et.strftime('%Y-%m-%d')
 
     # Otherwise, find the next drawing day
     days_ahead = 0
     for i in range(1, 8):  # Check next 7 days
-        next_date = current_date + timedelta(days=i)
+        next_date = current_date_et + timedelta(days=i)
         if next_date.weekday() in drawing_days:
             days_ahead = i
             break
 
-    next_drawing_date = current_date + timedelta(days=days_ahead)
+    next_drawing_date = current_date_et + timedelta(days=days_ahead)
     return next_drawing_date.strftime('%Y-%m-%d')
 
 def get_db_connection() -> sqlite3.Connection:
@@ -1018,7 +1021,9 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                 cursor.execute("""
                     SELECT
                         id, timestamp, n1, n2, n3, n4, n5, powerball,
-                        score_total, model_version, dataset_hash, target_draw_date, created_at
+                        score_total, model_version, dataset_hash, 
+                        COALESCE(target_draw_date, DATE(created_at)) as target_draw_date, 
+                        created_at
                     FROM predictions_log
                     WHERE COALESCE(target_draw_date, DATE(created_at)) = ?
                     ORDER BY score_total DESC
@@ -1036,8 +1041,8 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                 for pred_row in predictions_data:
                     prediction_numbers = [pred_row[2], pred_row[3], pred_row[4], pred_row[5], pred_row[6]]
                     prediction_pb = pred_row[7]
-                    prediction_target_date = pred_row[9] or target_date
-                    prediction_created_at = pred_row[10]
+                    prediction_target_date = pred_row[11] or target_date  # target_draw_date is now index 11
+                    prediction_created_at = pred_row[12]  # created_at is now index 12
 
                     # Find matching official result for the TARGET drawing date (not creation date)
                     cursor.execute("""
@@ -1082,8 +1087,8 @@ def get_predictions_grouped_by_date(limit_dates: int = 25) -> List[Dict]:
                         "numbers": prediction_numbers,
                         "powerball": prediction_pb,
                         "score": float(pred_row[8]),
-                        "model_version": pred_row[9],
-                        "dataset_hash": pred_row[10],
+                        "model_version": pred_row[9],  # model_version is correct at index 9
+                        "dataset_hash": pred_row[10],  # dataset_hash is correct at index 10
                         "target_draw_date": prediction_target_date,
                         "created_at": prediction_created_at,
                         "matches_main": matches_main,
