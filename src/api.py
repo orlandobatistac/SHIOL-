@@ -84,7 +84,7 @@ async def update_data_automatically():
         logger.error(f"Error during automatic data update: {e}")
 
 async def trigger_full_pipeline_automatically():
-    """Task to trigger the full pipeline automatically."""
+    """Task to trigger the full pipeline automatically with enhanced metadata."""
     logger.info("Running automatic full pipeline trigger.")
     try:
         # Check if pipeline is already running to prevent duplicates
@@ -94,24 +94,55 @@ async def trigger_full_pipeline_automatically():
             return
         
         if pipeline_orchestrator:
-            # Trigger the full pipeline execution
+            # Get current scheduler configuration
+            current_time = datetime.now()
+            current_day = current_time.strftime('%A').lower()
+            current_time_str = current_time.strftime('%H:%M')
+            
+            # Expected scheduler configuration (from scheduler setup)
+            expected_days = ['monday', 'wednesday', 'saturday']
+            expected_time = '23:30'
+            timezone = 'America/New_York'
+            
+            # Check if execution matches schedule
+            matches_schedule = (
+                current_day in expected_days and 
+                abs((current_time.hour * 60 + current_time.minute) - (23 * 60 + 30)) <= 5  # 5 minute tolerance
+            )
+            
+            # Trigger the full pipeline execution with enhanced metadata
             execution_id = str(uuid.uuid4())[:8]
             pipeline_executions[execution_id] = {
                 "execution_id": execution_id,
                 "status": "starting",
-                "start_time": datetime.now().isoformat(),
+                "start_time": current_time.isoformat(),
                 "current_step": "automated_trigger",
                 "steps_completed": 0,
                 "total_steps": 7,
                 "num_predictions": 10,
                 "requested_steps": None,
                 "error": None,
-                "trigger_type": "automatic_scheduler"
+                "trigger_type": "automatic_scheduler",
+                "execution_source": "automatic_scheduler",
+                "trigger_details": {
+                    "type": "scheduled",
+                    "scheduled_config": {
+                        "days": expected_days,
+                        "time": expected_time,
+                        "timezone": timezone
+                    },
+                    "actual_execution": {
+                        "day": current_day,
+                        "time": current_time_str,
+                        "matches_schedule": matches_schedule
+                    },
+                    "triggered_by": "automatic_scheduler"
+                }
             }
             
             # Run the pipeline in background
             asyncio.create_task(run_full_pipeline_background(execution_id, 10))
-            logger.info(f"Automatic pipeline execution started with ID: {execution_id}")
+            logger.info(f"Automatic pipeline execution started with ID: {execution_id} (scheduled: {matches_schedule})")
         else:
             logger.warning("Pipeline orchestrator not available to trigger pipeline.")
     except Exception as e:
@@ -1208,11 +1239,14 @@ async def get_pipeline_status():
         # Get pipeline status from orchestrator
         orchestrator_status = convert_numpy_types(pipeline_orchestrator.get_pipeline_status())
 
-        # Get recent execution history from global tracking
+        # Get recent execution history from global tracking with enhanced metadata
         recent_executions = []
         # Sort executions by start time descending and take the last 5
         sorted_executions = sorted(pipeline_executions.items(), key=lambda item: item[1].get("start_time", ""), reverse=True)
         for exec_id, execution in sorted_executions[:5]:
+            # Extract trigger details
+            trigger_details = execution.get("trigger_details", {})
+            
             recent_executions.append({
                 "execution_id": exec_id,
                 "status": execution.get("status", "unknown"),
@@ -1220,7 +1254,13 @@ async def get_pipeline_status():
                 "end_time": execution.get("end_time"),
                 "current_step": execution.get("current_step"),
                 "steps_completed": execution.get("steps_completed", 0),
-                "total_steps": execution.get("total_steps", 7)
+                "total_steps": execution.get("total_steps", 7),
+                "execution_source": execution.get("execution_source", "unknown"),
+                "trigger_type": execution.get("trigger_type", "unknown"),
+                "triggered_by": trigger_details.get("triggered_by", "unknown"),
+                "matches_schedule": trigger_details.get("actual_execution", {}).get("matches_schedule", None),
+                "execution_day": trigger_details.get("actual_execution", {}).get("day", "unknown"),
+                "execution_time": trigger_details.get("actual_execution", {}).get("time", "unknown")
             })
 
         # Get next scheduled execution (from scheduler)
@@ -1359,17 +1399,47 @@ async def trigger_pipeline_execution(
                     detail=f"Invalid steps: {invalid_steps}. Valid steps: {valid_steps}"
                 )
 
-        # Initialize execution tracking
+        # Initialize execution tracking with enhanced metadata
+        current_time = datetime.now()
+        current_day = current_time.strftime('%A').lower()
+        current_time_str = current_time.strftime('%H:%M')
+        
+        # Get scheduler configuration for comparison
+        expected_days = ['monday', 'wednesday', 'saturday']
+        expected_time = '23:30'
+        timezone = 'America/New_York'
+        
         pipeline_executions[execution_id] = {
             "execution_id": execution_id,
             "status": "starting",
-            "start_time": datetime.now().isoformat(),
+            "start_time": current_time.isoformat(),
             "current_step": None,
             "steps_completed": 0,
             "total_steps": len(step_list) if step_list else 7, # Default to 7 if full pipeline
             "num_predictions": num_predictions,
             "requested_steps": step_list,
-            "error": None
+            "error": None,
+            "trigger_type": "manual_dashboard",
+            "execution_source": "manual_dashboard",
+            "trigger_details": {
+                "type": "manual",
+                "scheduled_config": {
+                    "days": expected_days,
+                    "time": expected_time,
+                    "timezone": timezone
+                },
+                "actual_execution": {
+                    "day": current_day,
+                    "time": current_time_str,
+                    "matches_schedule": current_day in expected_days
+                },
+                "triggered_by": "user_dashboard",
+                "manual_parameters": {
+                    "num_predictions": num_predictions,
+                    "specific_steps": step_list,
+                    "force_execution": force
+                }
+            }
         }
 
         # Add background task
@@ -1797,10 +1867,19 @@ async def stop_pipeline_execution():
 
 # Background task functions for pipeline execution
 async def run_full_pipeline_background(execution_id: str, num_predictions: int):
-    """Run full pipeline in background task."""
+    """Run full pipeline in background task with enhanced logging."""
     try:
         pipeline_executions[execution_id]["status"] = "running"
         pipeline_executions[execution_id]["current_step"] = "starting"
+        
+        # Get execution metadata for logging
+        execution_meta = pipeline_executions[execution_id]
+        trigger_details = execution_meta.get("trigger_details", {})
+        
+        logger.info(f"Starting background pipeline execution {execution_id}")
+        logger.info(f"Execution source: {execution_meta.get('execution_source', 'unknown')}")
+        logger.info(f"Triggered by: {trigger_details.get('triggered_by', 'unknown')}")
+        logger.info(f"Schedule compliance: {trigger_details.get('actual_execution', {}).get('matches_schedule', 'unknown')}")
 
         # Run the full pipeline
         result = pipeline_orchestrator.run_full_pipeline() # This method should handle its own internal steps and logging
@@ -1815,10 +1894,18 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
             "error": result.get("error") # Capture any error message
         })
 
-        logger.info(f"Background pipeline execution {execution_id} completed with status: {result.get('status')}")
+        # Enhanced completion logging
+        completion_status = result.get("status", "unknown")
+        logger.info(f"Background pipeline execution {execution_id} completed with status: {completion_status}")
+        logger.info(f"Execution metadata: Source={execution_meta.get('execution_source')}, "
+                   f"Triggered_by={trigger_details.get('triggered_by')}, "
+                   f"Scheduled={trigger_details.get('actual_execution', {}).get('matches_schedule')}")
 
     except Exception as e:
         # Catch any exceptions not handled by the orchestrator itself
+        execution_meta = pipeline_executions[execution_id]
+        trigger_details = execution_meta.get("trigger_details", {})
+        
         pipeline_executions[execution_id].update({
             "status": "failed",
             "end_time": datetime.now().isoformat(),
@@ -1826,7 +1913,11 @@ async def run_full_pipeline_background(execution_id: str, num_predictions: int):
             "current_step": "exception_handler", # Indicate where failure occurred
             "steps_completed": pipeline_executions[execution_id].get("steps_completed", 0) # Keep track of steps before crash
         })
-        logger.error(f"Critical error during background pipeline execution {execution_id}: {e}", exc_info=True)
+        
+        logger.error(f"Critical error during background pipeline execution {execution_id}: {e}")
+        logger.error(f"Failed execution metadata: Source={execution_meta.get('execution_source')}, "
+                    f"Triggered_by={trigger_details.get('triggered_by')}, "
+                    f"Scheduled={trigger_details.get('actual_execution', {}).get('matches_schedule')}", exc_info=True)
 
 
 async def run_pipeline_steps_background(execution_id: str, steps: List[str], num_predictions: int):

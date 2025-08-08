@@ -728,20 +728,60 @@ class PipelineOrchestrator:
             raise
 
     def _generate_execution_report(self) -> Dict[str, Any]:
-        """Generate comprehensive execution report."""
+        """Generate comprehensive execution report with enhanced metadata."""
+        current_time = datetime.now()
+        current_day = current_time.strftime('%A').lower()
+        current_time_str = current_time.strftime('%H:%M')
+        
+        # Get scheduler configuration
+        expected_days = ['monday', 'wednesday', 'saturday']
+        expected_time = '23:30'
+        timezone = 'America/New_York'
+        
+        # Check if execution matches expected schedule
+        matches_schedule = (
+            current_day in expected_days and 
+            abs((current_time.hour * 60 + current_time.minute) - (23 * 60 + 30)) <= 30  # 30 minute tolerance for reports
+        )
+        
         return {
             'pipeline_execution': {
                 'start_time': self.execution_start_time.isoformat() if self.execution_start_time else None,
-                'end_time': datetime.now().isoformat(),
-                'total_execution_time': str(datetime.now() - self.execution_start_time) if self.execution_start_time else None,
-                'status': self.pipeline_status
+                'end_time': current_time.isoformat(),
+                'total_execution_time': str(current_time - self.execution_start_time) if self.execution_start_time else None,
+                'status': self.pipeline_status,
+                'execution_source': 'scheduled_pipeline',
+                'trigger_details': {
+                    'type': 'scheduled',
+                    'scheduled_config': {
+                        'days': expected_days,
+                        'time': expected_time,
+                        'timezone': timezone
+                    },
+                    'actual_execution': {
+                        'day': current_day,
+                        'time': current_time_str,
+                        'matches_schedule': matches_schedule
+                    },
+                    'triggered_by': 'pipeline_orchestrator'
+                }
             },
             'system_info': {
                 'config_file': self.config_path,
                 'historical_data_records': len(self.historical_data) if self.historical_data is not None else 0,
-                'adaptive_system_initialized': self.adaptive_system is not None
+                'adaptive_system_initialized': self.adaptive_system is not None,
+                'execution_context': {
+                    'is_drawing_day': current_day in expected_days,
+                    'expected_vs_actual': {
+                        'expected_days': expected_days,
+                        'actual_day': current_day,
+                        'expected_time': expected_time,
+                        'actual_time': current_time_str,
+                        'schedule_compliance': matches_schedule
+                    }
+                }
             },
-            'generated_at': datetime.now().isoformat()
+            'generated_at': current_time.isoformat()
         }
 
     def _generate_pipeline_summary(self, pipeline_results: Dict[str, Any], execution_time) -> Dict[str, Any]:
