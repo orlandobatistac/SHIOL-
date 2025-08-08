@@ -145,13 +145,18 @@ class PowerballUtils {
             const tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
 
+            // Convert to same timezone for comparison
+            const todayUTC = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const tomorrowUTC = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate());
+            const dateUTC = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+            
             // Check if it's today
-            if (dateObj.toDateString() === today.toDateString()) {
+            if (dateUTC.getTime() === todayUTC.getTime()) {
                 return 'Today';
             }
             
             // Check if it's tomorrow
-            if (dateObj.toDateString() === tomorrow.toDateString()) {
+            if (dateUTC.getTime() === tomorrowUTC.getTime()) {
                 return 'Tomorrow';
             }
 

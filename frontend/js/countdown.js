@@ -22,7 +22,7 @@ class CountdownTimer {
     start(targetDate) {
         try {
             this.targetDate = typeof targetDate === 'string' ? new Date(targetDate) : targetDate;
-            
+
             if (isNaN(this.targetDate.getTime())) {
                 throw new Error('Invalid target date');
             }
@@ -100,7 +100,7 @@ class CountdownTimer {
     onCountdownComplete() {
         this.stop();
         this.displayElement.textContent = 'Drawing in progress...';
-        
+
         // Add visual indication that drawing is happening
         if (this.displayElement.parentElement) {
             this.displayElement.parentElement.classList.add('drawing-active');
@@ -132,13 +132,13 @@ class CountdownTimer {
     updateAdditionalElements(timeDiff) {
         // Update urgency styling based on time remaining
         const hours = timeDiff / (1000 * 60 * 60);
-        
+
         if (this.displayElement.parentElement) {
             const parent = this.displayElement.parentElement;
-            
+
             // Remove existing urgency classes
             parent.classList.remove('countdown-urgent', 'countdown-critical');
-            
+
             if (hours <= 1) {
                 parent.classList.add('countdown-critical');
             } else if (hours <= 6) {
@@ -197,17 +197,17 @@ class CountdownUtils {
     static getNextDrawingDate() {
         const now = new Date();
         let nextDrawing = new Date(now);
-        
+
         // Powerball drawings are on Wednesdays (3) and Saturdays (6)
         // JavaScript: Sunday = 0, Monday = 1, ..., Saturday = 6
         const currentDay = now.getDay();
         const currentHour = now.getHours();
         const currentMinute = now.getMinutes();
-        
+
         let daysToAdd = 0;
-        
+
         if (currentDay < 3) {
-            // Before Wednesday
+            // Sunday, Monday, Tuesday - next drawing is Wednesday
             daysToAdd = 3 - currentDay;
         } else if (currentDay === 3) {
             // Wednesday - check if before 10:59 PM
@@ -217,7 +217,7 @@ class CountdownUtils {
                 daysToAdd = 3; // Next Saturday
             }
         } else if (currentDay < 6) {
-            // Thursday or Friday
+            // Thursday or Friday - next drawing is Saturday
             daysToAdd = 6 - currentDay;
         } else if (currentDay === 6) {
             // Saturday - check if before 10:59 PM
@@ -227,13 +227,13 @@ class CountdownUtils {
                 daysToAdd = 4; // Next Wednesday
             }
         } else {
-            // Sunday
-            daysToAdd = 3; // Next Wednesday
+            // Sunday - next drawing is Wednesday
+            daysToAdd = 3;
         }
-        
+
         nextDrawing.setDate(now.getDate() + daysToAdd);
         nextDrawing.setHours(22, 59, 0, 0); // 10:59 PM
-        
+
         return nextDrawing;
     }
 
@@ -262,7 +262,7 @@ class CountdownUtils {
                 } else {
                     return `${minutes}m ${seconds}s`;
                 }
-            
+
             case 'minimal':
                 if (days > 0) {
                     return `${days}d ${hours}h`;
@@ -271,7 +271,7 @@ class CountdownUtils {
                 } else {
                     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
                 }
-            
+
             case 'full':
             default:
                 if (days > 0) {

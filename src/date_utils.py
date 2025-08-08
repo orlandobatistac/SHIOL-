@@ -27,8 +27,8 @@ class DateManager:
     # Timezone estándar para todo el proyecto
     POWERBALL_TIMEZONE = pytz.timezone('America/New_York')
     
-    # Días de sorteo de Powerball (Lunes=0, Miércoles=2, Sábado=5)
-    DRAWING_DAYS = [0, 2, 5]
+    # Días de sorteo de Powerball (Miércoles=2, Sábado=5)
+    DRAWING_DAYS = [2, 5]
     
     # Hora de sorteo (11 PM ET)
     DRAWING_HOUR = 23
@@ -243,8 +243,8 @@ class DateManager:
         """
         info = {
             'drawing_days': cls.DRAWING_DAYS,
-            'drawing_days_names': ['Monday', 'Wednesday', 'Saturday'],
-            'drawing_days_spanish': ['Lunes', 'Miércoles', 'Sábado'],
+            'drawing_days_names': ['Wednesday', 'Saturday'],
+            'drawing_days_spanish': ['Miércoles', 'Sábado'],
             'drawing_hour_et': cls.DRAWING_HOUR,
             'timezone': str(cls.POWERBALL_TIMEZONE),
             'next_drawing_date': cls.calculate_next_drawing_date()
